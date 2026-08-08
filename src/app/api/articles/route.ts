@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/db";
+import { requirePermission } from "@/lib/auth-guard";
 
 export async function GET() {
   try {
@@ -16,6 +17,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const perm = await requirePermission("articles:create", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { title, slug, summary, content, categoryId, categoryName, seoTitle, seoDesc, status } = body;

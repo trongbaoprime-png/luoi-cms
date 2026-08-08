@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import fs from "fs/promises";
 import path from "path";
+import { requirePermission } from "@/lib/auth-guard";
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const perm = await requirePermission("media:delete", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     const media = await db.media.findUnique({ where: { id } });
@@ -16,9 +22,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       const filename = path.basename(media.url);
       const filePath = path.join(process.cwd(), "public", "images", filename);
       await fs.unlink(filePath);
-    } catch (e) {
-      console.warn("Could not delete physical file:", e);
-    }
+    } catch {}
 
     await db.media.delete({ where: { id } });
 

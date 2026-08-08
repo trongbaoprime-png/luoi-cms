@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requirePermission } from "@/lib/auth-guard";
 
 export async function GET() {
   try {
@@ -29,6 +30,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const perm = await requirePermission("settings:edit", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const body = await req.json();
 

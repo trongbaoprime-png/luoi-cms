@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/db";
 import { z } from "zod";
+import { requirePermission } from "@/lib/auth-guard";
 
 const PageSchema = z.object({
   title: z.string().min(2, "Tiêu đề quá ngắn"),
@@ -27,6 +28,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const perm = await requirePermission("pages:manage", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const validated = PageSchema.parse(body);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { cmsDb } from "@/lib/cms-db";
-import { verifyPassword, generateSecureToken, hashPassword } from "@/lib/auth-security";
+import { verifyPassword, generateSecureToken } from "@/lib/auth-security";
 import { createAdminSession, AdminRole } from "@/lib/redis-session";
 
 // In-Memory Rate Limiter to prevent Brute-Force attacks
@@ -55,19 +55,12 @@ export async function POST(req: Request) {
       permissions?: string | null;
     } | null = null;
 
-    // 1. Check against Environment SUPER_ADMIN if configured in .env
+    // 1. Check against Environment SUPER_ADMIN if configured via ADMIN_PASS_HASH (Argon2id)
     const envAdminUser = process.env.ADMIN_USER;
     const envAdminPassHash = process.env.ADMIN_PASS_HASH;
-    const envAdminPass = process.env.ADMIN_PASS;
 
-    if (envAdminUser && username === envAdminUser) {
-      let isEnvValid = false;
-      if (envAdminPassHash) {
-        isEnvValid = await verifyPassword(password, envAdminPassHash);
-      } else if (envAdminPass && password === envAdminPass) {
-        isEnvValid = true;
-      }
-
+    if (envAdminUser && envAdminPassHash && username === envAdminUser) {
+      const isEnvValid = await verifyPassword(password, envAdminPassHash);
       if (isEnvValid) {
         authenticatedUser = {
           id: "env-super-admin",
@@ -89,7 +82,7 @@ export async function POST(req: Request) {
           },
         });
 
-        if (dbUser) {
+        if (dbUser && dbUser.password) {
           const isDbPasswordValid = await verifyPassword(password, dbUser.password);
           if (isDbPasswordValid) {
             let role: AdminRole = "ADMIN";
@@ -108,7 +101,7 @@ export async function POST(req: Request) {
           }
         }
       } catch {
-        // Database access error handled gracefully
+        // Database access error handled gracefully without exposing internal stack trace
       }
     }
 

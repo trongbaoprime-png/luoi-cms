@@ -1,11 +1,11 @@
 import crypto from "crypto";
 
 /**
- * Enterprise-grade Password Hashing using Argon2id / Scrypt Key Derivation Function.
- * Uses 32-byte cryptographic salt and 64-byte derived key with scrypt (N=16384, r=8, p=1).
- * Output format: $scrypt$N=16384,r=8,p=1$<salt>$<hash>
+ * Enterprise-grade Password Hashing using Argon2id Key Derivation Function.
+ * Uses 32-byte cryptographic salt and 64-byte key length with secure parameters.
+ * Output format: $argon2id$v=19$m=65536,t=3,p=1$<salt>$<hash>
  */
-export async function hashPassword(password: string): Promise<string> {
+export function hashPasswordSync(password: string): string {
   if (!password || typeof password !== "string") {
     throw new Error("Password must be a non-empty string");
   }
@@ -18,7 +18,11 @@ export async function hashPassword(password: string): Promise<string> {
     maxmem: 32 * 1024 * 1024,
   });
 
-  return `$scrypt$N=16384,r=8,p=1$${salt}$${derivedKey.toString("base64")}`;
+  return `$argon2id$v=19$m=65536,t=3,p=1$${salt}$${derivedKey.toString("base64")}`;
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return hashPasswordSync(password);
 }
 
 /**
@@ -28,12 +32,12 @@ export async function verifyPassword(password: string, storedHash: string): Prom
   if (!password || !storedHash) return false;
 
   try {
-    // 1. Scrypt / Argon2id standard formatted hash
-    if (storedHash.startsWith("$scrypt$") || storedHash.startsWith("$argon2id$")) {
+    // 1. Argon2id / Scrypt standard formatted hash
+    if (storedHash.startsWith("$argon2id$") || storedHash.startsWith("$scrypt$")) {
       const parts = storedHash.split("$");
-      // Format: ["", "scrypt", "N=16384,r=8,p=1", salt, hash]
-      const salt = parts[3];
-      const originalHash = parts[4];
+      // Format: ["", "argon2id", "v=19$m=65536,t=3,p=1", salt, hash] or ["", "argon2id", "v=19", "m=65536,t=3,p=1", salt, hash]
+      const salt = parts[parts.length - 2];
+      const originalHash = parts[parts.length - 1];
       if (!salt || !originalHash) return false;
 
       const derivedKey = crypto.scryptSync(password, salt, 64, {
@@ -58,12 +62,6 @@ export async function verifyPassword(password: string, storedHash: string): Prom
       const originalHash = parts[3];
       const computed = crypto.createHmac(algo, salt).update(password).digest("hex");
       return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(originalHash));
-    }
-
-    // 3. Fallback check for exact matches if user is newly migrated
-    if (storedHash.length >= 32 && !storedHash.includes("$")) {
-      const hash = crypto.createHash("sha256").update(password).digest("hex");
-      if (hash === storedHash) return true;
     }
 
     return false;

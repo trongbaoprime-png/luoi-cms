@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/db";
+import { requirePermission } from "@/lib/auth-guard";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +22,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const perm = await requirePermission("articles:edit", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     const body = await req.json();
@@ -69,6 +75,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const perm = await requirePermission("articles:delete", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     await cmsDb.post.delete({ where: { id } });

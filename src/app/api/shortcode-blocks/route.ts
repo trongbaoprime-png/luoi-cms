@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/db";
+import { requirePermission } from "@/lib/auth-guard";
 
 let defaultBlocksSeeded = false;
 
@@ -101,6 +102,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const perm = await requirePermission("settings:edit", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { name, key, type, configJson } = body;

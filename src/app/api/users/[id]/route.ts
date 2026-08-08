@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import crypto from "crypto";
-
-function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
+import { hashPassword } from "@/lib/auth-security";
+import { requirePermission } from "@/lib/auth-guard";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const perm = await requirePermission("users:manage", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     const user = await db.user.findUnique({
@@ -36,6 +38,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const perm = await requirePermission("users:manage", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     const body = await req.json();
@@ -47,7 +54,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (body.permissions !== undefined) updateData.permissions = body.permissions;
     if (body.status) updateData.status = body.status;
     if (body.bio !== undefined) updateData.bio = body.bio;
-    if (body.password) updateData.password = hashPassword(body.password);
+    if (body.password) updateData.password = await hashPassword(body.password);
 
     const updatedUser = await db.user.update({
       where: { id },
@@ -71,6 +78,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const perm = await requirePermission("users:manage", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     await db.user.delete({ where: { id } });

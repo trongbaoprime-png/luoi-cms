@@ -3,8 +3,14 @@ import { db } from "@/lib/db";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
+import { requirePermission } from "@/lib/auth-guard";
 
 export async function POST(req: Request) {
+  const perm = await requirePermission("media:upload", req);
+  if (!perm.authorized) {
+    return perm.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

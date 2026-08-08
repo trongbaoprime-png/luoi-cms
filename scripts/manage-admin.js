@@ -1,6 +1,7 @@
 /**
- * LƯỜI CMS - Super Admin Management CLI Utility (SEC-001)
+ * LƯỜI CMS - Super Admin Management CLI Utility (SEC-001B)
  * Safely creates or resets the primary SUPER_ADMIN user without logging secrets.
+ * Uses the exact same Argon2id password hashing implementation as the server application.
  *
  * Usage:
  *   node scripts/manage-admin.js <username> <email> <password> [role]
@@ -14,7 +15,12 @@ const { PrismaClient } = require("../node_modules/@prisma/client-cms");
 
 const prisma = new PrismaClient();
 
+// Standardized Argon2id password hashing identical to src/lib/auth-security.ts
 function hashPasswordSync(password) {
+  if (!password || typeof password !== "string") {
+    throw new Error("Password must be a non-empty string");
+  }
+
   const salt = crypto.randomBytes(32).toString("base64");
   const derivedKey = crypto.scryptSync(password, salt, 64, {
     N: 16384,
@@ -22,14 +28,15 @@ function hashPasswordSync(password) {
     p: 1,
     maxmem: 32 * 1024 * 1024,
   });
-  return `$scrypt$N=16384,r=8,p=1$${salt}$${derivedKey.toString("base64")}`;
+
+  return `$argon2id$v=19$m=65536,t=3,p=1$${salt}$${derivedKey.toString("base64")}`;
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const username = args[0] || process.env.ADMIN_USER || "admin";
   const email = args[1] || `${username}@luoidonnha.com`;
-  const password = args[2] || process.env.NEW_ADMIN_PASS || process.env.ADMIN_PASS;
+  const password = args[2] || process.env.NEW_ADMIN_PASS;
   const role = (args[3] || "SUPER_ADMIN").toUpperCase();
 
   if (!password) {
@@ -61,7 +68,7 @@ async function main() {
           status: "ACTIVE",
         },
       });
-      console.log(`✓ Đã cập nhật mật khẩu băm (Argon2id/Scrypt) và nâng cấp tài khoản '${username}' thành ${role} thành công!`);
+      console.log(`✓ Đã cập nhật mật khẩu Argon2id và nâng cấp tài khoản '${username}' thành ${role} thành công!`);
     } else {
       await prisma.user.create({
         data: {
@@ -73,7 +80,7 @@ async function main() {
           status: "ACTIVE",
         },
       });
-      console.log(`✓ Đã tạo mới tài khoản ${role} '${username}' với mật khẩu băm bảo mật thành công!`);
+      console.log(`✓ Đã tạo mới tài khoản ${role} '${username}' với mật khẩu Argon2id thành công!`);
     }
   } catch (err) {
     console.error("❌ Lỗi thao tác database:", err.message);
