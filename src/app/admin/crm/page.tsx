@@ -691,26 +691,37 @@ function onEdit(e) {
             )}
           </div>
 
-          {/* Quick Realtime Sync Google Sheets Button */}
-          <button
-            onClick={() => handleSyncSheets([8])}
-            disabled={syncing}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
-            title="Đồng bộ ngay dữ liệu Google Sheets tháng hiện tại (Tháng 8)"
-          >
-            <RefreshCwIcon className={`w-3.5 h-3.5 text-stone-950 ${syncing ? "animate-spin" : ""}`} />
-            <span>{syncing ? "Đang đồng bộ..." : "⚡ Đồng Bộ T8"}</span>
-          </button>
+          {/* Dynamic Realtime Sync Google Sheets Buttons (Auto-updates with Current Month) */}
+          {(() => {
+            const currentM = new Date().getMonth() + 1;
+            const p1 = currentM === 1 ? 12 : currentM - 1;
+            const p2 = p1 === 1 ? 12 : p1 - 1;
+            const last3 = [p2, p1, currentM];
 
-          <button
-            onClick={() => handleSyncSheets([6, 7, 8])}
-            disabled={syncing}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
-            title="Đồng bộ toàn bộ 3 tháng gần nhất (Tháng 6, 7, 8)"
-          >
-            <FileSpreadsheetIcon className={`w-3.5 h-3.5 text-[#00c9b7] ${syncing ? "animate-spin" : ""}`} />
-            <span>Đồng Bộ T6-T8</span>
-          </button>
+            return (
+              <>
+                <button
+                  onClick={() => handleSyncSheets([currentM])}
+                  disabled={syncing}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
+                  title={`Đồng bộ ngay dữ liệu Google Sheets tháng hiện tại (Tháng ${currentM})`}
+                >
+                  <RefreshCwIcon className={`w-3.5 h-3.5 text-stone-950 ${syncing ? "animate-spin" : ""}`} />
+                  <span>{syncing ? `Đang đồng bộ T${currentM}...` : `⚡ Đồng Bộ T${currentM}`}</span>
+                </button>
+
+                <button
+                  onClick={() => handleSyncSheets(last3)}
+                  disabled={syncing}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
+                  title={`Đồng bộ toàn bộ 3 tháng gần nhất (Tháng ${p2}, ${p1}, ${currentM})`}
+                >
+                  <FileSpreadsheetIcon className={`w-3.5 h-3.5 text-[#00c9b7] ${syncing ? "animate-spin" : ""}`} />
+                  <span>Đồng Bộ T{p2}-T{currentM}</span>
+                </button>
+              </>
+            );
+          })()}
 
           <button
             onClick={() => {
