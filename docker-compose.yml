@@ -16,14 +16,43 @@ services:
       - CMS_DATABASE_URL=file:/app/luoi/cms/cms.db
       - CRM_DATABASE_URL=file:/app/luoi/minicrm/minicrm.db
       - OMNI_DATABASE_URL=file:/app/luoi/omni/omni.db
+      - CORE_DATABASE_URL=postgresql://luoi_admin:luoi_secure_password_2026@postgres:5432/luoi_core?schema=public
+      - CRM_POSTGRES_URL=postgresql://luoi_admin:luoi_secure_password_2026@postgres:5432/luoi_crm?schema=public
+      - OMNI_POSTGRES_URL=postgresql://luoi_admin:luoi_secure_password_2026@postgres:5432/luoi_omni?schema=public
     volumes:
       - ./prisma:/app/prisma
       - ./luoi:/app/luoi
       - ./public/uploads:/app/public/uploads
     networks:
       - app_net
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  # 2. LiteLLM Proxy (Enterprise Production AI Gateway)
+  # 2. PostgreSQL 16 Database Foundation (Enterprise Relational Data Core)
+  postgres:
+    image: postgres:16-alpine
+    container_name: luoi_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: luoi_admin
+      POSTGRES_PASSWORD: luoi_secure_password_2026
+      POSTGRES_DB: luoi_core
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Bound strictly to 127.0.0.1 (NOT public 0.0.0.0)
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luoi_admin -d luoi_core"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app_net
+
+  # 3. LiteLLM Proxy (Enterprise Production AI Gateway)
   litellm:
     image: ghcr.io/berriai/litellm:main-v1.40.0
     container_name: litellm_proxy
@@ -36,7 +65,7 @@ services:
     networks:
       - app_net
 
-  # 3. OmniRoute (Secondary AI Agent Router & Token Compression)
+  # 4. OmniRoute (Secondary AI Agent Router & Token Compression)
   omniroute:
     image: node:20-alpine
     container_name: omniroute_engine
@@ -47,7 +76,7 @@ services:
     networks:
       - app_net
 
-  # 4. OpenClaw (AI Web Scraping & Agent Automation)
+  # 5. OpenClaw (AI Web Scraping & Agent Automation)
   openclaw:
     image: python:3.11-slim
     container_name: openclaw_engine
@@ -58,7 +87,7 @@ services:
     networks:
       - app_net
 
-  # 5. Redis Cache & Message Queue
+  # 6. Redis Cache & Message Queue
   redis:
     image: redis:7-alpine
     container_name: redis_cache
@@ -67,6 +96,10 @@ services:
       - "127.0.0.1:6379:6379"
     networks:
       - app_net
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   app_net:

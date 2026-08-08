@@ -1,0 +1,88 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("OMNI_POSTGRES_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-omni-pg"
+}
+
+// 1. Quản lý Danh sách 60 Fanpages (PostgreSQL Foundation)
+model OmniFanpage {
+  id            String   @id @default(cuid())
+  pageId        String   @unique
+  pageName      String
+  accessToken   String?
+  category      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversations OmniConversation[]
+}
+
+// 2. Quản lý Thẻ Pancake.vn
+model OmniPancakeTag {
+  id          String   @id @default(cuid())
+  tagId       String   @unique
+  tagName     String
+  colorHex    String?
+  category    String?
+  createdAt   DateTime @default(now())
+}
+
+// 3. Quản lý Hội thoại Đa Kênh
+model OmniConversation {
+  id                String   @id @default(cuid())
+  pageId            String
+  fanpage           OmniFanpage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  psid              String
+  igsid             String?
+  customerName      String?
+  phone             String?
+  pancakeCustomerId String?
+  tags              String?  // JSON Array
+
+  // AI Extracted Intelligence
+  detectedBranch    String?
+  branchStatus      String?
+  detectedService   String?
+  subService        String?
+  quotedBudget      Float?
+  customerIntent    String?
+  aiConfidence      Float    @default(0)
+  aiAnalyzedAt      DateTime?
+
+  lastMessageAt     DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  messages          OmniMessage[]
+
+  @@index([psid])
+  @@index([pageId])
+  @@index([phone])
+  @@index([detectedBranch])
+  @@index([detectedService])
+  @@index([customerIntent])
+}
+
+// 4. Lịch sử Tin nhắn chi tiết
+model OmniMessage {
+  id              String           @id @default(cuid())
+  conversationId String
+  conversation   OmniConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderType      String           // "CUSTOMER", "STAFF", "AI_BOT"
+  senderId        String?
+  text            String
+  mid             String?
+
+  createdAt       DateTime         @default(now())
+
+  @@index([conversationId])
+  @@index([senderType])
+  @@index([createdAt])
+}
