@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { omniDb } from "@/lib/omni-db";
 import { crmDb } from "@/lib/crm-db";
 import { hashPhone } from "@/lib/meta-capi";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { conversationId, telesaleName, targetBranch } = await req.json();
 

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms-db";
 import { crmDb } from "@/lib/crm-db";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const datePreset = searchParams.get("datePreset") || "ALL_TIME";

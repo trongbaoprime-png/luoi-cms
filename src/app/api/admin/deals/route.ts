@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { requireAuth } from "@/lib/auth-guard";
 
 const DealSchema = z.object({
   code: z.string().min(2, "Mã voucher quá ngắn"),
@@ -12,7 +13,12 @@ const DealSchema = z.object({
   isHot: z.boolean().default(false),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const deals = await db.deal.findMany({
       orderBy: { createdAt: "desc" },
@@ -25,6 +31,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const validated = DealSchema.parse(body);

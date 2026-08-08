@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth-guard";
 
-export async function POST() {
+export async function POST(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // Revalidate all critical frontend & admin routes
     try {

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { topic, mode = "FULL_ARTICLE" } = await req.json();
 

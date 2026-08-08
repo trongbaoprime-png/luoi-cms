@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { sendTelegramNotification, getVietnamFormattedTime } from "@/lib/notification-service";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.authenticated) {
+    return auth.errorResponse || NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { botToken, chatId, enabledFields } = body;

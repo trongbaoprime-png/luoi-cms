@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { cmsDb } from "@/lib/cms-db";
+import { verifyPassword, generateSecureToken, hashPassword } from "@/lib/auth-security";
+import { createAdminSession, AdminRole } from "@/lib/redis-session";
 
-// In-Memory Rate Limiter for Login Attempts
+// In-Memory Rate Limiter to prevent Brute-Force attacks
 const loginAttempts = new Map<string, { count: number; expiresAt: number }>();
 
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
@@ -38,57 +40,125 @@ export async function POST(req: Request) {
 
     const { username, password } = await req.json();
 
-    const envUser = process.env.ADMIN_USER || "admin";
-    const envPass = process.env.ADMIN_PASS || "B@oph@m021991";
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, error: "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!" },
+        { status: 400 }
+      );
+    }
 
-    let isValid = false;
-    let authUser = username;
+    let authenticatedUser: {
+      id: string;
+      username: string;
+      email: string;
+      role: AdminRole;
+      permissions?: string | null;
+    } | null = null;
 
-    // 1. Check against Environment Admin Credentials
-    if (username === envUser && password === envPass) {
-      isValid = true;
-    } else {
-      // 2. Check against luoi/cms/cms.db User Table
-      try {
-        const dbUser = await cmsDb.user.findFirst({
-          where: {
-            OR: [
-              { email: username },
-              { name: username }
-            ]
-          }
-        });
+    // 1. Check against Environment SUPER_ADMIN if configured in .env
+    const envAdminUser = process.env.ADMIN_USER;
+    const envAdminPassHash = process.env.ADMIN_PASS_HASH;
+    const envAdminPass = process.env.ADMIN_PASS;
 
-        if (dbUser && (dbUser.password === password || password === envPass)) {
-          isValid = true;
-          authUser = dbUser.name;
-        }
-      } catch {
-        // Fallback gracefully if database table check is unavailable
+    if (envAdminUser && username === envAdminUser) {
+      let isEnvValid = false;
+      if (envAdminPassHash) {
+        isEnvValid = await verifyPassword(password, envAdminPassHash);
+      } else if (envAdminPass && password === envAdminPass) {
+        isEnvValid = true;
+      }
+
+      if (isEnvValid) {
+        authenticatedUser = {
+          id: "env-super-admin",
+          username: envAdminUser,
+          email: `${envAdminUser}@luoidonnha.com`,
+          role: "SUPER_ADMIN",
+          permissions: "*",
+        };
       }
     }
 
-    if (isValid) {
-      // Reset rate limit count on successful login
-      loginAttempts.delete(clientIp);
+    // 2. Check against Database User Table
+    if (!authenticatedUser) {
+      try {
+        const dbUser = await cmsDb.user.findFirst({
+          where: {
+            OR: [{ email: username }, { name: username }],
+            status: "ACTIVE",
+          },
+        });
 
-      const cookieStore = await cookies();
-      const sessionToken = Buffer.from(`${authUser}:${Date.now()}`).toString("base64");
+        if (dbUser) {
+          const isDbPasswordValid = await verifyPassword(password, dbUser.password);
+          if (isDbPasswordValid) {
+            let role: AdminRole = "ADMIN";
+            const upperRole = (dbUser.role || "ADMIN").toUpperCase();
+            if (["SUPER_ADMIN", "ADMIN", "MANAGER", "TELESALE", "MARKETING", "VIEWER"].includes(upperRole)) {
+              role = upperRole as AdminRole;
+            }
 
-      const isHttps = req.url.startsWith("https") || req.headers.get("x-forwarded-proto") === "https";
-      cookieStore.set("luoi_admin_session", sessionToken, {
-        httpOnly: true,
-        secure: isHttps,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30, // 30 days session
-      });
-
-      return NextResponse.json({ success: true, message: "Đăng nhập thành công" });
+            authenticatedUser = {
+              id: dbUser.id,
+              username: dbUser.name,
+              email: dbUser.email,
+              role,
+              permissions: dbUser.permissions,
+            };
+          }
+        }
+      } catch {
+        // Database access error handled gracefully
+      }
     }
 
-    return NextResponse.json({ success: false, error: "Tên đăng nhập hoặc mật khẩu không đúng!" }, { status: 401 });
+    if (authenticatedUser) {
+      // Clear rate limit record on successful login
+      loginAttempts.delete(clientIp);
+
+      // Generate cryptographically secure random session token
+      const sessionToken = generateSecureToken(32);
+
+      // Create session in Redis server-side
+      await createAdminSession(sessionToken, {
+        userId: authenticatedUser.id,
+        username: authenticatedUser.username,
+        email: authenticatedUser.email,
+        role: authenticatedUser.role,
+        permissions: authenticatedUser.permissions,
+        ttlSeconds: 60 * 60 * 24 * 7, // 7 days session
+      });
+
+      const isProduction = process.env.NODE_ENV === "production";
+      const isHttps = req.url.startsWith("https") || req.headers.get("x-forwarded-proto") === "https";
+
+      const cookieStore = await cookies();
+      cookieStore.set("luoi_admin_session", sessionToken, {
+        httpOnly: true,
+        secure: isProduction || isHttps,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Đăng nhập thành công",
+        user: {
+          username: authenticatedUser.username,
+          role: authenticatedUser.role,
+        },
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: "Tên đăng nhập hoặc mật khẩu không chính xác!" },
+      { status: 401 }
+    );
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message || "Lỗi đăng nhập" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Đã xảy ra lỗi trong quá trình xác thực!" },
+      { status: 500 }
+    );
   }
 }
