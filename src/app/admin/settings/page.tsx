@@ -218,6 +218,61 @@ export default function AdminSettingsPage() {
       )}
 
       <form onSubmit={handleSave} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-8">
+        {/* HOMEPAGE DISPLAY SETTINGS (MOVED TO TOP PER USER REQUEST) */}
+        <div>
+          <h2 className="text-base font-bold font-serif text-stone-900 mb-4 pb-2 border-b flex items-center gap-2">
+            <Layout size={18} className="text-[#0d4f4a]" />
+            Cài Đặt Hiển Thị Trang Chủ
+          </h2>
+          <div className="space-y-4 text-xs bg-stone-50 p-5 rounded-2xl border border-stone-200 font-mono">
+            <label className="block font-bold text-stone-800 text-sm">Trang chủ của bạn hiển thị:</label>
+
+            <div className="space-y-3 pl-2">
+              <label className="flex items-center gap-2.5 font-bold text-stone-700 cursor-pointer p-2.5 bg-white rounded-xl border border-stone-200 hover:border-[#0d4f4a] transition-all">
+                <input
+                  type="radio"
+                  name="homepageType"
+                  value="blog"
+                  checked={homepageType === "blog"}
+                  onChange={() => setHomepageType("blog")}
+                  className="w-4 h-4 text-[#0d4f4a]"
+                />
+                <span>Bài viết mới nhất (Giao diện Mặc định đầy đủ Hero Banner &amp; Deals)</span>
+              </label>
+
+              <label className="flex items-start gap-2.5 font-bold text-stone-700 cursor-pointer p-2.5 bg-white rounded-xl border border-stone-200 hover:border-[#0d4f4a] transition-all">
+                <input
+                  type="radio"
+                  name="homepageType"
+                  value="static"
+                  checked={homepageType === "static"}
+                  onChange={() => setHomepageType("static")}
+                  className="mt-1 w-4 h-4 text-[#0d4f4a]"
+                />
+                <div className="space-y-2.5 flex-1">
+                  <span>Một trang tĩnh (Chọn trang tĩnh LadiPage / UX Builder bên dưới):</span>
+                  {homepageType === "static" && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="font-bold text-[#0d4f4a]">Chọn Trang chủ:</span>
+                      <select
+                        value={homepagePageId}
+                        onChange={(e) => setHomepagePageId(e.target.value)}
+                        className="px-3.5 py-2 border border-stone-300 rounded-xl font-bold text-stone-900 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[#0d4f4a] text-xs"
+                      >
+                        {pages.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.title} (/{p.slug})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* LOGO CONFIGURATION SECTION (USER REQUEST) */}
         <div>
           <h2 className="text-base font-bold font-serif text-stone-900 mb-4 pb-2 border-b flex items-center gap-2">
@@ -558,59 +613,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* WordPress Style Reading Settings Section - DO NOT REMOVE BELOW */}
-        <div>
-          <h2 className="text-base font-bold font-serif text-stone-900 mb-4 pb-2 border-b flex items-center gap-2">
-            <Layout size={18} className="text-[#0d4f4a]" />
-            Cài Đặt Đọc (Hiển Thị Trang Chủ Website - WordPress Reading Settings)
-          </h2>
-          <div className="space-y-4 text-xs bg-stone-50 p-4 rounded-xl border border-stone-200">
-            <label className="block font-semibold text-stone-800">Trang chủ của bạn hiển thị:</label>
 
-            <div className="space-y-2 pl-2">
-              <label className="flex items-center gap-2 font-medium text-stone-700 cursor-pointer">
-                <input
-                  type="radio"
-                  name="homepageType"
-                  value="blog"
-                  checked={homepageType === "blog"}
-                  onChange={() => setHomepageType("blog")}
-                />
-                <span>Bài viết mới nhất (Tạp chí kỹ thuật &amp; ROI)</span>
-              </label>
-
-              <label className="flex items-start gap-2 font-medium text-stone-700 cursor-pointer pt-1">
-                <input
-                  type="radio"
-                  name="homepageType"
-                  value="static"
-                  checked={homepageType === "static"}
-                  onChange={() => setHomepageType("static")}
-                  className="mt-0.5"
-                />
-                <div className="space-y-2">
-                  <span>Một trang tĩnh (Chọn trang tĩnh LadiPage / UX Builder bên dưới):</span>
-                  {homepageType === "static" && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <span className="font-bold text-stone-600">Trang chủ:</span>
-                      <select
-                        value={homepagePageId}
-                        onChange={(e) => setHomepagePageId(e.target.value)}
-                        className="px-3 py-1.5 border border-stone-300 rounded-lg font-bold text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
-                      >
-                        {pages.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.title} (/{p.slug})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
 
         <div>
           <h2 className="text-base font-bold text-stone-900 mb-4 pb-2 border-b">Thương Hiệu &amp; Cấu Hình CDN Image</h2>
