@@ -1,0 +1,605 @@
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -2,6 +2,7 @@
+ 
+ services:
+   # 1. Next.js App (Lưới CMS + miniCRM + Omnichannel)
++  # DB-001 does NOT cut over production. SQLite remains the active datasource.
+   app:
+     build:
+       context: .
+@@ -16,39 +17,61 @@
+       - CMS_DATABASE_URL=file:/app/luoi/cms/cms.db
+       - CRM_DATABASE_URL=file:/app/luoi/minicrm/minicrm.db
+       - OMNI_DATABASE_URL=file:/app/luoi/omni/omni.db
+-      - CORE_DATABASE_URL=postgresql://luoi_admin:luoi_secure_password_2026@postgres:5432/luoi_core?schema=public
+-      - CRM_POSTGRES_URL=postgresql://luoi_admin:luoi_secure_password_2026@postgres:5432/luoi_crm?schema=public
+-      - OMNI_POSTGRES_URL=postgresql://luoi_admin:luoi_secure_password_2026@postgres:5432/luoi_omni?schema=public
++      # PostgreSQL URLs are optional until DB-001 dry-run is explicitly enabled.
++      - CORE_DATABASE_URL=${CORE_DATABASE_URL:-}
++      - CRM_POSTGRES_URL=${CRM_POSTGRES_URL:-}
++      - OMNI_POSTGRES_URL=${OMNI_POSTGRES_URL:-}
+     volumes:
+       - ./prisma:/app/prisma
+       - ./luoi:/app/luoi
+       - ./public/uploads:/app/public/uploads
+     networks:
+       - app_net
++
++  # 2. PostgreSQL 16 foundation. Disabled by default via Compose profile.
++  # Start only when running DB-001: docker compose --profile postgres-foundation up -d postgres postgres-init
++  postgres:
++    profiles: ["postgres-foundation"]
++    image: postgres:16-alpine
++    container_name: luoi_postgres
++    restart: unless-stopped
++    environment:
++      POSTGRES_USER: ${POSTGRES_USER:-luoi_admin}
++      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required for postgres-foundation}
++      POSTGRES_DB: ${POSTGRES_DB:-luoi_core}
++    volumes:
++      - postgres_data:/var/lib/postgresql/data
++    # No host port is published. PostgreSQL is reachable only inside app_net.
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
++      interval: 10s
++      timeout: 5s
++      retries: 10
++      start_period: 10s
++    networks:
++      - app_net
++
++  # Creates logical domain schemas even when the PostgreSQL volume already exists.
++  postgres-init:
++    profiles: ["postgres-foundation"]
++    image: postgres:16-alpine
++    container_name: luoi_postgres_init
++    restart: "no"
+     depends_on:
+       postgres:
+         condition: service_healthy
+-
+-  # 2. PostgreSQL 16 Database Foundation (Enterprise Relational Data Core)
+-  postgres:
+-    image: postgres:16-alpine
+-    container_name: luoi_postgres
+-    restart: always
+     environment:
+-      POSTGRES_USER: luoi_admin
+-      POSTGRES_PASSWORD: luoi_secure_password_2026
+-      POSTGRES_DB: luoi_core
+-    volumes:
+-      - postgres_data:/var/lib/postgresql/data
+-    ports:
+-      # Bound strictly to 127.0.0.1 (NOT public 0.0.0.0)
+-      - "127.0.0.1:5432:5432"
+-    healthcheck:
+-      test: ["CMD-SHELL", "pg_isready -U luoi_admin -d luoi_core"]
+-      interval: 10s
+-      timeout: 5s
+-      retries: 5
+-      start_period: 10s
++      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required for postgres-foundation}
++      POSTGRES_USER: ${POSTGRES_USER:-luoi_admin}
++      POSTGRES_DB: ${POSTGRES_DB:-luoi_core}
++    command:
++      - /bin/sh
++      - -ec
++      - |
++        psql -h postgres -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -v ON_ERROR_STOP=1 <<'SQL'
++        CREATE SCHEMA IF NOT EXISTS crm;
++        CREATE SCHEMA IF NOT EXISTS omni;
++        SQL
+     networks:
+       - app_net
+ 
+@@ -65,7 +88,7 @@
+     networks:
+       - app_net
+ 
+-  # 4. OmniRoute (Secondary AI Agent Router & Token Compression)
++  # 4. OmniRoute (placeholder - not part of DB-001)
+   omniroute:
+     image: node:20-alpine
+     container_name: omniroute_engine
+@@ -76,7 +99,7 @@
+     networks:
+       - app_net
+ 
+-  # 5. OpenClaw (AI Web Scraping & Agent Automation)
++  # 5. OpenClaw (placeholder - not part of DB-001)
+   openclaw:
+     image: python:3.11-slim
+     container_name: openclaw_engine
+--- a/package.json
++++ b/package.json
+@@ -10,7 +10,11 @@
+     "start": "next start",
+     "lint": "eslint",
+     "audit": "tsc --noEmit",
+-    "check:system": "npm run prisma:generate && tsc --noEmit && next build"
++    "check:system": "npm run prisma:generate && tsc --noEmit && next build",
++    "prisma:generate:postgres": "prisma generate --schema=prisma/crm-postgres.prisma && prisma generate --schema=prisma/omnichannel-postgres.prisma",
++    "db:postgres:push": "prisma db push --schema=prisma/crm-postgres.prisma && prisma db push --schema=prisma/omnichannel-postgres.prisma",
++    "db:migrate:crm": "node scripts/migrate-crm-to-postgres.js",
++    "db:verify:crm": "node scripts/verify-crm-migration.js"
+   },
+   "dependencies": {
+     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+--- /dev/null
++++ b/prisma/crm-postgres.prisma
+@@ -0,0 +1,71 @@
++datasource db {
++  provider = "postgresql"
++  url      = env("CRM_POSTGRES_URL")
++}
++
++generator client {
++  provider = "prisma-client-js"
++  output   = "../node_modules/@prisma/client-crm-pg"
++}
++
++model CRMLead {
++  id                String             @id @default(cuid())
++  leadId            String?
++  fullName          String
++  phone             String
++  email             String?
++  phoneHash         String
++  emailHash         String?
++  source            String             @default("META_INSTANT_FORM")
++  sourceGroup       String             @default("KHÁC")
++  status            String             @default("NEW")
++  telesale          String?
++  branch            String?
++  branchGroup       String?
++  service           String?
++  serviceGroup      String?
++  checkinDate       String?
++  isMonthNote       Boolean            @default(false)
++  result            String?
++  isOldCustomer     Boolean            @default(false)
++  isKoMkt           Boolean            @default(false)
++  isVietKieu        Boolean            @default(false)
++  isNN              Boolean            @default(false)
++  revenue           Float              @default(0)
++  actualRevenue     Float              @default(0)
++  caTheoRevenue     Float              @default(0)
++  fbclid            String?
++  fbp               String?
++  fbc               String?
++  note              String?
++  value             Float?
++  currency          String             @default("VND")
++  syncedToMeta      Boolean            @default(false)
++  metaEventResponse String?
++  ref               String?
++  createdAt         DateTime           @default(now())
++  updatedAt         DateTime           @updatedAt
++  statusHistory     CRMStatusHistory[]
++
++  @@index([phone])
++  @@index([status])
++  @@index([createdAt])
++  @@index([sourceGroup])
++  @@index([telesale])
++  @@index([branchGroup])
++  @@index([serviceGroup])
++  @@index([checkinDate])
++}
++
++model CRMStatusHistory {
++  id             String   @id @default(cuid())
++  leadId         String
++  lead           CRMLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
++  previousStatus String
++  newStatus      String
++  updatedBy      String   @default("SYSTEM")
++  createdAt      DateTime @default(now())
++
++  @@index([leadId])
++  @@index([createdAt])
++}
+--- /dev/null
++++ b/prisma/omnichannel-postgres.prisma
+@@ -0,0 +1,79 @@
++datasource db {
++  provider = "postgresql"
++  url      = env("OMNI_POSTGRES_URL")
++}
++
++generator client {
++  provider = "prisma-client-js"
++  output   = "../node_modules/@prisma/client-omni-pg"
++}
++
++// DB-001 mirrors the current SQLite Omnichannel schema only.
++// Contact/Identity/ChannelAccount V2 will be introduced in IDENT-001 / OMNI-001.
++model OmniFanpage {
++  id            String   @id @default(cuid())
++  pageId        String   @unique
++  pageName      String
++  accessToken   String?
++  category      String?
++  isActive      Boolean  @default(true)
++  createdAt     DateTime @default(now())
++  updatedAt     DateTime @updatedAt
++  conversations OmniConversation[]
++}
++
++model OmniPancakeTag {
++  id          String   @id @default(cuid())
++  tagId       String   @unique
++  tagName     String
++  colorHex    String?
++  category    String?
++  createdAt   DateTime @default(now())
++}
++
++model OmniConversation {
++  id                String       @id @default(cuid())
++  pageId            String
++  fanpage           OmniFanpage  @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
++  psid              String
++  igsid             String?
++  customerName      String?
++  phone             String?
++  pancakeCustomerId String?
++  tags              String?
++  detectedBranch    String?
++  branchStatus      String?
++  detectedService   String?
++  subService        String?
++  quotedBudget      Float?
++  customerIntent    String?
++  aiConfidence      Float        @default(0)
++  aiAnalyzedAt      DateTime?
++  lastMessageAt     DateTime     @default(now())
++  createdAt         DateTime     @default(now())
++  updatedAt         DateTime     @updatedAt
++  messages          OmniMessage[]
++
++  @@index([psid])
++  @@index([pageId])
++  @@index([phone])
++  @@index([detectedBranch])
++  @@index([detectedService])
++  @@index([customerIntent])
++  @@index([lastMessageAt])
++}
++
++model OmniMessage {
++  id             String           @id @default(cuid())
++  conversationId String
++  conversation   OmniConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
++  senderType     String
++  senderId       String?
++  text           String
++  mid            String?
++  createdAt      DateTime         @default(now())
++
++  @@index([conversationId])
++  @@index([senderType])
++  @@index([createdAt])
++}
+--- /dev/null
++++ b/scripts/migrate-crm-to-postgres.js
+@@ -0,0 +1,133 @@
++/**
++ * DB-001: Idempotent SQLite -> PostgreSQL CRM migration.
++ * This script DOES NOT switch the running application datasource.
++ * Prerequisites:
++ *   npm run prisma:generate
++ *   npm run prisma:generate:postgres
++ *   npm run db:postgres:push
++ *   CRM_POSTGRES_URL must point at the PostgreSQL crm schema.
++ */
++const { PrismaClient: SourceClient } = require("@prisma/client-crm");
++const { PrismaClient: TargetClient } = require("@prisma/client-crm-pg");
++
++const source = new SourceClient();
++const target = new TargetClient();
++const BATCH_SIZE = Math.max(50, Math.min(2000, Number(process.env.CRM_MIGRATION_BATCH_SIZE || 500)));
++
++function leadData(row) {
++  return {
++    id: row.id,
++    leadId: row.leadId,
++    fullName: row.fullName,
++    phone: row.phone,
++    email: row.email,
++    phoneHash: row.phoneHash,
++    emailHash: row.emailHash,
++    source: row.source,
++    sourceGroup: row.sourceGroup,
++    status: row.status,
++    telesale: row.telesale,
++    branch: row.branch,
++    branchGroup: row.branchGroup,
++    service: row.service,
++    serviceGroup: row.serviceGroup,
++    checkinDate: row.checkinDate,
++    isMonthNote: row.isMonthNote,
++    result: row.result,
++    isOldCustomer: row.isOldCustomer,
++    isKoMkt: row.isKoMkt,
++    isVietKieu: row.isVietKieu,
++    isNN: row.isNN,
++    revenue: row.revenue,
++    actualRevenue: row.actualRevenue,
++    caTheoRevenue: row.caTheoRevenue,
++    fbclid: row.fbclid,
++    fbp: row.fbp,
++    fbc: row.fbc,
++    note: row.note,
++    value: row.value,
++    currency: row.currency,
++    syncedToMeta: row.syncedToMeta,
++    metaEventResponse: row.metaEventResponse,
++    ref: row.ref,
++    createdAt: row.createdAt,
++    updatedAt: row.updatedAt,
++  };
++}
++
++function historyData(row) {
++  return {
++    id: row.id,
++    leadId: row.leadId,
++    previousStatus: row.previousStatus,
++    newStatus: row.newStatus,
++    updatedBy: row.updatedBy,
++    createdAt: row.createdAt,
++  };
++}
++
++async function migrateModel({ name, sourceModel, targetModel, map }) {
++  const total = await sourceModel.count();
++  console.log(`[DB-001] ${name}: source=${total}, batch=${BATCH_SIZE}`);
++  let cursor;
++  let processed = 0;
++
++  while (true) {
++    const rows = await sourceModel.findMany({
++      orderBy: { id: "asc" },
++      take: BATCH_SIZE,
++      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
++    });
++    if (!rows.length) break;
++
++    await target.$transaction(
++      rows.map((row) => {
++        const data = map(row);
++        return targetModel.upsert({
++          where: { id: row.id },
++          create: data,
++          update: data,
++        });
++      })
++    );
++
++    processed += rows.length;
++    cursor = rows[rows.length - 1].id;
++    console.log(`[DB-001] ${name}: ${processed}/${total}`);
++  }
++}
++
++async function main() {
++  if (!process.env.CRM_POSTGRES_URL) {
++    throw new Error("CRM_POSTGRES_URL is required. Migration aborted before any target write.");
++  }
++
++  await source.$connect();
++  await target.$connect();
++
++  // Parent rows first, relation history second.
++  await migrateModel({
++    name: "CRMLead",
++    sourceModel: source.cRMLead,
++    targetModel: target.cRMLead,
++    map: leadData,
++  });
++
++  await migrateModel({
++    name: "CRMStatusHistory",
++    sourceModel: source.cRMStatusHistory,
++    targetModel: target.cRMStatusHistory,
++    map: historyData,
++  });
++
++  console.log("[DB-001] Migration finished. Application is still using SQLite; run verification next.");
++}
++
++main()
++  .catch((err) => {
++    console.error("[DB-001] MIGRATION FAILED:", err.message);
++    process.exitCode = 1;
++  })
++  .finally(async () => {
++    await Promise.allSettled([source.$disconnect(), target.$disconnect()]);
++  });
+--- /dev/null
++++ b/scripts/verify-crm-migration.js
+@@ -0,0 +1,94 @@
++/**
++ * DB-001: Compares production SQLite CRM with PostgreSQL dry-run target.
++ * Exit code 1 on any mismatch. No writes are performed.
++ */
++const { PrismaClient: SourceClient } = require("@prisma/client-crm");
++const { PrismaClient: TargetClient } = require("@prisma/client-crm-pg");
++
++const source = new SourceClient();
++const target = new TargetClient();
++const MONEY_TOLERANCE = 0.01;
++
++async function snapshot(db) {
++  const [
++    totalLeads,
++    qualifiedCount,
++    checkinCount,
++    purchaseCount,
++    totals,
++    historyCount,
++  ] = await Promise.all([
++    db.cRMLead.count(),
++    db.cRMLead.count({ where: { status: { in: ["QUALIFIED", "SCHEDULED"] } } }),
++    db.cRMLead.count({
++      where: {
++        OR: [
++          { status: "CHECKIN" },
++          { status: "PURCHASE" },
++          { checkinDate: { not: null } },
++        ],
++      },
++    }),
++    db.cRMLead.count({ where: { status: "PURCHASE" } }),
++    db.cRMLead.aggregate({
++      _sum: { revenue: true, actualRevenue: true, caTheoRevenue: true },
++    }),
++    db.cRMStatusHistory.count(),
++  ]);
++
++  return {
++    totalLeads,
++    qualifiedCount,
++    checkinCount,
++    purchaseCount,
++    revenue: totals._sum.revenue || 0,
++    actualRevenue: totals._sum.actualRevenue || 0,
++    caTheoRevenue: totals._sum.caTheoRevenue || 0,
++    historyCount,
++  };
++}
++
++function sameMoney(a, b) {
++  return Math.abs(Number(a) - Number(b)) <= MONEY_TOLERANCE;
++}
++
++async function main() {
++  if (!process.env.CRM_POSTGRES_URL) {
++    throw new Error("CRM_POSTGRES_URL is required for verification.");
++  }
++  await source.$connect();
++  await target.$connect();
++
++  const [sqlite, postgres] = await Promise.all([snapshot(source), snapshot(target)]);
++  const checks = [
++    ["Total leads", sqlite.totalLeads, postgres.totalLeads, (a,b) => a === b],
++    ["Qualified", sqlite.qualifiedCount, postgres.qualifiedCount, (a,b) => a === b],
++    ["Check-in", sqlite.checkinCount, postgres.checkinCount, (a,b) => a === b],
++    ["Purchase", sqlite.purchaseCount, postgres.purchaseCount, (a,b) => a === b],
++    ["Revenue", sqlite.revenue, postgres.revenue, sameMoney],
++    ["Actual revenue", sqlite.actualRevenue, postgres.actualRevenue, sameMoney],
++    ["Ca theo revenue", sqlite.caTheoRevenue, postgres.caTheoRevenue, sameMoney],
++    ["Status history", sqlite.historyCount, postgres.historyCount, (a,b) => a === b],
++  ];
++
++  console.log("\\nCRM MIGRATION VERIFY");
++  console.log("=".repeat(72));
++  let failed = 0;
++  for (const [label, a, b, compare] of checks) {
++    const ok = compare(a, b);
++    if (!ok) failed++;
++    console.log(`${ok ? "PASS" : "FAIL"} | ${label.padEnd(20)} | SQLite=${a} | Postgres=${b}`);
++  }
++  console.log("=".repeat(72));
++  console.log(failed === 0 ? "STATUS: PASS - eligible for later cutover review (NOT automatic)." : `STATUS: FAIL - ${failed} mismatches. DO NOT CUT OVER.`);
++  if (failed) process.exitCode = 1;
++}
++
++main()
++  .catch((err) => {
++    console.error("[DB-001] VERIFY FAILED:", err.message);
++    process.exitCode = 1;
++  })
++  .finally(async () => {
++    await Promise.allSettled([source.$disconnect(), target.$disconnect()]);
++  });
+--- /dev/null
++++ b/.env.db001.example
+@@ -0,0 +1,9 @@
++# DB-001 PostgreSQL foundation example. DO NOT commit real secrets.
++POSTGRES_USER=luoi_admin
++POSTGRES_PASSWORD=REPLACE_WITH_A_LONG_RANDOM_PASSWORD
++POSTGRES_DB=luoi_core
++
++# One PostgreSQL database, isolated by domain schemas.
++CORE_DATABASE_URL=postgresql://luoi_admin:URL_ENCODED_PASSWORD@postgres:5432/luoi_core?schema=public
++CRM_POSTGRES_URL=postgresql://luoi_admin:URL_ENCODED_PASSWORD@postgres:5432/luoi_core?schema=crm
++OMNI_POSTGRES_URL=postgresql://luoi_admin:URL_ENCODED_PASSWORD@postgres:5432/luoi_core?schema=omni
+--- /dev/null
++++ b/docs/DB-001-POSTGRES-FOUNDATION.md
+@@ -0,0 +1,73 @@
++# DB-001 — PostgreSQL Foundation (NO CUTOVER)
++
++This change creates a safe PostgreSQL dry-run path for CRM + Omnichannel while the running application continues to use the existing SQLite databases.
++
++## Safety guarantees
++
++- CMS remains on SQLite.
++- miniCRM remains on SQLite until a later explicit cutover task.
++- Omnichannel remains on SQLite until a later explicit cutover task.
++- PostgreSQL publishes no host port.
++- PostgreSQL is opt-in via the `postgres-foundation` Compose profile.
++- No password is hard-coded in source.
++- CRM migration is idempotent (`upsert` by existing primary ID).
++- Verification exits non-zero on any KPI mismatch.
++
++## 1. Configure local/VPS environment
++
++Copy `.env.db001.example` values into the deployment `.env` and replace the password. URL-encode the password inside connection URLs.
++
++## 2. Validate Compose before starting anything
++
++```bash
++docker compose config
++```
++
++## 3. Start PostgreSQL foundation only
++
++```bash
++docker compose --profile postgres-foundation up -d postgres postgres-init
++docker compose ps
++```
++
++Expected: `luoi_postgres` healthy and `luoi_postgres_init` exits with code 0.
++
++## 4. Generate target clients and create target tables
++
++Run from the application environment where `CRM_POSTGRES_URL` and `OMNI_POSTGRES_URL` resolve to PostgreSQL. If running inside Docker, ensure the app container has those environment variables.
++
++```bash
++npm run prisma:generate:postgres
++npm run db:postgres:push
++```
++
++This only creates PostgreSQL tables. It does not switch the running app.
++
++## 5. Dry-run migration
++
++Take an SQLite backup first, then:
++
++```bash
++npm run db:migrate:crm
++npm run db:verify:crm
++```
++
++Only continue to a future cutover task if verification is `STATUS: PASS`.
++
++## 6. Required application build regression check
++
++```bash
++npm run check:system
++```
++
++The normal build intentionally does **not** generate PostgreSQL Prisma clients, so current production remains independent of DB-001 until explicitly invoked.
++
++## Rollback
++
++There is no production cutover in DB-001. To abandon the foundation:
++
++```bash
++docker compose --profile postgres-foundation down
++```
++
++Do not delete `postgres_data` unless you intentionally want to erase the dry-run PostgreSQL copy.
