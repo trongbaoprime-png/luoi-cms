@@ -70,6 +70,13 @@ export default function RootLayout({
       lang="vi"
       className={`${beVietnamPro.variable} ${sourceSerif4.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Preconnect hints cho Google Fonts - giảm font loading latency */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch cho các domain thường dùng */}
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
+      </head>
       <body className="flex min-h-full flex-col bg-bg text-ink">
         <AttributionTracker />
         <ContactClickTracker />
