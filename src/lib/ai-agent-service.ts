@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { crmDb } from "./crm-db";
 
 // Fallback Branch List
 export const DEFAULT_BRANCHES = [
@@ -39,12 +39,12 @@ export class AIAgentService {
    */
   static async getRealTaxonomy() {
     try {
-      const branches = await db.cRMLead.groupBy({
+      const branches = await crmDb.cRMLead.groupBy({
         by: ["branch"],
         _count: { _all: true },
         orderBy: { _count: { branch: "desc" } },
       });
-      const services = await db.cRMLead.groupBy({
+      const services = await crmDb.cRMLead.groupBy({
         by: ["service"],
         _count: { _all: true },
         orderBy: { _count: { service: "desc" } },

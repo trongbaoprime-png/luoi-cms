@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { crmDb } from "@/lib/crm-db";
+import { cmsDb } from "@/lib/cms-db";
 import { hashPhone, hashEmail, sendMetaCapiLeadEvent } from "@/lib/meta-capi";
 import { pushLeadToGoogleSheet } from "@/lib/google-sheets";
 import { sendTelegramNotification, getVietnamFormattedTime } from "@/lib/notification-service";
@@ -14,7 +15,7 @@ export async function GET(req: Request) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  const verifyTokenSetting = await db.setting.findUnique({
+  const verifyTokenSetting = await cmsDb.setting.findUnique({
     where: { key: "meta_webhook_verify_token" },
   });
 
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
     const emailHash = email ? hashEmail(email) : undefined;
 
     // 2. Save Lead into miniCRM Database
-    const newLead = await db.cRMLead.create({
+    const newLead = await crmDb.cRMLead.create({
       data: {
         leadId,
         fullName,
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
     });
 
     // Create Initial Audit Log in CRMStatusHistory
-    await db.cRMStatusHistory.create({
+    await crmDb.cRMStatusHistory.create({
       data: {
         leadId: newLead.id,
         previousStatus: "NONE",
@@ -126,17 +127,22 @@ export async function POST(req: Request) {
 
     // 4. Trigger Telegram Bot Alert if configured
     try {
-      const telegramTokenSetting = await db.setting.findUnique({ where: { key: "telegram_bot_token" } });
-      const telegramChatIdSetting = await db.setting.findUnique({ where: { key: "telegram_chat_id" } });
+      const telegramTokenSetting = await cmsDb.setting.findUnique({ where: { key: "telegram_bot_token" } });
+      const telegramChatIdSetting = await cmsDb.setting.findUnique({ where: { key: "telegram_chat_id" } });
 
       if (telegramTokenSetting?.value && telegramChatIdSetting?.value) {
-        sendTelegramNotification(telegramTokenSetting.value, telegramChatIdSetting.value, {
-          time: getVietnamFormattedTime(),
-          name: newLead.fullName,
-          phone: newLead.phone,
-          email: newLead.email || undefined,
-          source: newLead.source,
-          fbclid: newLead.fbclid || undefined,
+        const message = `🔔 <b>CÓ LEAD MỚI TỪ ${sourceGroup.toUpperCase()}</b>\n` +
+          `👤 <b>Họ tên:</b> ${fullName}\n` +
+          `📞 <b>SĐT:</b> ${phone}\n` +
+          `🏢 <b>Chi nhánh:</b> ${branch}\n` +
+          `💼 <b>Dịch vụ:</b> ${service}\n` +
+          `👩‍💼 <b>Telesale:</b> ${telesale}\n` +
+          `⏰ <b>Thời gian:</b> ${getVietnamFormattedTime()}`;
+
+        sendTelegramNotification({
+          botToken: telegramTokenSetting.value,
+          chatId: telegramChatIdSetting.value,
+          message,
         }).catch(() => {});
       }
     } catch {}

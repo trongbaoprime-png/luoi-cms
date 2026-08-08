@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { omniDb } from "@/lib/omni-db";
-import { db } from "@/lib/db";
+import { crmDb } from "@/lib/crm-db";
 import { hashPhone } from "@/lib/meta-capi";
 
 export async function POST(req: Request) {
@@ -33,11 +33,11 @@ export async function POST(req: Request) {
     // 2. Promote/Upsert to main miniCRM cRMLead table
     let lead = null;
     if (omniConv.phone) {
-      lead = await db.cRMLead.findFirst({ where: { phone: omniConv.phone } });
+      lead = await crmDb.cRMLead.findFirst({ where: { phone: omniConv.phone } });
     }
 
     if (!lead) {
-      lead = await db.cRMLead.create({
+      lead = await crmDb.cRMLead.create({
         data: {
           fullName: omniConv.customerName || `Khách ${omniConv.psid.slice(-4)}`,
           phone,
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         },
       });
     } else {
-      lead = await db.cRMLead.update({
+      lead = await crmDb.cRMLead.update({
         where: { id: lead.id },
         data: {
           branch: assignedBranch,

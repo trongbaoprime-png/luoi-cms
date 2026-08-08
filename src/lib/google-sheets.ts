@@ -1,3 +1,4 @@
+import { crmDb } from "@/lib/crm-db";
 import { db } from "@/lib/db";
 import { parseTdsPayload, isRealName, getPriorityRef } from "@/lib/tds-parser";
 import { hashPhone } from "@/lib/meta-capi";
@@ -180,7 +181,7 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
         const chunk = parsedRecords.slice(cIdx, cIdx + CHUNK_SIZE);
         const phonesInChunk = chunk.map(item => item.parsed.phone);
 
-        const existingLeadsInDb = await db.cRMLead.findMany({
+        const existingLeadsInDb = await crmDb.cRMLead.findMany({
           where: { phone: { in: phonesInChunk } },
         });
 
@@ -197,7 +198,7 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
               ? String(parsed.fullName)
               : (isRealName(existing.fullName) ? existing.fullName : parsed.fullName || existing.fullName);
 
-            await db.cRMLead.update({
+            await crmDb.cRMLead.update({
               where: { id: existing.id },
               data: {
                 fullName: updatedName,
@@ -208,43 +209,33 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
                 branchGroup: String(parsed.branchGroup || existing.branchGroup),
                 service: String(parsed.service || existing.service),
                 serviceGroup: String(parsed.serviceGroup || existing.serviceGroup),
-                checkinDate: String(parsed.checkinDate || existing.checkinDate),
-                isMonthNote: parsed.isMonthNote ?? existing.isMonthNote,
-                result: String(r.result || parsed.result || existing.result),
-                isOldCustomer: parsed.isOldCustomer ?? existing.isOldCustomer,
-                isKoMkt: parsed.isKoMkt ?? existing.isKoMkt,
-                isVietKieu: parsed.isVietKieu ?? existing.isVietKieu,
-                isNN: parsed.isNN ?? existing.isNN,
-                revenue: Number(r.revenue || parsed.revenue || existing.revenue),
-                actualRevenue: Number(r.actualRevenue || parsed.actualRevenue || existing.actualRevenue),
-                caTheoRevenue: Number(r.caTheoRevenue || parsed.caTheoRevenue || existing.caTheoRevenue),
+                checkinDate: String(parsed.checkinDate || existing.checkinDate || ""),
+                isMonthNote: Boolean(parsed.isMonthNote ?? existing.isMonthNote),
+                result: String(parsed.result || existing.result || ""),
+                isOldCustomer: Boolean(parsed.isOldCustomer ?? existing.isOldCustomer),
+                revenue: Number(r.revenue || parsed.revenue || existing.revenue || 0),
+                actualRevenue: Number(r.actualRevenue || parsed.actualRevenue || existing.actualRevenue || 0),
+                caTheoRevenue: Number(r.caTheoRevenue || parsed.caTheoRevenue || existing.caTheoRevenue || 0),
                 status,
                 ref: getPriorityRef(existing.ref, isDathen ? "App" : "Checkin"),
               },
             });
           } else {
-            const newName = parsed.fullName
-              ? String(parsed.fullName)
-              : `${isDathen ? "Khách Đặt Hẹn" : "Khách"} ${r.telesale || "TDS"}`;
-
             newLeadsToInsert.push({
-              fullName: newName,
+              fullName: String(parsed.fullName || "Khách Vãng Lai"),
               phone: String(parsed.phone),
               phoneHash,
-              source: String(parsed.source),
-              sourceGroup: String(parsed.sourceGroup),
-              telesale: String(parsed.telesale),
-              branch: String(parsed.branch),
-              branchGroup: String(parsed.branchGroup),
-              service: String(parsed.service),
-              serviceGroup: String(parsed.serviceGroup),
-              checkinDate: String(parsed.checkinDate),
-              isMonthNote: parsed.isMonthNote,
-              result: String(r.result || parsed.result),
-              isOldCustomer: parsed.isOldCustomer,
-              isKoMkt: parsed.isKoMkt,
-              isVietKieu: parsed.isVietKieu,
-              isNN: parsed.isNN,
+              source: String(parsed.source || "TDS_EXCEL"),
+              sourceGroup: String(parsed.sourceGroup || "Khác"),
+              telesale: String(parsed.telesale || "Chưa gán"),
+              branch: String(parsed.branch || "Hồ Chí Minh"),
+              branchGroup: String(parsed.branchGroup || "Hồ Chí Minh"),
+              service: String(parsed.service || "Khám & Tư Vấn"),
+              serviceGroup: String(parsed.serviceGroup || "Nha Khoa Tổng Quát"),
+              checkinDate: String(parsed.checkinDate || ""),
+              isMonthNote: Boolean(parsed.isMonthNote),
+              result: String(parsed.result || ""),
+              isOldCustomer: Boolean(parsed.isOldCustomer),
               revenue: Number(r.revenue || parsed.revenue || 0),
               actualRevenue: Number(r.actualRevenue || parsed.actualRevenue || 0),
               caTheoRevenue: Number(r.caTheoRevenue || parsed.caTheoRevenue || 0),
@@ -257,7 +248,7 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
         }
 
         if (newLeadsToInsert.length > 0) {
-          await db.cRMLead.createMany({
+          await crmDb.cRMLead.createMany({
             data: newLeadsToInsert,
           });
         }

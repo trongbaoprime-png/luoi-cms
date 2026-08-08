@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { crmDb } from "@/lib/crm-db";
 
 export async function GET() {
   try {
     const [rawBranches, rawServices] = await Promise.all([
-      db.cRMLead.groupBy({
+      crmDb.cRMLead.groupBy({
         by: ["branch"],
         _count: { _all: true },
         orderBy: { _count: { branch: "desc" } },
       }),
-      db.cRMLead.groupBy({
+      crmDb.cRMLead.groupBy({
         by: ["service"],
         _count: { _all: true },
         orderBy: { _count: { service: "desc" } },

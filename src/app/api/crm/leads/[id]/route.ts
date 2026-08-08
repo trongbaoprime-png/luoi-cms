@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { crmDb } from "@/lib/crm-db";
 import { hashPhone, hashEmail, sendMetaCapiLeadEvent } from "@/lib/meta-capi";
 import { normalizeSource, getSourceGroup, normalizeBranch, getBranchGroup, normalizeService, getServiceGroup, normalizeTelesale } from "@/lib/tds-parser";
 
@@ -10,7 +10,7 @@ interface RouteParams {
 export async function GET(req: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const lead = await db.cRMLead.findUnique({
+    const lead = await crmDb.cRMLead.findUnique({
       where: { id },
       include: {
         statusHistory: { orderBy: { createdAt: "desc" } },
@@ -33,7 +33,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const { id } = await params;
     const body = await req.json();
 
-    const existingLead = await db.cRMLead.findUnique({ where: { id } });
+    const existingLead = await crmDb.cRMLead.findUnique({ where: { id } });
     if (!existingLead) {
       return NextResponse.json({ success: false, error: "Không tìm thấy Lead" }, { status: 404 });
     }
@@ -57,7 +57,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
     const previousStatus = existingLead.status;
 
-    const updatedLead = await db.cRMLead.update({
+    const updatedLead = await crmDb.cRMLead.update({
       where: { id },
       data: {
         fullName,
@@ -82,7 +82,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     });
 
     if (previousStatus !== status) {
-      await db.cRMStatusHistory.create({
+      await crmDb.cRMStatusHistory.create({
         data: {
           leadId: id,
           previousStatus,
@@ -124,7 +124,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
 export async function DELETE(req: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    await db.cRMLead.delete({ where: { id } });
+    await crmDb.cRMLead.delete({ where: { id } });
     return NextResponse.json({ success: true, message: "Đã xóa Lead thành công" });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Delete lead failed";

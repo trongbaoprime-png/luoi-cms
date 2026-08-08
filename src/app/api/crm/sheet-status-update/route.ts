@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { crmDb } from "@/lib/crm-db";
 import { sendMetaCapiLeadEvent } from "@/lib/meta-capi";
 import { parseTdsPayload } from "@/lib/tds-parser";
 
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const finalValue = body.value !== undefined ? Number(body.value) : parsed.revenue > 0 ? parsed.revenue : parsed.actualRevenue;
 
     // 1. Find Lead by ID or Phone
-    const lead = await db.cRMLead.findFirst({
+    const lead = await crmDb.cRMLead.findFirst({
       where: leadId ? { id: leadId } : { phone },
     });
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const previousStatus = lead.status;
 
     // 2. Update Lead in Database with full TDS metadata
-    const updatedLead = await db.cRMLead.update({
+    const updatedLead = await crmDb.cRMLead.update({
       where: { id: lead.id },
       data: {
         status: finalStatus,
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     });
 
     // Record Status Change History
-    await db.cRMStatusHistory.create({
+    await crmDb.cRMStatusHistory.create({
       data: {
         leadId: lead.id,
         previousStatus,
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
       // Update CAPI sync flag
       if (capiResult.success) {
-        await db.cRMLead.update({
+        await crmDb.cRMLead.update({
           where: { id: updatedLead.id },
           data: {
             syncedToMeta: true,
