@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
@@ -13,7 +14,9 @@ export async function GET() {
       { success: true, data: settingsMap },
       {
         headers: {
-          "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       }
     );
@@ -39,7 +42,19 @@ export async function POST(req: Request) {
 
     await Promise.all(updates);
 
-    return NextResponse.json({ success: true, message: "Đã cập nhật cấu hình thành công" });
+    // Tức thì làm tươi Cache toàn bộ hệ thống
+    try {
+      revalidatePath("/", "page");
+      revalidatePath("/[slug]", "page");
+      revalidatePath("/blog", "page");
+      revalidatePath("/san-pham", "page");
+      revalidatePath("/admin/settings", "page");
+    } catch {}
+
+    return NextResponse.json({
+      success: true,
+      message: "Đã cập nhật cấu hình thành công và làm tươi bộ nhớ đệm Cache!",
+    });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Lỗi lưu cấu hình" },

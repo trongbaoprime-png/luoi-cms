@@ -189,6 +189,29 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const [clearingCache, setClearingCache] = useState(false);
+  const [clearCacheMsg, setClearCacheMsg] = useState("");
+
+  const handleClearCache = async () => {
+    setClearingCache(true);
+    setClearCacheMsg("Đang xoá bộ nhớ đệm Cache và làm tươi trang chủ...");
+    try {
+      const res = await fetch("/api/admin/clear-cache", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setClearCacheMsg(data.message);
+        try { sessionStorage.clear(); } catch {}
+      } else {
+        setClearCacheMsg("Lỗi: " + (data.error || "Không thể xoá cache"));
+      }
+    } catch {
+      setClearCacheMsg("Lỗi kết nối máy chủ");
+    } finally {
+      setClearingCache(false);
+      setTimeout(() => setClearCacheMsg(""), 6000);
+    }
+  };
+
   const handleSelectLogoMedia = (url: string) => {
     setLogoUrl(url);
     setIsMediaModalOpen(false);
@@ -208,22 +231,49 @@ export default function AdminSettingsPage() {
           <Settings className="w-6 h-6 text-[#0d9488]" />
           Cấu Hình Cài Đặt Hệ Thống &amp; Hiển Thị Trang Chủ
         </h1>
+
+        <button
+          type="button"
+          onClick={handleClearCache}
+          disabled={clearingCache}
+          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs font-mono transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+        >
+          <span>🧹 Xoá Cache &amp; Làm Tươi Toàn Bộ</span>
+        </button>
       </div>
+
+      {clearCacheMsg && (
+        <div className={`p-4 rounded-xl text-xs font-mono font-bold border ${clearCacheMsg.includes("✓") || clearCacheMsg.includes("thành công") ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-amber-50 text-amber-800 border-amber-300"}`}>
+          {clearCacheMsg}
+        </div>
+      )}
 
       {saved && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 font-medium">
           <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-          Đã lưu cài đặt hệ thống &amp; cấu hình Logo thành công!
+          Đã lưu cài đặt hệ thống &amp; làm tươi bộ nhớ đệm Cache thành công!
         </div>
       )}
 
       <form onSubmit={handleSave} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-8">
         {/* HOMEPAGE DISPLAY SETTINGS (MOVED TO TOP PER USER REQUEST) */}
         <div>
-          <h2 className="text-base font-bold font-serif text-stone-900 mb-4 pb-2 border-b flex items-center gap-2">
-            <Layout size={18} className="text-[#0d4f4a]" />
-            Cài Đặt Hiển Thị Trang Chủ
-          </h2>
+          <div className="flex items-center justify-between mb-4 pb-2 border-b">
+            <h2 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
+              <Layout size={18} className="text-[#0d4f4a]" />
+              Cài Đặt Hiển Thị Trang Chủ
+            </h2>
+
+            <button
+              type="button"
+              onClick={handleClearCache}
+              disabled={clearingCache}
+              className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-mono font-bold transition-colors border border-stone-300 cursor-pointer flex items-center gap-1"
+            >
+              <span>🧹 Xoá Cache Trang Chủ</span>
+            </button>
+          </div>
+
           <div className="space-y-4 text-xs bg-stone-50 p-5 rounded-2xl border border-stone-200 font-mono">
             <label className="block font-bold text-stone-800 text-sm">Trang chủ của bạn hiển thị:</label>
 

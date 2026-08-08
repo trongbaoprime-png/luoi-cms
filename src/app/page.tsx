@@ -8,6 +8,9 @@ import WorkflowSteps from "@/components/WorkflowSteps";
 import TrustBadges from "@/components/TrustBadges";
 import LuoiFooter from "@/components/LuoiFooter";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function RootHomePage() {
   try {
     const [homepageTypeSetting, homepagePageIdSetting] = await Promise.all([
@@ -18,11 +21,30 @@ export default async function RootHomePage() {
     const homepageType = homepageTypeSetting?.value || "blog";
     const homepagePageId = homepagePageIdSetting?.value;
 
-    if (homepageType === "static" && homepagePageId) {
-      const selectedPage = await cmsDb.page.findUnique({
-        where: { id: homepagePageId },
-      }).catch(() => null);
+    // 1. Khi người dùng chọn "Một trang tĩnh":
+    if (homepageType === "static") {
+      let selectedPage = null;
 
+      // Tìm theo ID trang đã chọn
+      if (homepagePageId) {
+        selectedPage = await cmsDb.page.findFirst({
+          where: {
+            OR: [
+              { id: homepagePageId },
+              { slug: homepagePageId },
+            ],
+          },
+        }).catch(() => null);
+      }
+
+      // Nếu không thấy theo ID, tìm trang tĩnh slug="home"
+      if (!selectedPage) {
+        selectedPage = await cmsDb.page.findFirst({
+          where: { slug: "home" },
+        }).catch(() => null);
+      }
+
+      // Nếu tìm thấy trang tĩnh được xuất bản, nạp giao diện Builder
       if (selectedPage && selectedPage.isPublished) {
         return (
           <DynamicStaticPage
@@ -31,20 +53,11 @@ export default async function RootHomePage() {
         );
       }
     }
-
-    // Fallback to default /home page if configured
-    const homePage = await cmsDb.page.findUnique({
-      where: { slug: "home" },
-    }).catch(() => null);
-
-    if (homePage && homePage.isPublished) {
-      return <DynamicStaticPage params={Promise.resolve({ slug: "home" })} />;
-    }
   } catch {
-    // Fallback gracefully during static prerendering or fresh database init
+    // Fallback gracefully
   }
 
-  // Default fallback — dùng Header dynamic (cùng font-mono style với toàn bộ site)
+  // 2. Khi người dùng chọn "Bài viết mới nhất (Giao diện Mặc định đầy đủ Hero Banner & Deals)":
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f4ed] text-[#1a1612] font-sans antialiased selection:bg-[#0d4f4a]/15 selection:text-[#0d4f4a]">
       <Header />
