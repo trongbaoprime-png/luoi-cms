@@ -131,18 +131,14 @@ export async function POST(req: Request) {
       const telegramChatIdSetting = await cmsDb.setting.findUnique({ where: { key: "telegram_chat_id" } });
 
       if (telegramTokenSetting?.value && telegramChatIdSetting?.value) {
-        const message = `🔔 <b>CÓ LEAD MỚI TỪ ${sourceGroup.toUpperCase()}</b>\n` +
-          `👤 <b>Họ tên:</b> ${fullName}\n` +
-          `📞 <b>SĐT:</b> ${phone}\n` +
-          `🏢 <b>Chi nhánh:</b> ${branch}\n` +
-          `💼 <b>Dịch vụ:</b> ${service}\n` +
-          `👩‍💼 <b>Telesale:</b> ${telesale}\n` +
-          `⏰ <b>Thời gian:</b> ${getVietnamFormattedTime()}`;
-
-        sendTelegramNotification({
-          botToken: telegramTokenSetting.value,
-          chatId: telegramChatIdSetting.value,
-          message,
+        sendTelegramNotification(telegramTokenSetting.value, telegramChatIdSetting.value, {
+          time: getVietnamFormattedTime(),
+          name: fullName,
+          phone,
+          email: email || undefined,
+          source: sourceGroup.toUpperCase(),
+          branch,
+          service,
         }).catch(() => {});
       }
     } catch {}
