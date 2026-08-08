@@ -1,7 +1,7 @@
 /**
- * LƯỜI CMS - Super Admin Management CLI Utility (SEC-001B)
+ * LƯỜI CMS - Super Admin Management CLI Utility (SEC-001C)
  * Safely creates or resets the primary SUPER_ADMIN user without logging secrets.
- * Uses the exact same Argon2id password hashing implementation as the server application.
+ * Uses official Argon2id password hashing library.
  *
  * Usage:
  *   node scripts/manage-admin.js <username> <email> <password> [role]
@@ -10,26 +10,22 @@
  *   node scripts/manage-admin.js admin admin@luoidonnha.com MySecurePass123! SUPER_ADMIN
  */
 
-const crypto = require("crypto");
+const argon2 = require("argon2");
 const { PrismaClient } = require("../node_modules/@prisma/client-cms");
 
 const prisma = new PrismaClient();
 
-// Standardized Argon2id password hashing identical to src/lib/auth-security.ts
-function hashPasswordSync(password) {
+async function hashPassword(password) {
   if (!password || typeof password !== "string") {
     throw new Error("Password must be a non-empty string");
   }
 
-  const salt = crypto.randomBytes(32).toString("base64");
-  const derivedKey = crypto.scryptSync(password, salt, 64, {
-    N: 16384,
-    r: 8,
-    p: 1,
-    maxmem: 32 * 1024 * 1024,
+  return await argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 1,
   });
-
-  return `$argon2id$v=19$m=65536,t=3,p=1$${salt}$${derivedKey.toString("base64")}`;
 }
 
 async function main() {
@@ -45,7 +41,7 @@ async function main() {
     process.exit(1);
   }
 
-  const hashedPassword = hashPasswordSync(password);
+  const hashedPassword = await hashPassword(password);
 
   console.log(`🔐 Đang thiết lập tài khoản ${role} (${username} - ${email})...`);
 

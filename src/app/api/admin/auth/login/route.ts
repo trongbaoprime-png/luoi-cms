@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { cmsDb } from "@/lib/cms-db";
-import { verifyPassword, generateSecureToken } from "@/lib/auth-security";
+import { verifyPassword, generateSecureToken, needsRehash, hashPassword } from "@/lib/auth-security";
 import { createAdminSession, AdminRole } from "@/lib/redis-session";
 
 // In-Memory Rate Limiter to prevent Brute-Force attacks
@@ -98,6 +98,17 @@ export async function POST(req: Request) {
               role,
               permissions: dbUser.permissions,
             };
+
+            // Transparent re-hash to official Argon2id if user had legacy hash
+            if (needsRehash(dbUser.password)) {
+              try {
+                const newArgon2Hash = await hashPassword(password);
+                await cmsDb.user.update({
+                  where: { id: dbUser.id },
+                  data: { password: newArgon2Hash },
+                });
+              } catch {}
+            }
           }
         }
       } catch {
