@@ -27,6 +27,31 @@ export default function AdminSettingsPage() {
   const [menuColorHover, setMenuColorHover] = useState("#0d4f4a");
   const [menuColorActive, setMenuColorActive] = useState("#0d4f4a");
 
+  // Footer Configuration States
+  const [footerFont, setFooterFont] = useState<"default" | "sans" | "serif" | "mono">("mono");
+  const [footerDesc, setFooterDesc] = useState("Chia sẻ mẹo hay, sản phẩm tiện ích và giải pháp giúp cuộc sống nhẹ nhàng hơn mỗi ngày. Tự động áp mã giảm giá Shopee ưu đãi Facebook.");
+  const [footerEmail, setFooterEmail] = useState("hello@luoidonnha.com");
+  const [footerCopyright, setFooterCopyright] = useState("© 2026 LƯỜI DỌN NHÀ. Bản quyền thuộc về luoidonnha.com.");
+  const [col1Title, setCol1Title] = useState("KHÁM PHÁ");
+  const [col1LinksStr, setCol1LinksStr] = useState(JSON.stringify([
+    { label: "Blog & Mẹo Hay", url: "/blog" },
+    { label: "Sản phẩm tiện ích", url: "/san-pham" },
+    { label: "Icon Facebook", url: "/#tool-widget" },
+    { label: "Mã giảm giá Shopee", url: "/#tool-widget" },
+  ], null, 2));
+  const [col2Title, setCol2Title] = useState("HỖ TRỢ");
+  const [col2LinksStr, setCol2LinksStr] = useState(JSON.stringify([
+    { label: "Hướng dẫn dán link", url: "/#guide" },
+    { label: "Câu hỏi thường gặp", url: "/#faq" },
+    { label: "Điều khoản dịch vụ", url: "/#terms" },
+    { label: "Liên hệ hỗ trợ", url: "/#contact" },
+  ], null, 2));
+  const [socialFb, setSocialFb] = useState("https://facebook.com");
+  const [socialInsta, setSocialInsta] = useState("https://instagram.com");
+  const [socialTiktok, setSocialTiktok] = useState("https://tiktok.com");
+  const [socialYoutube, setSocialYoutube] = useState("https://youtube.com");
+  const [footerBg, setFooterBg] = useState("#ffffff");
+
   // Search Engine & CDN & Indexing States
   const [discourageSearchEngines, setDiscourageSearchEngines] = useState(false);
   const [cdnUrl, setCdnUrl] = useState("https://media.luoidonnha.com");
@@ -69,6 +94,21 @@ export default function AdminSettingsPage() {
         if (setRes.data.menu_color_hover) setMenuColorHover(setRes.data.menu_color_hover);
         if (setRes.data.menu_color_active) setMenuColorActive(setRes.data.menu_color_active);
 
+        // Footer settings
+        if (setRes.data.footer_font) setFooterFont(setRes.data.footer_font as any);
+        if (setRes.data.footer_description) setFooterDesc(setRes.data.footer_description);
+        if (setRes.data.footer_email) setFooterEmail(setRes.data.footer_email);
+        if (setRes.data.footer_copyright) setFooterCopyright(setRes.data.footer_copyright);
+        if (setRes.data.footer_col1_title) setCol1Title(setRes.data.footer_col1_title);
+        if (setRes.data.footer_col1_links) setCol1LinksStr(setRes.data.footer_col1_links);
+        if (setRes.data.footer_col2_title) setCol2Title(setRes.data.footer_col2_title);
+        if (setRes.data.footer_col2_links) setCol2LinksStr(setRes.data.footer_col2_links);
+        if (setRes.data.footer_social_fb !== undefined) setSocialFb(setRes.data.footer_social_fb);
+        if (setRes.data.footer_social_insta !== undefined) setSocialInsta(setRes.data.footer_social_insta);
+        if (setRes.data.footer_social_tiktok !== undefined) setSocialTiktok(setRes.data.footer_social_tiktok);
+        if (setRes.data.footer_social_youtube !== undefined) setSocialYoutube(setRes.data.footer_social_youtube);
+        if (setRes.data.footer_bg_color) setFooterBg(setRes.data.footer_bg_color);
+
         // SEO & Indexing settings
         if (setRes.data.discourage_search_engines !== undefined) {
           setDiscourageSearchEngines(setRes.data.discourage_search_engines === "true");
@@ -102,6 +142,19 @@ export default function AdminSettingsPage() {
           menu_color_text: menuColorText,
           menu_color_hover: menuColorHover,
           menu_color_active: menuColorActive,
+          footer_font: footerFont,
+          footer_description: footerDesc,
+          footer_email: footerEmail,
+          footer_copyright: footerCopyright,
+          footer_col1_title: col1Title,
+          footer_col1_links: col1LinksStr,
+          footer_col2_title: col2Title,
+          footer_col2_links: col2LinksStr,
+          footer_social_fb: socialFb,
+          footer_social_insta: socialInsta,
+          footer_social_tiktok: socialTiktok,
+          footer_social_youtube: socialYoutube,
+          footer_bg_color: footerBg,
           discourage_search_engines: String(discourageSearchEngines),
           cdn_url: cdnUrl,
           indexnow_api_key: indexnowApiKey,
@@ -644,6 +697,180 @@ export default function AdminSettingsPage() {
                 {indexingMsg}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* FOOTER CONFIGURATION SECTION (USER REQUEST) */}
+        <div>
+          <h2 className="text-base font-bold font-serif text-stone-900 mb-4 pb-2 border-b flex items-center gap-2">
+            <Layout size={18} className="text-[#0d4f4a]" />
+            Cấu Hình Chân Trang (Footer - Đồng Bộ Font Chữ, Cột Menu, Mạng Xã Hội &amp; Bản Quyền)
+          </h2>
+
+          <div className="space-y-6 bg-stone-50 p-5 rounded-2xl border border-stone-200 text-xs font-mono">
+            {/* Font Family & Background Color */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-bold text-stone-800 mb-1.5">Font Chữ Chân Trang (Footer Font):</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { id: "mono", name: "Mono (Kỹ thuật/Modern)" },
+                    { id: "serif", name: "Serif (Sang trọng/Báo chí)" },
+                    { id: "sans", name: "Sans (Thanh lịch)" },
+                    { id: "default", name: "Mặc định hệ thống" },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setFooterFont(f.id as any)}
+                      className={`p-2 rounded-xl border text-center font-bold text-[11px] transition-all cursor-pointer ${
+                        footerFont === f.id
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
+                      }`}
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-800 mb-1.5">Màu Nền Chân Trang (Footer Background):</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={footerBg}
+                    onChange={(e) => setFooterBg(e.target.value)}
+                    className="w-10 h-9 p-1 border rounded-lg cursor-pointer bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={footerBg}
+                    onChange={(e) => setFooterBg(e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-xl bg-white font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Description & Support Email & Copyright */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-3">
+                <label className="block font-bold text-stone-800 mb-1">Mô Tả Thương Hiệu / Giới Thiệu Chân Trang:</label>
+                <textarea
+                  rows={2}
+                  value={footerDesc}
+                  onChange={(e) => setFooterDesc(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-sans text-xs focus:ring-1 focus:ring-[#0d4f4a]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-800 mb-1">Email Hỗ Trợ Khách Hàng:</label>
+                <input
+                  type="email"
+                  value={footerEmail}
+                  onChange={(e) => setFooterEmail(e.target.value)}
+                  placeholder="hello@luoidonnha.com"
+                  className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block font-bold text-stone-800 mb-1">Dòng Bản Quyền Cuối Trang (Copyright):</label>
+                <input
+                  type="text"
+                  value={footerCopyright}
+                  onChange={(e) => setFooterCopyright(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Menu Column 1 & Menu Column 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-stone-200">
+              <div className="space-y-2">
+                <label className="block font-bold text-stone-800">Tiêu đề &amp; Liên kết Cột 1 (JSON Links):</label>
+                <input
+                  type="text"
+                  value={col1Title}
+                  onChange={(e) => setCol1Title(e.target.value)}
+                  placeholder="KHÁM PHÁ"
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-bold text-xs mb-1"
+                />
+                <textarea
+                  rows={4}
+                  value={col1LinksStr}
+                  onChange={(e) => setCol1LinksStr(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-mono text-[11px] focus:ring-1 focus:ring-[#0d4f4a]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block font-bold text-stone-800">Tiêu đề &amp; Liên kết Cột 2 (JSON Links):</label>
+                <input
+                  type="text"
+                  value={col2Title}
+                  onChange={(e) => setCol2Title(e.target.value)}
+                  placeholder="HỖ TRỢ"
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-bold text-xs mb-1"
+                />
+                <textarea
+                  rows={4}
+                  value={col2LinksStr}
+                  onChange={(e) => setCol2LinksStr(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-mono text-[11px] focus:ring-1 focus:ring-[#0d4f4a]"
+                />
+              </div>
+            </div>
+
+            {/* Social Media Channels */}
+            <div className="pt-2 border-t border-stone-200">
+              <label className="block font-bold text-stone-800 mb-2">Đường Dẫn Mạng Xã Hội (Social Media Icons):</label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <span className="text-[11px] font-bold text-blue-600 block mb-1">Facebook URL:</span>
+                  <input
+                    type="text"
+                    value={socialFb}
+                    onChange={(e) => setSocialFb(e.target.value)}
+                    placeholder="https://facebook.com/..."
+                    className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-pink-600 block mb-1">Instagram URL:</span>
+                  <input
+                    type="text"
+                    value={socialInsta}
+                    onChange={(e) => setSocialInsta(e.target.value)}
+                    placeholder="https://instagram.com/..."
+                    className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-stone-900 block mb-1">TikTok URL:</span>
+                  <input
+                    type="text"
+                    value={socialTiktok}
+                    onChange={(e) => setSocialTiktok(e.target.value)}
+                    placeholder="https://tiktok.com/@..."
+                    className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-red-600 block mb-1">YouTube URL:</span>
+                  <input
+                    type="text"
+                    value={socialYoutube}
+                    onChange={(e) => setSocialYoutube(e.target.value)}
+                    placeholder="https://youtube.com/@..."
+                    className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

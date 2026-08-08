@@ -1,9 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Mail } from "lucide-react";
-
 
 function FacebookIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -29,85 +29,222 @@ function YoutubeIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+interface FooterLink {
+  label: string;
+  url: string;
+}
+
 export default function LuoiFooter() {
+  const [logoUrl, setLogoUrl] = useState("/images/luoidonnhangang.png");
+  const [siteName, setSiteName] = useState("LƯỜI DỌN NHÀ");
+  const [footerFont, setFooterFont] = useState("mono");
+  const [footerDesc, setFooterDesc] = useState(
+    "Chia sẻ mẹo hay, sản phẩm tiện ích và giải pháp giúp cuộc sống nhẹ nhàng hơn mỗi ngày. Tự động áp mã giảm giá Shopee ưu đãi Facebook."
+  );
+  const [footerEmail, setFooterEmail] = useState("hello@luoidonnha.com");
+  const [footerCopyright, setFooterCopyright] = useState(
+    "© 2026 LƯỜI DỌN NHÀ. Bản quyền thuộc về luoidonnha.com."
+  );
+
+  const [col1Title, setCol1Title] = useState("KHÁM PHÁ");
+  const [col1Links, setCol1Links] = useState<FooterLink[]>([
+    { label: "Blog & Mẹo Hay", url: "/blog" },
+    { label: "Sản phẩm tiện ích", url: "/san-pham" },
+    { label: "Icon Facebook", url: "/#tool-widget" },
+    { label: "Mã giảm giá Shopee", url: "/#tool-widget" },
+  ]);
+
+  const [col2Title, setCol2Title] = useState("HỖ TRỢ");
+  const [col2Links, setCol2Links] = useState<FooterLink[]>([
+    { label: "Hướng dẫn dán link", url: "/#guide" },
+    { label: "Câu hỏi thường gặp", url: "/#faq" },
+    { label: "Điều khoản dịch vụ", url: "/#terms" },
+    { label: "Liên hệ hỗ trợ", url: "/#contact" },
+  ]);
+
+  const [socialFb, setSocialFb] = useState("https://facebook.com");
+  const [socialInsta, setSocialInsta] = useState("https://instagram.com");
+  const [socialTiktok, setSocialTiktok] = useState("https://tiktok.com");
+  const [socialYoutube, setSocialYoutube] = useState("https://youtube.com");
+
+  const [footerBg, setFooterBg] = useState("#ffffff");
+  const [footerHoverColor, setFooterHoverColor] = useState("#0d4f4a");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) {
+          if (res.data.logo_url) setLogoUrl(res.data.logo_url);
+          if (res.data.site_name) setSiteName(res.data.site_name);
+          if (res.data.footer_font) setFooterFont(res.data.footer_font);
+          else if (res.data.menu_font) setFooterFont(res.data.menu_font);
+
+          if (res.data.footer_description) setFooterDesc(res.data.footer_description);
+          if (res.data.footer_email) setFooterEmail(res.data.footer_email);
+          if (res.data.footer_copyright) setFooterCopyright(res.data.footer_copyright);
+
+          if (res.data.footer_col1_title) setCol1Title(res.data.footer_col1_title);
+          if (res.data.footer_col1_links) {
+            try {
+              setCol1Links(JSON.parse(res.data.footer_col1_links));
+            } catch {}
+          }
+
+          if (res.data.footer_col2_title) setCol2Title(res.data.footer_col2_title);
+          if (res.data.footer_col2_links) {
+            try {
+              setCol2Links(JSON.parse(res.data.footer_col2_links));
+            } catch {}
+          }
+
+          if (res.data.footer_social_fb !== undefined) setSocialFb(res.data.footer_social_fb);
+          if (res.data.footer_social_insta !== undefined) setSocialInsta(res.data.footer_social_insta);
+          if (res.data.footer_social_tiktok !== undefined) setSocialTiktok(res.data.footer_social_tiktok);
+          if (res.data.footer_social_youtube !== undefined) setSocialYoutube(res.data.footer_social_youtube);
+
+          if (res.data.footer_bg_color) setFooterBg(res.data.footer_bg_color);
+          if (res.data.menu_color_hover) setFooterHoverColor(res.data.menu_color_hover);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const fontClass =
+    footerFont === "mono"
+      ? "font-mono"
+      : footerFont === "serif"
+      ? "font-serif"
+      : footerFont === "sans"
+      ? "font-sans"
+      : "font-mono";
+
   return (
-    <footer className="bg-white border-t border-[#e7e5e4] pt-14 pb-10">
+    <footer style={{ backgroundColor: footerBg }} className={`border-t border-[#e7e5e4] pt-14 pb-10 ${fontClass}`}>
       <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-[#f5f5f4]">
-          
           {/* Brand Info */}
           <div className="md:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <Image
-                src="/images/luoidonnhangang.png"
-                alt="LƯỜI DỌN NHÀ Logo"
-                width={160}
-                height={40}
-                className="h-10 w-auto object-contain"
-              />
+              {logoUrl ? (
+                <Image
+                  src={logoUrl}
+                  alt={`${siteName} Logo`}
+                  width={160}
+                  height={40}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <span className="font-bold text-lg text-stone-900 tracking-tight uppercase">
+                  {siteName}
+                </span>
+              )}
             </div>
 
             <p className="text-xs text-[#78716c] leading-relaxed max-w-sm">
-              Chia sẻ mẹo hay, sản phẩm tiện ích và giải pháp giúp cuộc sống nhẹ nhàng hơn mỗi ngày. Tự động áp mã giảm giá Shopee ưu đãi Facebook.
+              {footerDesc}
             </p>
           </div>
 
-          {/* Nav Columns */}
+          {/* Nav Column 1 */}
           <div className="md:col-span-2 space-y-3">
-            <h4 className="font-sans font-black text-xs uppercase tracking-wider text-[#1c1917]">
-              KHÁM PHÁ
+            <h4 className="font-black text-xs uppercase tracking-wider text-[#1c1917]">
+              {col1Title}
             </h4>
             <ul className="space-y-2 text-xs font-semibold text-[#57534e]">
-              <li><Link href="/blog" className="hover:text-[#0d4f4a]">Blog & Mẹo Hay</Link></li>
-              <li><Link href="/san-pham" className="hover:text-[#0d4f4a]">Sản phẩm tiện ích</Link></li>
-              <li><Link href="#tool-widget" className="hover:text-[#0d4f4a]">Icon Facebook</Link></li>
-              <li><Link href="#tool-widget" className="hover:text-[#0d4f4a]">Mã giảm giá Shopee</Link></li>
+              {col1Links.map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    href={link.url || "#"}
+                    className="hover:text-[#0d4f4a] transition-colors"
+                    style={{ ["--hover-color" as any]: footerHoverColor }}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Nav Column 2 */}
           <div className="md:col-span-2 space-y-3">
-            <h4 className="font-sans font-black text-xs uppercase tracking-wider text-[#1c1917]">
-              HỖ TRỢ
+            <h4 className="font-black text-xs uppercase tracking-wider text-[#1c1917]">
+              {col2Title}
             </h4>
             <ul className="space-y-2 text-xs font-semibold text-[#57534e]">
-              <li><Link href="#guide" className="hover:text-[#0d4f4a]">Hướng dẫn dán link</Link></li>
-              <li><Link href="#faq" className="hover:text-[#0d4f4a]">Câu hỏi thường gặp</Link></li>
-              <li><Link href="#terms" className="hover:text-[#0d4f4a]">Điều khoản dịch vụ</Link></li>
-              <li><Link href="#contact" className="hover:text-[#0d4f4a]">Liên hệ hỗ trợ</Link></li>
+              {col2Links.map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    href={link.url || "#"}
+                    className="hover:text-[#0d4f4a] transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Social Links */}
           <div className="md:col-span-4 space-y-4">
-            <h4 className="font-sans font-black text-xs uppercase tracking-wider text-[#1c1917]">
+            <h4 className="font-black text-xs uppercase tracking-wider text-[#1c1917]">
               KẾT NỐI VỚI CHÚNG TÔI
             </h4>
             <div className="flex items-center gap-3">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:opacity-90 transition-opacity">
-                <FacebookIcon className="w-4 h-4" />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-[#e4405f] text-white flex items-center justify-center hover:opacity-90 transition-opacity">
-                <InstagramIcon className="w-4 h-4" />
-              </a>
-              <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90 transition-opacity font-bold text-xs">
-                🎵
-              </a>
-              <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-[#ff0000] text-white flex items-center justify-center hover:opacity-90 transition-opacity">
-                <YoutubeIcon className="w-4 h-4" />
-              </a>
+              {socialFb && (
+                <a
+                  href={socialFb}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-xs"
+                >
+                  <FacebookIcon className="w-4 h-4" />
+                </a>
+              )}
+              {socialInsta && (
+                <a
+                  href={socialInsta}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-[#e4405f] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-xs"
+                >
+                  <InstagramIcon className="w-4 h-4" />
+                </a>
+              )}
+              {socialTiktok && (
+                <a
+                  href={socialTiktok}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90 transition-opacity font-bold text-xs shadow-xs"
+                >
+                  🎵
+                </a>
+              )}
+              {socialYoutube && (
+                <a
+                  href={socialYoutube}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-[#ff0000] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-xs"
+                >
+                  <YoutubeIcon className="w-4 h-4" />
+                </a>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-[#78716c] font-medium pt-2">
-              <Mail size={14} className="text-[#0d4f4a]" />
-              <span>hello@luoidonnha.com</span>
-            </div>
+            {footerEmail && (
+              <div className="flex items-center gap-2 text-xs text-[#78716c] font-medium pt-2">
+                <Mail size={14} className="text-[#0d4f4a]" />
+                <span>{footerEmail}</span>
+              </div>
+            )}
           </div>
-
         </div>
 
         {/* Bottom Copyright */}
         <div className="pt-8 text-center text-xs text-[#a8a29e] font-medium">
-          © 2026 LƯỜI DỌN NHÀ. Bản quyền thuộc về luoidonnha.com.
+          {footerCopyright}
         </div>
       </div>
     </footer>
