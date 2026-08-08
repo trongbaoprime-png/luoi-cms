@@ -322,6 +322,8 @@ export function MiniCrmAdminPage() {
 
   useEffect(() => {
     fetchLeads();
+    const interval = setInterval(fetchLeads, 60000);
+    return () => clearInterval(interval);
   }, [fetchLeads]);
 
   const handleApplyDateRange = () => {
@@ -689,6 +691,27 @@ function onEdit(e) {
             )}
           </div>
 
+          {/* Quick Realtime Sync Google Sheets Button */}
+          <button
+            onClick={() => handleSyncSheets([8])}
+            disabled={syncing}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
+            title="Đồng bộ ngay dữ liệu Google Sheets tháng hiện tại (Tháng 8)"
+          >
+            <RefreshCwIcon className={`w-3.5 h-3.5 text-stone-950 ${syncing ? "animate-spin" : ""}`} />
+            <span>{syncing ? "Đang đồng bộ..." : "⚡ Đồng Bộ T8"}</span>
+          </button>
+
+          <button
+            onClick={() => handleSyncSheets([6, 7, 8])}
+            disabled={syncing}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
+            title="Đồng bộ toàn bộ 3 tháng gần nhất (Tháng 6, 7, 8)"
+          >
+            <FileSpreadsheetIcon className={`w-3.5 h-3.5 text-[#00c9b7] ${syncing ? "animate-spin" : ""}`} />
+            <span>Đồng Bộ T6-T8</span>
+          </button>
+
           <button
             onClick={() => {
               setFormData({
@@ -720,6 +743,13 @@ function onEdit(e) {
           </button>
         </div>
       </div>
+
+      {/* Sync Status Banner if any */}
+      {syncNotice && (
+        <div className={`p-3 rounded-xl text-xs font-mono font-bold border ${syncNotice.includes("Lỗi") ? "bg-red-50 text-red-800 border-red-200" : "bg-emerald-50 text-emerald-800 border-emerald-300"}`}>
+          {syncNotice}
+        </div>
+      )}
 
       {/* Table Selection Tabs: miniCRM vs Khách đăng ký */}
       <div className="flex border-b border-stone-200 gap-6 font-mono text-xs pt-1 px-2">
