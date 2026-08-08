@@ -23,7 +23,7 @@ export default async function RootHomePage() {
         where: { id: homepagePageId },
       }).catch(() => null);
 
-      if (selectedPage && selectedPage.isPublished && selectedPage.content && selectedPage.content.length > 50) {
+      if (selectedPage && selectedPage.isPublished) {
         return (
           <DynamicStaticPage
             params={Promise.resolve({ slug: selectedPage.slug })}
@@ -32,12 +32,12 @@ export default async function RootHomePage() {
       }
     }
 
-    // Fallback to default /home page if configured with content
+    // Fallback to default /home page if configured
     const homePage = await cmsDb.page.findUnique({
       where: { slug: "home" },
     }).catch(() => null);
 
-    if (homePage && homePage.isPublished && homePage.content && homePage.content.length > 50) {
+    if (homePage && homePage.isPublished) {
       return <DynamicStaticPage params={Promise.resolve({ slug: "home" })} />;
     }
   } catch {

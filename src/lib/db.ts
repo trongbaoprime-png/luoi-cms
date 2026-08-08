@@ -7,14 +7,8 @@ const globalForPrisma = globalThis as unknown as {
   prisma: DefaultPrismaClient | undefined;
 };
 
-export const db =
-  globalForPrisma.prisma ??
-  new DefaultPrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
+// Unified CMS Database export for all content, articles, pages, categories, settings
+export const db = cmsDb;
 
 export { cmsDb, crmDb, omniDb, omnichannelDb };
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
-}

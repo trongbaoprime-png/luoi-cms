@@ -1,4 +1,4 @@
-import { db } from './src/lib/db';
+import { crmDb } from './src/lib/crm-db';
 import { syncAllTdsSheets } from './src/lib/google-sheets';
 import { execSync } from 'child_process';
 
@@ -29,7 +29,7 @@ async function runMasterSync() {
   const months = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08'];
 
   for (const m of months) {
-    const leads = await db.cRMLead.findMany({
+    const leads = await crmDb.cRMLead.findMany({
       where: { checkinDate: { startsWith: m } },
     });
 
@@ -84,7 +84,7 @@ async function runMasterSync() {
     console.log(`   • DT KO MKT        : ${koMktRev.toLocaleString('vi-VN')}đ\n`);
   }
 
-  const grandTotal = await db.cRMLead.count();
+  const grandTotal = await crmDb.cRMLead.count();
   console.log(`🎉 GRAND TOTAL CRM LEADS IN DATABASE: ${grandTotal.toLocaleString('vi-VN')}`);
 }
 
