@@ -1,0 +1,243 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./luoi-cms.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-cms"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String   // Hashed password
+  role        String   @default("EDITOR") // ADMIN, EDITOR, AUTHOR
+  permissions String?  // JSON string containing granular permissions list
+  avatar      String?
+  bio         String?
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  posts       Post[]
+}
+
+model Post {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  summary         String?
+  content         String
+  coverImage      String?
+  status          String    @default("PUBLISHED")
+  isFeatured      Boolean   @default(false)
+  views           Int       @default(0)
+  readTimeMinutes Int       @default(5)
+  seoTitle        String?
+  seoDescription  String?
+  schemaJson      String?
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  authorId        String?
+  author          Author?   @relation(fields: [authorId], references: [id])
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  posts       Post[]
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Author {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  avatar    String?
+  bio       String?
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+}
+
+model Page {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  content        String?
+  blocks         String?  // JSON string of UX Builder visual blocks array
+  seoTitle       String?
+  seoDescription String?
+  isPublished    Boolean  @default(true)
+  useDefaultHeader Boolean @default(true)
+  useDefaultFooter Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // Stores setting values (e.g. homepage_type, homepage_page_id, header_menu)
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String   // e.g. "ARTICLE_CREATE", "USER_UPDATE", "MEDIA_DELETE"
+  entity    String   // "Article", "User", "Media", "Deal"
+  details   String?  // JSON details of change
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  events    String   // JSON list of events e.g. ["article.created", "deal.created"]
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AdsSetting {
+  id          String   @id @default(cuid())
+  platform    String   @unique
+  pixelId     String?
+  accessToken String?
+  testCode    String?
+  isEnabled   Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+model AdsLog {
+  id        String   @id @default(cuid())
+  platform  String
+  eventName String
+  eventData String
+  status    String
+  response  String?
+  createdAt DateTime @default(now())
+}
+
+model AISetting {
+  id           String   @id @default(cuid())
+  provider     String   @default("GEMINI")
+  apiKey       String?
+  defaultModel String   @default("gemini-1.5-pro")
+  updatedAt    DateTime @updatedAt
+}
+
+model Product {
+  id             String     @id @default(cuid())
+  title          String
+  slug           String     @unique
+  description    String?
+  price          Float?
+  originalPrice  Float?
+  image          String?
+  rating         Float      @default(5.0)
+  pros           String?    // JSON or line-separated pros
+  cons           String?    // JSON or line-separated cons
+  affiliateUrl   String
+  merchant       String     @default("Shopee") // Shopee, Lazada, Tiki, etc.
+  clicks         Int        @default(0)
+  isFeatured     Boolean    @default(false)
+  seoTitle       String?
+  seoDescription String?
+  categoryId     String?
+  category       Category?  @relation(fields: [categoryId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  clickLogs      ClickLog[]
+  deals          Deal[]
+}
+
+model Deal {
+  id            String    @id @default(cuid())
+  code          String
+  title         String
+  discount      String    // e.g. "Giảm 50k", "Freeship"
+  merchant      String    // Shopee, Lazada, Tiki
+  affiliateUrl  String
+  discountPrice Float?
+  originalPrice Float?
+  startDate     DateTime?
+  endDate       DateTime?
+  expiresAt     DateTime?
+  usageCount    Int       @default(0)
+  isHot         Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  productId     String?
+  product       Product?  @relation(fields: [productId], references: [id])
+  createdAt     DateTime  @default(now())
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  subject         String?
+  message         String
+  ipAddress       String?
+  status          String   @default("UNREAD")
+  conversionStage String   @default("REGISTERED") // REGISTERED, QUALIFIED_LEAD, APPOINTMENT, PURCHASE
+  gclid           String?
+  wbraid          String?
+  gbraid          String?
+  fbclid          String?
+  fbc             String?
+  fbp             String?
+  ttclid          String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  createdAt       DateTime @default(now())
+}
+
+model ClickLog {
+  id        String   @id @default(cuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  targetUrl String
+  merchant  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model ShortcodeBlock {
+  id         String   @id @default(cuid())
+  name       String
+  key        String   @unique
+  type       String   // "PRICING", "FORM", "SLIDER", "OFFERS"
+  configJson String   // Stores JSON configuration of custom columns, fields, banners, highlights
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

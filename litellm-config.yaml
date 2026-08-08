@@ -1,0 +1,30 @@
+# LiteLLM Proxy Production Configuration
+model_list:
+  # 1. Google Gemini Pro (Primary)
+  - model_name: gemini-pro
+    litellm_params:
+      model: gemini/gemini-1.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  # 2. Claude 3.5 Sonnet (Trợ Lý Sếp & Sales)
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-3-5-sonnet-20241022
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # 3. OpenAI GPT-4o (JSON Structured Data)
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+  # 4. Groq Llama 3.3 70B (Fast Fallback)
+  - model_name: groq-llama
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+
+router_settings:
+  routing_strategy: "usage-based-routing-v2"
+  num_retries: 3
+  timeout: 30

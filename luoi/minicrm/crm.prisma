@@ -1,0 +1,69 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("CRM_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-crm"
+}
+
+model CRMLead {
+  id                String             @id @default(cuid())
+  leadId            String?            // ID từ Meta Ads (leadgen_id)
+  fullName          String
+  phone             String
+  email             String?
+  phoneHash         String             // SHA256 hashed phone
+  emailHash         String?            // SHA256 hashed email
+  source            String             @default("META_INSTANT_FORM") // META_INSTANT_FORM, WEBSITE_FORM, MESSENGER, ZALO
+  sourceGroup       String             @default("KHÁC") // FACEBOOK, WEBSITE, TIKTOK, HOTLINE, KHÁC
+  status            String             @default("NEW") // NEW, QUALIFIED, SCHEDULED, CHECKIN, PURCHASE, JUNK
+  telesale          String?            // Tên Telesale phụ trách (XUÂN, NHI, QUYÊN...)
+  branch            String?            // Chi nhánh (THỦ ĐỨC, BIÊN HÒA, GÒ VẤP...)
+  branchGroup       String?            // Nhóm khu vực (HCM, ĐỒNG NAI, BÌNH DƯƠNG...)
+  service           String?            // Dịch vụ (CN, IMP, SỨ, TRÁM, CVR...)
+  serviceGroup      String?            // Nhóm DV (CHỈNH NHA, IMPLANT, RĂNG SỨ, TỔNG QUÁT)
+  checkinDate       String?            // YYYY-MM-DD ngày check-in từ Cột H
+  isMonthNote       Boolean            @default(false) // "TRONG THÁNG X" trong Cột H
+  result            String?            // Đậu, Rớt, Chưa có
+  isOldCustomer     Boolean            @default(false) // Cột O: OLD/CU/KHACH CU
+  isKoMkt           Boolean            @default(false) // Cột K = 0 (Không MKT)
+  isVietKieu        Boolean            @default(false) // Cột N: VK / Việt Kiều
+  isNN              Boolean            @default(false) // Cột N: NN / Nước Ngoài
+  revenue           Float              @default(0) // Doanh thu từ Cột J
+  actualRevenue     Float              @default(0) // Thực thu từ Cột M
+  caTheoRevenue     Float              @default(0) // DT Ca theo từ Cột L
+  fbclid            String?
+  fbp               String?
+  fbc               String?
+  note              String?
+  value             Float?
+  currency          String             @default("VND")
+  syncedToMeta      Boolean            @default(false)
+  metaEventResponse String?
+  ref               String?            // "Form" (Đăng ký form), "App" (Sheet DATHEN), "Checkin" (Sheet Telesale)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  statusHistory     CRMStatusHistory[]
+
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt])
+  @@index([sourceGroup])
+  @@index([telesale])
+  @@index([branchGroup])
+}
+
+model CRMStatusHistory {
+  id             String   @id @default(cuid())
+  leadId         String
+  lead           CRMLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  previousStatus String?
+  newStatus      String
+  changedBy      String?
+  note           String?
+  createdAt      DateTime @default(now())
+
+  @@index([leadId])
+}

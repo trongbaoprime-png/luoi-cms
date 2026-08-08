@@ -1,0 +1,882 @@
+const CONFIG = {
+  year: 2026,
+  cacheMinutes: 10,
+  dathenUrl: 'https://docs.google.com/spreadsheets/d/1zq0nnHqKgtsZBZnEKknM55qI_wjnm_Z5MzPBDLBD1jc/',
+  dathenSheetName: 'DATHENALL',
+  telesales: [
+    { name: 'XUÂN', url: 'https://docs.google.com/spreadsheets/d/1pxmzcZ3T0y28NeCGDqMBjWeGPDk-kc8eygb2PCBzp1U/' },
+    { name: 'NHI', url: 'https://docs.google.com/spreadsheets/d/1ihTl-vYgtKUixWxBa5aZscwAUmQMz8MySmEZKuLhdK0/' },
+    { name: 'QUYÊN', url: 'https://docs.google.com/spreadsheets/d/1UwXReFeX3UjK4izpQcjw09j28l7oRxVpAlEUhy7YDl8/' },
+    { name: 'HẬU', url: 'https://docs.google.com/spreadsheets/d/1W-GmpqS6R8FrYtVEcN3BsxE4h989VUpoPHGqd16OwDQ/' },
+    { name: 'TRANG', url: 'https://docs.google.com/spreadsheets/d/1_PQpFRDbROnxAi5-XPqn-jNGKSaNVJCMwesxqTX9CXk/' },
+    { name: 'LIỄU', url: 'https://docs.google.com/spreadsheets/d/1gpd1_rY9nIewF_57fsh8grRi5I0XISjuYQXV8V1cAAE/' },
+    { name: 'TRÂN', url: 'https://docs.google.com/spreadsheets/d/1PfhNKBLF5BvqLl2Crj4XKYo3JCw6KA5oKW51nYe6crU/' },
+    { name: 'LOAN', url: 'https://docs.google.com/spreadsheets/d/1MBRu8GVxMU1Objo23VJCxBXT3nhcsVVS74Meu-VTky0/' },
+    { name: 'SINH', url: 'https://docs.google.com/spreadsheets/d/1Og0jD71x-NguQ1RYi5i0WCX8B9ER_nXMMyg-PCGFnHc/' },
+    { name: 'NHUNG', url: 'https://docs.google.com/spreadsheets/d/1CAbfidfSX1ODONN0EULnd7YP7eTyOdMVVLNU9iaxVqY/' },
+    { name: 'THẢO', url: 'https://docs.google.com/spreadsheets/d/16_aBPIrzYJ69Y2qOlWLMJT--k67W4WHsBijBTjGeMgs/' },
+    { name: 'HẠ', url: 'https://docs.google.com/spreadsheets/d/13_JfIxys9DxKjY_RpvB1O5FZXpddhW_j_SvH9SfE3HI/' },
+    { name: 'TRÚC', url: 'https://docs.google.com/spreadsheets/d/104QyODw2m0wjqpG_hPMqZHT94h7xuc8XfktnCJgXyhM/' },
+    { name: 'VI', url: 'https://docs.google.com/spreadsheets/d/11S3wvEoqMQZl9ahMGveQ3g4HZJ-pHG2XGvogf5mIvlU/' },
+    { name: 'TELEVOI', url: 'https://docs.google.com/spreadsheets/d/1dCfOnW29zox7kODLhMi8mkNU2kEuEqhaKLwr_Odh9nQ/' }
+  ]
+};
+
+function doGet(e) {
+  e = e || { parameter: {} };
+  const month = Number(e.parameter.month || new Date().getMonth() + 1);
+  const callback = e.parameter.callback || '';
+  const fresh = String(e.parameter.fresh || '') === '1';
+
+  let json = fresh ? null : readCacheJson(month);
+
+  if (!json) {
+    const data = getDashboardData(month);
+    json = JSON.stringify(data);
+    saveCacheJson(month, json);
+  }
+
+  if (callback) {
+    return ContentService.createTextOutput(`${callback}(${json})`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return ContentService.createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+function refreshMonthCache(month) {
+  month = Number(month || new Date().getMonth() + 1);
+  const data = getDashboardData(month);
+  saveCacheJson(month, JSON.stringify(data));
+}
+
+function refreshAllDashboardCache() {
+  for (let month = 1; month <= 12; month++) {
+    const data = getDashboardData(month);
+    saveCacheJson(month, JSON.stringify(data));
+  }
+}
+
+function refreshCurrentMonthCache() {
+  const month = new Date().getMonth() + 1;
+  const data = getDashboardData(month);
+  saveCacheJson(month, JSON.stringify(data));
+}
+
+function refreshCurrentAndNearbyCache() {
+  const current = new Date().getMonth() + 1;
+  const months = [current - 1, current, current + 1].filter(m => m >= 1 && m <= 12);
+
+  months.forEach(month => {
+    const data = getDashboardData(month);
+    saveCacheJson(month, JSON.stringify(data));
+  });
+}
+
+function setupFastCacheTrigger() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'refreshCurrentAndNearbyCache') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  ScriptApp.newTrigger('refreshCurrentAndNearbyCache')
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+}
+
+function setupAutoRefreshCache() {
+  setupFastCacheTrigger();
+}
+
+function clearDashboardCache() {
+  const props = PropertiesService.getScriptProperties();
+  const keys = props.getKeys();
+
+  keys.forEach(key => {
+    if (key.indexOf('cache_file_month_') === 0) {
+      const fileId = props.getProperty(key);
+      try {
+        DriveApp.getFileById(fileId).setTrashed(true);
+      } catch (err) {}
+    }
+
+    if (key.indexOf('cache_file_month_') === 0 || key.indexOf('cache_time_month_') === 0) {
+      props.deleteProperty(key);
+    }
+  });
+}
+
+function readCacheJson(month) {
+  const props = PropertiesService.getScriptProperties();
+  const fileId = props.getProperty('cache_file_month_' + month);
+  const time = Number(props.getProperty('cache_time_month_' + month) || 0);
+
+  if (!fileId) return null;
+  if (Date.now() - time > CONFIG.cacheMinutes * 60 * 1000) return null;
+
+  try {
+    return DriveApp.getFileById(fileId).getBlob().getDataAsString();
+  } catch (err) {
+    return null;
+  }
+}
+
+function saveCacheJson(month, json) {
+  const props = PropertiesService.getScriptProperties();
+  const key = 'cache_file_month_' + month;
+  const oldFileId = props.getProperty(key);
+  const fileName = 'dashboard_cache_' + getSheetName(month) + '.json';
+
+  try {
+    if (oldFileId) {
+      DriveApp.getFileById(oldFileId).setContent(json);
+    } else {
+      const file = DriveApp.createFile(fileName, json, MimeType.PLAIN_TEXT);
+      props.setProperty(key, file.getId());
+    }
+
+    props.setProperty('cache_time_month_' + month, String(Date.now()));
+  } catch (err) {
+    const file = DriveApp.createFile(fileName, json, MimeType.PLAIN_TEXT);
+    props.setProperty(key, file.getId());
+    props.setProperty('cache_time_month_' + month, String(Date.now()));
+  }
+}
+
+function getDashboardData(month) {
+  const sheetName = getSheetName(month);
+  const records = [];
+  const logs = [];
+
+  CONFIG.telesales.forEach(t => {
+    try {
+      const ss = SpreadsheetApp.openByUrl(t.url);
+      const sheet = ss.getSheetByName(sheetName);
+
+      if (!sheet) {
+        logs.push({ name: normalizeTelesale(t.name), status: '❌', msg: 'Không có sheet ' + sheetName });
+        return;
+      }
+
+      const lastRow = sheet.getLastRow();
+
+      if (lastRow < 3) {
+        logs.push({ name: normalizeTelesale(t.name), status: '⚠️', msg: 'Chưa có dữ liệu' });
+        return;
+      }
+
+      const rows = sheet.getRange(3, 2, lastRow - 2, 17).getDisplayValues();
+
+      rows.forEach(row => {
+        const item = parseRow(row, t.name, month);
+        if (item) records.push(item);
+      });
+
+      const s = summarizeServer(records.filter(r => r.telesale === normalizeTelesale(t.name)));
+
+      logs.push({
+        name: normalizeTelesale(t.name),
+        status: '✅',
+        msg:
+          `${s.customers} dòng hợp lệ`
+          + ` | Check-in: ${s.checkin}`
+          + ` | Đậu: ${s.pass}`
+          + ` | Rớt: ${s.fail}`
+          + ` | Khách mới: ${s.newCustomer}`
+          + ` | Khách cũ: ${s.oldCustomer}`
+          + ` | Khách cũ PS: ${s.oldCustomerPS}`
+          + ` | DT Khách cũ PS: ${formatNumber(s.oldCustomerPSRevenue)}`
+          + ` | DT: ${formatNumber(s.revenue)}`
+      });
+
+    } catch (err) {
+      logs.push({ name: normalizeTelesale(t.name), status: '❌', msg: String(err) });
+    }
+  });
+
+  // Đọc thêm dữ liệu ĐẶT HẸN từ file tổng DATHEN, vùng A3:J
+  try {
+    const dathen = getDathenRecords(month);
+    records.push.apply(records, dathen.records);
+    logs.push(dathen.log);
+  } catch (err) {
+    logs.push({ name: 'DATHEN', status: '❌', msg: String(err) });
+  }
+
+  return {
+    success: true,
+    cachedAt: new Date().toLocaleString('vi-VN'),
+    sheetName,
+    rawCount: records.length,
+    logs,
+    records
+  };
+}
+
+
+
+function getDathenRecords(month) {
+  const ss = SpreadsheetApp.openByUrl(CONFIG.dathenUrl);
+  const sheet = ss.getSheetByName(CONFIG.dathenSheetName);
+  const records = [];
+
+  if (!sheet) {
+    return { records, log: { name: 'DATHEN', status: '❌', msg: 'Không có sheet DATHEN' } };
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3) {
+    return { records, log: { name: 'DATHEN', status: '⚠️', msg: 'Chưa có dữ liệu' } };
+  }
+
+  // Đọc đúng vùng A3:J. Dùng getValues để giữ Date thật ở cột A,
+  // đồng thời getDisplayValues để các cột text/SĐT không bị mất số 0 đầu.
+  const values = sheet.getRange(3, 1, lastRow - 2, 10).getValues();
+  const displays = sheet.getRange(3, 1, lastRow - 2, 10).getDisplayValues();
+
+  let totalRows = 0;
+  let validDateRows = 0;
+
+  values.forEach((row, idx) => {
+    totalRows++;
+    const displayRow = displays[idx] || [];
+    const item = parseDathenRow(row, displayRow, month);
+    if (getInputDateKey(row[0]) || getInputDateKey(displayRow[0])) validDateRows++;
+    if (item) records.push(item);
+  });
+
+  return {
+    records,
+    log: {
+      name: 'DATHEN',
+      status: '✅',
+      msg: `${records.length} đặt hẹn hợp lệ trong ${getSheetName(month)} | Có ngày: ${validDateRows}/${totalRows} dòng A3:J`
+    }
+  };
+}
+
+function parseDathenRow(row, displayRow, month) {
+  // A ngày nhập liệu | B họ tên | C SĐT | D nguồn | E chi nhánh | F DV chính | G DV chi tiết | H diễn giải | I sale hẹn | J cũ/mới
+  displayRow = displayRow || row;
+
+  const inputDate = row[0] || displayRow[0];
+  const name = displayRow[1] || row[1];
+  const phone = displayRow[2] || row[2];
+
+  if (!name && !phone) return null;
+
+  const dateKey = getInputDateKey(inputDate) || getInputDateKey(displayRow[0]);
+  if (!dateKey) return null;
+
+  // Lọc đúng tháng/năm theo ngày đặt hẹn ở cột A, không dùng ngày check-in.
+  const y = Number(dateKey.slice(0, 4));
+  const m = Number(dateKey.slice(5, 7));
+  if (y !== Number(CONFIG.year) || m !== Number(month)) return null;
+
+  const source = normalizeSource(displayRow[3] || row[3] || 'Chưa rõ');
+  const branch = normalizeBranch(displayRow[4] || row[4] || 'Chưa rõ');
+  const service = normalizeService(displayRow[5] || displayRow[6] || row[5] || row[6] || 'Chưa rõ');
+  const telesale = normalizeTelesale(displayRow[8] || row[8] || 'Chưa rõ');
+  const oldNew = normalizeText(displayRow[9] || row[9]);
+
+  return {
+    type: 'DATHEN',
+    fullName: name,
+    phone: phone,
+    colB: name,
+    colC: phone,
+    colD: displayRow[3] || row[3],
+    colE: displayRow[4] || row[4],
+    colH: displayRow[8] || row[8],
+    appointment: 1,
+    customer: 0,
+    telesale,
+    source,
+    sourceGroup: getSourceGroup(source),
+    branch,
+    branchGroup: getBranchGroup(branch),
+    service,
+    serviceGroup: getServiceGroup(service),
+    ctkm: 'ĐẶT HẸN',
+
+    // Ngày đặt hẹn độc lập với ngày check-in.
+    appointmentDate: dateKey,
+    appointmentMonth: dateKey.slice(0, 7),
+    checkinDate: '',
+    checkinMonth: '',
+    isMonthNote: false,
+
+    checkin: 0,
+    result: 'Đặt hẹn',
+    pass: 0,
+    fail: 0,
+
+    revenue: 0,
+    newRevenue: 0,
+    oldRevenue: 0,
+    oldCustomerPSRevenue: 0,
+    actualRevenue: 0,
+    actualNewRevenue: 0,
+    actualOldRevenue: 0,
+    caTheo: 0,
+    caTheoRevenue: 0,
+    vietKieuRevenue: 0,
+    koMkt: 0,
+
+    // Không cộng vào Khách mới/Khách cũ của check-in để tránh làm sai bảng hiệu suất.
+    appointmentNew: oldNew.includes('MOI') ? 1 : 0,
+    appointmentOld: oldNew.includes('CU') ? 1 : 0,
+    newCustomer: 0,
+    oldCustomer: 0,
+    oldCustomerPS: 0
+  };
+}
+
+function getInputDateKey(value) {
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  return getCheckinDateKey(value);
+}
+
+function isHeaderOrGuideRow(row) {
+  const cName = normalizeText(row[1]);   // Cột C - Họ tên
+  const dPhone = normalizeText(row[2]);  // Cột D - SĐT
+  const eSource = normalizeText(row[3]); // Cột E - Nguồn
+  const fBranch = normalizeText(row[4]); // Cột F - Chi nhánh
+  const gService = normalizeText(row[5]); // Cột G - DVU
+  const hDate = normalizeText(row[6]);   // Cột H - Ngày checkin
+
+  if (!cName && !dPhone && !eSource && !fBranch && !gService && !hDate) return true;
+
+  // Bỏ dòng tiêu đề của sheet cá nhân: HỌ TÊN | SỐ ĐT | NGUỒN | CHI NHÁNH | DVU | NGÀY CHECK IN
+  if (cName.includes('HO TEN') || dPhone.includes('SO DT') || eSource === 'NGUON' || fBranch.includes('CHI NHANH') || gService === 'DVU') return true;
+  if (hDate.includes('NGAY') && hDate.includes('CHECK')) return true;
+
+  // Bỏ các dòng note/hướng dẫn nếu lỡ nằm trong vùng đọc
+  if (cName.includes('MUON NOTE') || dPhone.includes('MUON NOTE') || hDate.includes('NGAY KHACH DEN')) return true;
+
+  return false;
+}
+
+function parseRow(row, telesale, month) {
+  if (isHeaderOrGuideRow(row)) return null;
+
+  const name = row[1];
+  const phone = row[2];
+
+  if (!name && !phone) return null;
+
+  const source = normalizeSource(row[3] || 'Chưa rõ');
+  const branch = normalizeBranch(row[4] || 'Chưa rõ');
+  const service = normalizeService(row[5] || 'Chưa rõ');
+
+  const hValue = row[6];   // Cột H
+  const jValue = row[8];   // Cột J
+  const kValue = row[9];   // Cột K
+  const lValue = row[10];  // Cột L
+  const mValue = row[11];  // Cột M
+  const nValue = row[12];  // Cột N
+  const oValue = row[13];  // Cột O
+  const pValue = row[14] || 'Không có CTKM'; // Cột P
+
+  const revenue = parseRevenueJ(jValue);
+  const hasSpecificDate = isSpecificDateH(hValue);
+  const hasMonthNote = isMonthNoteH(hValue);
+  const isOld = isOldCustomerByColumnO(oValue);
+
+  const checkin = hasSpecificDate ? 1 : 0;
+  const result = getResult(jValue, checkin);
+  const caTheo = isValidCaTheo(lValue) ? 1 : 0;
+  const actualMoney = parseMoney(mValue);
+  const isNewCustomer = hasSpecificDate && !isOld;
+  const isOldCustomer = hasSpecificDate && isOld;
+
+  // Quy tắc nghiệp vụ TDS: Sheet nhân viên tháng m thì toàn bộ doanh thu/checkin thuộc 100% về tháng m của sheet đó
+  let rawDate = getCheckinDateKey(hValue);
+  const targetYM = `${CONFIG.year}-${String(month || new Date().getMonth() + 1).padStart(2, '0')}`;
+  if (rawDate && rawDate.length === 10) {
+    rawDate = `${targetYM}-${rawDate.slice(8, 10)}`;
+  } else {
+    rawDate = `${targetYM}-01`;
+  }
+
+  return {
+    type: 'CHECKIN',
+    fullName: name,
+    phone: phone,
+    colC: name,
+    colD: phone,
+    appointment: 0,
+    customer: 1,
+    telesale: normalizeTelesale(telesale),
+    source,
+    sourceGroup: getSourceGroup(source),
+    branch,
+    branchGroup: getBranchGroup(branch),
+    service,
+    serviceGroup: getServiceGroup(service),
+    ctkm: pValue,
+
+    checkinDate: rawDate,
+    checkinMonth: targetYM,
+    isMonthNote: hasMonthNote,
+
+    checkin,
+    result,
+    pass: result === 'Đậu' ? 1 : 0,
+    fail: result === 'Rớt' ? 1 : 0,
+
+    revenue,
+    newRevenue: isNewCustomer ? revenue : 0,
+    oldRevenue: isOldCustomer ? revenue : 0,
+    oldCustomerPSRevenue: hasMonthNote ? revenue : 0,
+
+    actualRevenue: isNewCustomer || isOldCustomer ? actualMoney : 0,
+    actualNewRevenue: isNewCustomer ? actualMoney : 0,
+    actualOldRevenue: isOldCustomer ? actualMoney : 0,
+
+    caTheo,
+    caTheoRevenue: caTheo ? parseMoney(lValue) : 0,
+
+    nnCustomer: isNguoiNuocNgoai(nValue) ? 1 : 0,
+    nnRevenue: isNguoiNuocNgoai(nValue) ? revenue : 0,
+    vietKieuRevenue: isVietKieu(nValue) ? revenue : 0,
+    koMkt: isKoMkt(kValue) ? 1 : 0,
+
+    newCustomer: isNewCustomer ? 1 : 0,
+    oldCustomer: isOldCustomer ? 1 : 0,
+    oldCustomerPS: hasMonthNote ? 1 : 0
+  };
+}
+
+function summarizeServer(records) {
+  const t = {
+    appointments: 0,
+    customers: 0,
+    checkin: 0,
+    pass: 0,
+    fail: 0,
+    newCustomer: 0,
+    oldCustomer: 0,
+    oldCustomerPS: 0,
+    revenue: 0,
+    newRevenue: 0,
+    oldRevenue: 0,
+    oldCustomerPSRevenue: 0,
+    actualRevenue: 0,
+    actualNewRevenue: 0,
+    actualOldRevenue: 0,
+    vietKieuRevenue: 0,
+    caTheo: 0,
+    koMkt: 0,
+    nnCustomer: 0,
+    nnRevenue: 0
+  };
+
+  records.forEach(r => {
+    t.appointments += Number(r.appointment || 0);
+    t.customers += Number(r.customer || 0);
+    t.checkin += Number(r.checkin || 0);
+    t.pass += Number(r.pass || 0);
+    t.fail += Number(r.fail || 0);
+    t.newCustomer += Number(r.newCustomer || 0);
+    t.oldCustomer += Number(r.oldCustomer || 0);
+    t.oldCustomerPS += Number(r.oldCustomerPS || 0);
+    t.revenue += Number(r.revenue || 0);
+    t.newRevenue += Number(r.newRevenue || 0);
+    t.oldRevenue += Number(r.oldRevenue || 0);
+    t.oldCustomerPSRevenue += Number(r.oldCustomerPSRevenue || 0);
+    t.actualRevenue += Number(r.actualRevenue || 0);
+    t.actualNewRevenue += Number(r.actualNewRevenue || 0);
+    t.actualOldRevenue += Number(r.actualOldRevenue || 0);
+    t.vietKieuRevenue += Number(r.vietKieuRevenue || 0);
+    t.nnCustomer += Number(r.nnCustomer || 0);
+    t.nnRevenue += Number(r.nnRevenue || 0);
+    t.caTheo += Number(r.caTheo || 0);
+    t.koMkt += Number(r.koMkt || 0);
+  });
+
+  return t;
+}
+
+function isOldCustomerByColumnO(value) {
+  const text = normalizeText(value);
+  if (!text) return false;
+
+  return (
+    text === 'OLD' ||
+    text === 'CU' ||
+    text.includes('OLD') ||
+    text.includes('KHACH CU') ||
+    text.includes('KH CU')
+  );
+}
+
+function getCheckinDateKey(value) {
+  const raw = String(value || '').trim();
+  const text = normalizeText(raw);
+
+  if (!raw) return '';
+  if (text.includes('TRONG THANG')) return '';
+
+  const m = raw.match(/(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/);
+  if (!m) return '';
+
+  let d = Number(m[1]);
+  let mo = Number(m[2]);
+  let y = m[3] ? String(m[3]) : String(CONFIG.year);
+
+  if (y.length === 2) y = '20' + y;
+
+  if (mo > 12 && d <= 12) {
+    const temp = d;
+    d = mo;
+    mo = temp;
+  }
+
+  if (mo < 1 || mo > 12) return '';
+  if (d < 1 || d > 31) return '';
+
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function getCheckinMonthKey(value) {
+  const raw = String(value || '').trim();
+  const text = normalizeText(raw);
+
+  if (!raw) return '';
+
+  const note = text.match(/TRONG THANG\s*(\d{1,2})/);
+
+  if (note) {
+    const mo = Number(note[1]);
+    if (mo < 1 || mo > 12) return '';
+    return `${CONFIG.year}-${String(mo).padStart(2, '0')}`;
+  }
+
+  const m = raw.match(/(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/);
+  if (!m) return '';
+
+  let d = Number(m[1]);
+  let mo = Number(m[2]);
+  let y = m[3] ? String(m[3]) : String(CONFIG.year);
+
+  if (y.length === 2) y = '20' + y;
+
+  if (mo > 12 && d <= 12) {
+    const temp = d;
+    d = mo;
+    mo = temp;
+  }
+
+  if (mo < 1 || mo > 12) return '';
+
+  return `${y}-${String(mo).padStart(2, '0')}`;
+}
+
+function isMonthNoteH(value) {
+  const text = normalizeText(value);
+  return /TRONG THANG\s*\d{1,2}/.test(text);
+}
+
+function isSpecificDateH(value) {
+  const text = normalizeText(value);
+  if (!text) return false;
+  if (isMonthNoteH(value)) return false;
+  return /\d{1,2}[\/\-.]\d{1,2}/.test(text);
+}
+
+function normalizeBranch(value) {
+  const text = normalizeText(value);
+
+  if (text.includes('DA LAT')) return 'ĐÀ LẠT';
+  if (text.includes('TAY NINH')) return 'TÂY NINH';
+  if (text.includes('DA NANG')) return 'ĐÀ NẴNG';
+  if (text.includes('QUY NHON')) return 'QUY NHƠN';
+  if (text.includes('BINH PHUOC')) return 'BÌNH PHƯỚC';
+
+  if (text.includes('THU DUC')) return 'THỦ ĐỨC';
+  if (text.includes('BINH CHANH')) return 'BÌNH CHÁNH';
+  if (text.includes('BINH THANH')) return 'BÌNH THẠNH';
+  if (text.includes('GO VAP')) return 'GÒ VẤP';
+  if (text.includes('HOC MON')) return 'HÓC MÔN';
+  if (text.includes('LANDMARK')) return 'LANDMARK';
+  if (text.includes('LBB')) return 'LBB';
+  if (text.includes('QUAN 1')) return 'QUẬN 1';
+  if (text.includes('QUAN 3')) return 'QUẬN 3';
+  if (text.includes('QUAN 7')) return 'QUẬN 7';
+  if (text.includes('TAN BINH')) return 'TÂN BÌNH';
+  if (text.includes('TAN PHU')) return 'TÂN PHÚ';
+  if (text.includes('TEN LUA')) return 'TÊN LỬA';
+  if (text.includes('VINH LOC B')) return 'VĨNH LỘC B';
+
+  if (text.includes('BINH DUONG')) return 'BÌNH DƯƠNG';
+  if (text.includes('DI AN')) return 'DĨ AN';
+  if (text.includes('MINH HOA')) return 'MINH HOÀ';
+
+  if (text.includes('BIEN HOA')) return 'BIÊN HÒA';
+  if (text.includes('GIA KIEM')) return 'GIA KIỆM';
+  if (text.includes('DAI PHUOC')) return 'ĐẠI PHƯỚC';
+
+  if (text.includes('CAN THO 1')) return 'CẦN THƠ 1';
+  if (text.includes('CAN THO 2')) return 'CẦN THƠ 2';
+  if (text.includes('THOT NOT')) return 'THỐT NỐT';
+  if (text.includes('CA MAU')) return 'CÀ MAU';
+  if (text.includes('BAC LIEU')) return 'BẠC LIÊU';
+  if (text.includes('SOC TRANG')) return 'SÓC TRĂNG';
+  if (text.includes('DONG THAP')) return 'ĐỒNG THÁP';
+
+  if (text.includes('VUNG TAU')) return 'VŨNG TÀU';
+  if (text.includes('BA RIA')) return 'BÀ RỊA';
+  if (text.includes('BA CU')) return 'BA CU';
+  if (text.includes('XUYEN MOC')) return 'XUYÊN MỘC';
+  if (text.includes('PHUOC TINH')) return 'PHƯỚC TỈNH';
+
+  return String(value || '').trim().toUpperCase();
+}
+
+function getBranchGroup(value) {
+  const text = normalizeText(normalizeBranch(value));
+
+  const hcm = [
+    'BINH CHANH', 'BINH THANH', 'GO VAP', 'HOC MON', 'LANDMARK',
+    'LBB', 'QUAN 1', 'QUAN 3', 'QUAN 7', 'TAN BINH',
+    'TAN PHU', 'TEN LUA', 'THU DUC', 'VINH LOC B'
+  ];
+
+  const binhDuong = ['BINH DUONG', 'DI AN', 'MINH HOA'];
+  const vungTau = ['VUNG TAU', 'BA CU', 'BA RIA', 'XUYEN MOC', 'PHUOC TINH'];
+  const dongNai = ['BIEN HOA', 'GIA KIEM', 'DAI PHUOC'];
+  const mienTay = ['CAN THO 1', 'CAN THO 2', 'THOT NOT', 'CA MAU', 'BAC LIEU', 'SOC TRANG', 'DONG THAP'];
+
+  if (hcm.some(x => text.includes(x))) return 'HCM';
+  if (binhDuong.some(x => text.includes(x))) return 'BÌNH DƯƠNG';
+  if (vungTau.some(x => text.includes(x))) return 'TP VŨNG TÀU';
+  if (dongNai.some(x => text.includes(x))) return 'ĐỒNG NAI';
+  if (mienTay.some(x => text.includes(x))) return 'MIỀN TÂY';
+
+  return 'CN KHÁC';
+}
+
+function normalizeSource(value) {
+  const text = normalizeText(value);
+
+  if (text === 'FACEBOOK' || text.includes('FACEBOOK')) return 'FACEBOOK';
+  if (text === 'HLFB') return 'HLFB';
+
+  if (text === 'TIKTOK' || text.includes('TIKTOK') || text.includes('TIK TOK')) return 'TIKTOK';
+  if (text === 'HLTT') return 'HLTT';
+
+  if (text === 'WEBSITE') return 'WEBSITE';
+  if (text === 'HLW') return 'HLW';
+  if (text === 'CWEB') return 'CWEB';
+  if (text === 'GG') return 'GG';
+  if (text === 'HLGG') return 'HLGG';
+
+  if (text === 'HOTLINE') return 'HOTLINE';
+  if (text === 'HTK') return 'HTK';
+
+  return String(value || '').trim().toUpperCase();
+}
+
+function getSourceGroup(value) {
+  const text = normalizeText(normalizeSource(value));
+
+  if (text === 'FACEBOOK' || text === 'HLFB' || text.includes('FACEBOOK')) return 'FACEBOOK';
+  if (['WEBSITE', 'HLW', 'CWEB', 'GG', 'HLGG'].includes(text) || text.includes('WEBSITE')) return 'WEBSITE';
+  if (text === 'TIKTOK' || text === 'HLTT' || text.includes('TIKTOK') || text.includes('TIK TOK')) return 'TIKTOK';
+  if (text === 'HOTLINE' || text === 'HTK' || text.includes('HOTLINE')) return 'HOTLINE';
+
+  return 'KHÁC';
+}
+
+function normalizeService(value) {
+  const text = normalizeText(value);
+
+  if (text === 'CN' || text.includes('CHINH NHA') || text.includes('NIENG') || text.includes('INVISALIGN')) return 'CN';
+
+  if (text === 'TRAM') return 'TRÁM';
+  if (text === 'CTUY') return 'CTUY';
+  if (text === 'CVR') return 'CVR';
+  if (text === 'NR') return 'NR';
+  if (text === 'TL') return 'TL';
+  if (text === 'TTR') return 'TTR';
+  if (text === 'HDT') return 'HĐT';
+  if (text === 'GMC') return 'GMC';
+  if (text === 'MXO') return 'MXO';
+  if (text === 'KTQ') return 'KTQ';
+  if (text === 'TQ') return 'TQ';
+
+  if (text === 'IMP' || text.includes('IMPLANT') || text.includes('ALL ON')) return 'IMP';
+  if (text === 'SU' || text.includes('RANG SU') || text.includes('VENEER')) return 'SỨ';
+
+  return String(value || '').trim().toUpperCase();
+}
+
+function getServiceGroup(value) {
+  const text = normalizeText(normalizeService(value));
+
+  if (text === 'CN' || text.includes('CHINH NHA') || text.includes('NIENG') || text.includes('INVISALIGN')) return 'CHỈNH NHA';
+
+  if (text.includes('IMPLANT') || text === 'IMP' || text.includes('ALL ON')) return 'IMPLANT';
+  if (text === 'SU' || text.includes('RANG SU') || text.includes('VENEER')) return 'RĂNG SỨ';
+
+  // Các dịch vụ còn lại như CTUY, TRÁM, CVR, NR, TL, TTR, HĐT, GMC, MXO, KTQ, TQ...
+  // được gom vào nhóm chính TỔNG QUÁT để bộ lọc nhóm dịch vụ chỉ còn 4 nhóm chuẩn.
+  return 'TỔNG QUÁT';
+}
+
+function isRot(value) {
+  const text = normalizeText(value);
+  return text === 'R' || text === 'ROT' || text === 'RỚT';
+}
+
+function isDauValue(value) {
+  const text = normalizeText(value);
+
+  if (!text) return false;
+  if (isRot(text)) return false;
+  if (text === 'THEO') return true;
+  if (text === '0') return true;
+
+  return text.replace(/[^\d]/g, '') !== '';
+}
+
+function getResult(jValue, checkin) {
+  if (!checkin) return 'Chưa có';
+
+  if (isRot(jValue)) return 'Rớt';
+  if (isDauValue(jValue)) return 'Đậu';
+
+  return 'Chưa có';
+}
+
+function parseRevenueJ(value) {
+  const text = normalizeText(value);
+
+  if (!text) return 0;
+  if (isRot(text)) return 0;
+  if (text === 'THEO') return 0;
+  if (text === '0') return 0;
+
+  const number = text.replace(/[^\d]/g, '');
+
+  return number ? Number(number) : 0;
+}
+
+function parseMoney(value) {
+  const text = String(value || '').replace(/[^\d]/g, '');
+  return text ? Number(text) : 0;
+}
+
+function isValidCaTheo(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+
+  return text.replace(/[^\d]/g, '') !== '';
+}
+
+function isNguoiNuocNgoai(value) {
+  const text = normalizeText(value);
+
+  if (!text) return false;
+
+  return (
+    text === 'NN' ||
+    text.includes('NGUOI NUOC NGOAI') ||
+    text.includes('FOREIGN')
+  );
+}
+
+function isVietKieu(value) {
+
+  const text = normalizeText(value);
+
+  if (!text) return false;
+
+  // Người nước ngoài => KHÔNG tính Việt kiều
+  if (
+    text === 'NN' ||
+    text.includes('NGUOI NUOC NGOAI') ||
+    text.includes('FOREIGN')
+  ) {
+    return false;
+  }
+
+  // Việt kiều
+  if (text === 'VK') return true;
+  if (text.includes('VK')) return true;
+  if (text.includes('VIET KIEU')) return true;
+
+  // Danh sách quốc gia
+  const countries = [
+    'MY',
+    'USA',
+    'CANADA',
+    'UC',
+    'ANH',
+    'PHAP',
+    'DUC',
+    'NHAT',
+    'HAN',
+    'HAN QUOC',
+    'DAI LOAN',
+    'SINGAPORE',
+    'UC CHAU',
+    'NEW ZEALAND',
+    'THUY SI',
+    'MALAYSIA'
+  ];
+
+  return countries.some(c => text.includes(c));
+}
+
+function isKoMkt(value) {
+  return String(value || '').trim() === '0';
+}
+
+function getSheetName(month) {
+  return String(month).padStart(2, '0') + '.' + String(CONFIG.year).slice(-2);
+}
+
+function normalizeTelesale(value){
+
+  const t = normalizeText(value);
+
+  if (t === 'CHANG' || t === 'TRANG') {
+    return 'TRANG';
+  }
+
+  if (t === 'LIEU') {
+    return 'LIỂU';
+  }
+
+  if (t === 'TELE' || t === 'TELEVOI') {
+    return 'TELEVOI';
+  }
+
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/Đ/g, 'D')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString('vi-VN');
+}

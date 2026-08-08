@@ -1,0 +1,29 @@
+# Node & Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Databases & Backups
+*.db
+*.db-journal
+*.sqlite
+!prisma/dev.db
+!luoi/cms/cms.db
+!luoi/minicrm/minicrm.db
+!luoi/omni/omni.db
+
+# Environment variables
+.env
+.env*.local
+
+# Logs & System
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db

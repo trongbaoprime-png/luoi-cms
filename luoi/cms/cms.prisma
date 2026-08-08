@@ -1,0 +1,175 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("CMS_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-cms"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String   // Hashed password
+  role        String   @default("EDITOR") // ADMIN, EDITOR, AUTHOR
+  permissions String?  // JSON string containing granular permissions list
+  avatar      String?
+  bio         String?
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  posts       Post[]
+}
+
+model Post {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  summary         String?
+  content         String
+  coverImage      String?
+  status          String    @default("PUBLISHED")
+  isFeatured      Boolean   @default(false)
+  views           Int       @default(0)
+  readTimeMinutes Int       @default(5)
+  seoTitle        String?
+  seoDescription  String?
+  schemaJson      String?
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  authorId        String?
+  author          Author?   @relation(fields: [authorId], references: [id])
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  posts       Post[]
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Author {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  role      String?
+  avatar    String?
+  bio       String?
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model Page {
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  content          String?  // Rich text or HTML content
+  blocks           String?  // JSON string representing layout components (Puck Editor)
+  seoTitle         String?
+  seoDescription   String?
+  isPublished      Boolean  @default(true)
+  useDefaultHeader Boolean  @default(true)
+  useDefaultFooter Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ShortcodeBlock {
+  id         String   @id @default(cuid())
+  name       String   // Tên hiển thị (VD: Vòng Quay May Mắn Banner)
+  key        String   @unique // Mã shortcode (VD: vong-quay-may-man)
+  type       String   // WSPIN (Vòng quay), SLIDESU (Slide răng sứ), FORM (Form đăng ký), POPUP (Popup nhận quà)
+  configJson String   // Cấu hình JSON chứa màu sắc, quà tặng, tiêu đề, danh sách quà, nút bấm...
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Product {
+  id              String    @id @default(cuid())
+  name            String    @default("")
+  title           String    @default("")
+  slug            String    @unique
+  description     String?
+  price           Float?
+  originalPrice   Float?
+  discountPercent Int?      @default(0)
+  image           String?
+  isHotDeal       Boolean   @default(false)
+  affiliateUrl    String?   // Đường dẫn Shopee/Lazada affiliate
+  merchant        String?   // SHOPEE, LAZADA, TIKTOK_SHOP, KHÁC
+  clicks          Int       @default(0)
+  salesCount      Int       @default(0)
+  rating          Float     @default(5.0)
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Deal {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  banner       String?
+  couponCode   String?
+  discountValue String?
+  affiliateUrl String?
+  merchant     String?
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  altText   String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  group     String   @default("GENERAL") // GENERAL, ADS, SEO, INTEGRATION
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClickLog {
+  id        String   @id @default(cuid())
+  targetUrl String
+  userIp    String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    String   @default("NEW") // NEW, READ, REPLIED
+  createdAt DateTime @default(now())
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}

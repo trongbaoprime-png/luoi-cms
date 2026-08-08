@@ -1,0 +1,99 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("OMNI_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-omni"
+}
+
+// 1. Quản lý Danh sách 60 Fanpages (Sheet ALL PAGE)
+model OmniFanpage {
+  id            String   @id @default(cuid())
+  pageId        String   @unique
+  pageName      String
+  accessToken   String?
+  category      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversations OmniConversation[]
+}
+
+// 2. Quản lý Thẻ Pancake.vn (Sheet Thẻ Pancake)
+model OmniPancakeTag {
+  id          String   @id @default(cuid())
+  tagId       String   @unique
+  tagName     String
+  colorHex    String?
+  category    String?
+  createdAt   DateTime @default(now())
+}
+
+// 3. Quản lý Hội thoại Đa Kênh (500.000 Conversions)
+model OmniConversation {
+  id                String   @id @default(cuid())
+  pageId            String
+  fanpage           OmniFanpage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  psid              String
+  igsid             String?
+  customerName      String?
+  phone             String?
+  pancakeCustomerId String?
+  tags              String?  // JSON Array: ["Khách tiềm năng", "Cà Mau"]
+
+  // AI Extracted Intelligence (Kết quả AI Agent bóc tách)
+  detectedBranch    String?  // CÀ MAU, BIÊN HÒA, THỦ ĐỨC, GÒ VẤP...
+  branchStatus      String?  // MENTIONED (Khách hỏi), CONFIRMED (Khách chốt qua)
+  detectedService   String?  // RĂNG SỨ, IMPLANT, NIỀNG RĂNG...
+  subService        String?  // Răng sứ Zirconia, Cấy Implant All-on-4...
+  quotedBudget      Float?   // Ngân sách / Giá đã báo
+  customerIntent    String?  // BÁO_GIÁ, ĐẶT_LỊCH, KHIẾU_NẠI, HỎI_ĐỊA_CHỈ
+  aiConfidence      Float    @default(0)
+  aiAnalyzedAt      DateTime?
+
+  lastMessageAt     DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  messages          OmniMessage[]
+
+  @@unique([pageId, psid])
+  @@index([phone])
+  @@index([detectedBranch])
+  @@index([detectedService])
+  @@index([customerIntent])
+}
+
+// 4. Quản lý Nội dung Chi tiết Tin nhắn
+model OmniMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   OmniConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  mid            String?  @unique
+  senderType     String   // CUSTOMER, PAGE_ADMIN, AI_COPILOT
+  text           String
+  attachments    String?  // JSON Array: Image/Video URLs
+
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([senderType])
+}
+
+// 5. Nhật ký AI Copilot Bóc tách Ý định Khách hàng
+model OmniAIInsight {
+  id             String   @id @default(cuid())
+  conversationId String
+  rawPrompt      String
+  aiResponse     String   // JSON string: { branch, service, intent, summary }
+  tokensUsed     Int      @default(0)
+  modelName      String   @default("gemini-2.5-flash")
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+}

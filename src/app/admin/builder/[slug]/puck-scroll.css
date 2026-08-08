@@ -1,0 +1,48 @@
+/*
+ * puck-scroll.css
+ * Fix scroll và toggle show/hide (collapse/expand) cho panel Puck editor.
+ */
+
+/* ── Khi category được MỞ (isExpanded) — cho phép scroll khi danh sách dài ── */
+[class*="ComponentList--isExpanded"] > [class*="ComponentList-content"] {
+  display: block !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 220px) !important;
+}
+
+/* ── Khi category bị ĐÓNG (collapsed) — ẩn nội dung theo đúng logic của Puck ── */
+[class*="ComponentList"]:not([class*="ComponentList--isExpanded"]) > [class*="ComponentList-content"] {
+  display: none !important;
+}
+
+/* ── Puck left sidebar container ── */
+[class*="PuckLayout-leftSide"],
+[class*="PuckLayout--leftSideBarVisible"] [class*="PuckLayout-leftSide"] {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* ── Tab panels (Blocks / Outline tabs) ── */
+[class*="Puck-sideBar"] [role="tabpanel"],
+[class*="SidebarSection"] {
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+/* ── Scrollbar nhỏ gọn ── */
+[class*="ComponentList-content"]::-webkit-scrollbar,
+[class*="PuckLayout-leftSide"] *::-webkit-scrollbar {
+  width: 4px;
+}
+[class*="ComponentList-content"]::-webkit-scrollbar-track,
+[class*="PuckLayout-leftSide"] *::-webkit-scrollbar-track {
+  background: transparent;
+}
+[class*="ComponentList-content"]::-webkit-scrollbar-thumb,
+[class*="PuckLayout-leftSide"] *::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
