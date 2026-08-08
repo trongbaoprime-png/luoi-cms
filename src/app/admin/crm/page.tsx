@@ -575,19 +575,21 @@ function onEdit(e) {
 
   return (
     <div className="w-full space-y-3 pb-8">
-      {/* Header Banner - Synchronized Brand Guide Teal */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white py-3.5 px-5 rounded-2xl shadow-md border border-[#084540]">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <ShieldCheckIcon className="w-5 h-5 text-[#00c9b7]" />
-            <h1 className="text-lg font-bold font-serif text-[#ffffff]">miniCRM — Quản Lý Khách Hàng</h1>
+      {/* Header Banner - Synchronized Brand Guide Teal (Sleek & Single Line) */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white py-3 px-5 rounded-2xl shadow-md border border-[#084540]">
+        <div className="shrink-0">
+          <div className="flex items-center gap-2">
+            <ShieldCheckIcon className="w-5 h-5 text-[#00c9b7] shrink-0" />
+            <h1 className="text-base sm:text-lg font-bold font-serif text-white tracking-tight whitespace-nowrap">
+              miniCRM — Quản Lý Khách Hàng
+            </h1>
           </div>
-          <p className="text-xs text-[#e6f4f1]/80">
+          <p className="text-[11px] text-[#e6f4f1]/80 mt-0.5 whitespace-nowrap hidden sm:block">
             Đồng bộ quản lý khách hàng, tự động phát Meta CAPI Lead/Contact/Purchase &amp; Telegram alert
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 flex-nowrap">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           {/* Real-time Date Picker Dropdown Button */}
           <div className="relative">
             <button
@@ -691,7 +693,7 @@ function onEdit(e) {
             )}
           </div>
 
-          {/* Dynamic Realtime Sync Google Sheets Buttons (Auto-updates with Current Month) */}
+          {/* Dynamic Realtime Sync Google Sheets Buttons */}
           {(() => {
             const currentM = new Date().getMonth() + 1;
             const p1 = currentM === 1 ? 12 : currentM - 1;
@@ -722,36 +724,6 @@ function onEdit(e) {
               </>
             );
           })()}
-
-          <button
-            onClick={() => {
-              setFormData({
-                fullName: "",
-                phone: "",
-                email: "",
-                source: "META_INSTANT_FORM",
-                telesale: "XUÂN",
-                branch: "Thủ Đức",
-                service: "Chỉnh nha",
-                status: "QUALIFIED",
-                revenue: 0,
-                note: "",
-              });
-              setIsCreateModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#00c9b7] hover:bg-[#00b0a1] text-[#023835] font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono"
-          >
-            <PlusIcon className="w-4 h-4" />
-            <span>Tạo Lead Mới</span>
-          </button>
-
-          <button
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl border border-white/20 shadow-xs transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono"
-          >
-            <DownloadIcon className="w-4 h-4 text-[#00c9b7]" />
-            <span>Xuất CSV</span>
-          </button>
         </div>
       </div>
 
