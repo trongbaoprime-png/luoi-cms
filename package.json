@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/cms.prisma && prisma generate --schema=prisma/crm.prisma && prisma generate --schema=prisma/omnichannel.prisma && prisma generate --schema=prisma/crm.sqlite.prisma && prisma generate --schema=prisma/omnichannel.sqlite.prisma",
-    "prisma:generate": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/cms.prisma && prisma generate --schema=prisma/crm.prisma && prisma generate --schema=prisma/omnichannel.prisma && prisma generate --schema=prisma/crm.sqlite.prisma && prisma generate --schema=prisma/omnichannel.sqlite.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/cms.prisma && prisma generate --schema=prisma/crm.sqlite.prisma && prisma generate --schema=prisma/omnichannel.sqlite.prisma && prisma generate --schema=prisma/crm-postgres.prisma && prisma generate --schema=prisma/omni-postgres.prisma",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/cms.prisma && prisma generate --schema=prisma/crm.sqlite.prisma && prisma generate --schema=prisma/omnichannel.sqlite.prisma && prisma generate --schema=prisma/crm-postgres.prisma && prisma generate --schema=prisma/omni-postgres.prisma",
     "build": "npm run prisma:generate && next build",
     "start": "next start",
     "lint": "eslint",
