@@ -8,7 +8,9 @@ const globalForCMS = globalThis as unknown as {
 function getCmsDatabaseUrl() {
   const envUrl = process.env.CMS_DATABASE_URL;
   if (envUrl && envUrl.startsWith("file:")) {
-    return envUrl;
+    const relPath = envUrl.replace(/^file:/, "");
+    const absPath = path.resolve(process.cwd(), relPath);
+    return `file:${absPath}`;
   }
   const absoluteDbPath = path.resolve(process.cwd(), "prisma", "luoi-cms.db");
   return `file:${absoluteDbPath}`;

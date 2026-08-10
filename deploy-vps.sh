@@ -24,6 +24,11 @@ npx prisma generate --schema=prisma/omnichannel.sqlite.prisma || true
 npx prisma generate --schema=prisma/crm-postgres.prisma || true
 npx prisma generate --schema=prisma/omni-postgres.prisma || true
 
+echo "  -> Pushing schema & đảm bảo bộ nhớ SQLite luoi-cms.db sẵn sàng..."
+npx prisma db push --schema=prisma/cms.prisma --accept-data-loss || true
+chmod 666 prisma/*.db || true
+chmod 777 prisma/ || true
+
 echo "  -> Pushing schema & tạo tự động CSDL PostgreSQL luoi_crm..."
 npx prisma db push --schema=prisma/crm-postgres.prisma --accept-data-loss || true
 
