@@ -1,18 +1,18 @@
 # ==============================================================================
-# LƯỜI CMS - LOCAL POSTGRESQL ENVIRONMENT & MIGRATION SCRIPT
-# Chạy trong PowerShell: .\setup-postgres-local.ps1
+# LUOI CMS - LOCAL POSTGRESQL ENVIRONMENT & MIGRATION SCRIPT
+# Run in PowerShell: .\setup-postgres-local.ps1 -User "postgres" -Password "luoicms"
 # ==============================================================================
 
 param(
-  [string]$User = "postgres",
-  [string]$Password = ""
+    [string]$User = "postgres",
+    [string]$Password = ""
 )
 
 if (-not $Password) {
-  $Password = Read-Host -Prompt "🔑 Nhập mật khẩu tài khoản PostgreSQL Localhost ($User)"
+    $Password = Read-Host -Prompt "Nhap mat khau PostgreSQL Localhost ($User)"
 }
 
-Write-Host "🚀 [1/4] Cập nhật chuỗi kết nối PostgreSQL Localhost vào file .env..." -ForegroundColor Green
+Write-Host "[1/4] Cap nhat chuoi ket noi PostgreSQL Localhost vao file .env..." -ForegroundColor Green
 
 $pgUrlCrm = "postgresql://${User}:${Password}@127.0.0.1:5432/luoi_crm?schema=public"
 $pgUrlOmni = "postgresql://${User}:${Password}@127.0.0.1:5432/luoi_omni?schema=public"
@@ -25,20 +25,20 @@ $envContent += "CRM_POSTGRES_URL=`"$pgUrlCrm`""
 $envContent += "OMNI_POSTGRES_URL=`"$pgUrlOmni`""
 $envContent | Set-Content .env
 
-Write-Host "🔨 [2/4] Generate toàn bộ Prisma Clients..." -ForegroundColor Green
+Write-Host "[2/4] Generate toan bo Prisma Clients..." -ForegroundColor Green
 npx prisma generate --schema=prisma/crm.sqlite.prisma
 npx prisma generate --schema=prisma/omnichannel.sqlite.prisma
 npx prisma generate --schema=prisma/crm-postgres.prisma
 npx prisma generate --schema=prisma/omni-postgres.prisma
 
-Write-Host "📦 [3/4] Tạo cấu trúc Bảng trên Local PostgreSQL..." -ForegroundColor Green
+Write-Host "[3/4] Tao cau truc Bang tren Local PostgreSQL..." -ForegroundColor Green
 $env:CRM_POSTGRES_URL = $pgUrlCrm
 $env:OMNI_POSTGRES_URL = $pgUrlOmni
 npx prisma db push --schema=prisma/crm-postgres.prisma --accept-data-loss
 npx prisma db push --schema=prisma/omni-postgres.prisma --accept-data-loss
 
-Write-Host "🚀 [4/4] Nạp dữ liệu 48.156 Leads từ minicrm.db sang Local PostgreSQL..." -ForegroundColor Green
+Write-Host "[4/4] Nap du lieu 48.156 Leads tu minicrm.db sang Local PostgreSQL..." -ForegroundColor Green
 npx tsx scripts/migrate-sqlite-to-postgres.ts
 
 Write-Host "==============================================================================" -ForegroundColor Green
-Write-Host "🎉 HOÀN TẤT CHUẨN HÓA MÔI TRƯỜNG POSTGRESQL TRÊN LOCALHOST!" -ForegroundColor Green
+Write-Host "HOAN TAT CHUAN HOA MOI TRUONG POSTGRESQL TREN LOCALHOST!" -ForegroundColor Green
