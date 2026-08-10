@@ -27,6 +27,15 @@ async function main() {
 
   console.log("✅ Đã xác nhận kết nối PostgreSQL CRM & Omnichannel.");
 
+  // Tự động tạo CSDL luoi_crm và luoi_omni trên PostgreSQL nếu chưa có
+  const { execSync } = require("child_process");
+  try {
+    console.log("🔨 Đang tự động kiểm tra & khởi tạo CSDL PostgreSQL trên VPS...");
+    execSync("npx prisma db push --schema=prisma/crm-postgres.prisma --accept-data-loss", { stdio: "ignore", env: process.env });
+    execSync("npx prisma db push --schema=prisma/omni-postgres.prisma --accept-data-loss", { stdio: "ignore", env: process.env });
+    console.log("✅ CSDL PostgreSQL luoi_crm & luoi_omni đã sẵn sàng!");
+  } catch {}
+
   // Khởi tạo Client với đường dẫn tuyệt đối tới minicrm.db
   const path = require("path");
   const sqliteCrmPath = path.resolve(process.cwd(), "prisma/minicrm.db");
