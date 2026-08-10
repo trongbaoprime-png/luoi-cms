@@ -156,26 +156,37 @@ export async function GET(req: Request) {
         take: pageSize,
         skip: (page - 1) * pageSize,
       }),
-      crmDb.cRMLead.count({
-        where: { ...where, status: { in: ["QUALIFIED", "SCHEDULED"] } },
-      }),
+      // qualifiedCount: Chỉ đếm leads đã đạt trạng thái thực sự qualified trở lên
       crmDb.cRMLead.count({
         where: {
           ...where,
-          OR: [{ status: "CHECKIN" }, { status: "PURCHASE" }, { checkinDate: { not: "" } }],
+          status: { in: ["QUALIFIED", "SCHEDULED", "CHECKIN", "PURCHASE"] },
         },
       }),
+      // checkinCount: Chỉ đếm leads đã thực sự checkin hoặc mua hàng
       crmDb.cRMLead.count({
         where: {
           ...where,
-          OR: [{ status: "PURCHASE" }, { result: "Đậu" }],
+          status: { in: ["CHECKIN", "PURCHASE"] },
         },
       }),
+      // passCount: Chỉ đếm leads đã đậu (mua hàng thực sự)
+      crmDb.cRMLead.count({
+        where: {
+          ...where,
+          status: "PURCHASE",
+        },
+      }),
+      // failCount: Chỉ đếm leads kết quả Rớt
       crmDb.cRMLead.count({
         where: { ...where, result: "Rớt" },
       }),
+      // purchaseCount: Đếm PURCHASE (giống passCount, giữ để tương thích KPI)
       crmDb.cRMLead.count({
-        where: { ...where, status: "PURCHASE" },
+        where: {
+          ...where,
+          status: "PURCHASE",
+        },
       }),
       crmDb.cRMLead.aggregate({
         where,
