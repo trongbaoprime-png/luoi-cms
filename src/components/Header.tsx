@@ -39,6 +39,7 @@ interface HeaderSettingsState {
   logoPosDesktop: "left" | "center" | "right";
   logoPosMobile: "left" | "center" | "right";
   menuPosDesktop: "left" | "center" | "right";
+  menuStyle: "pill" | "underline";
   logoHeightDesktop: number;
   logoHeightMobile: number;
   ctaButtons: HeaderCtaButtonConfig[];
@@ -57,6 +58,7 @@ const DEFAULT_SETTINGS: HeaderSettingsState = {
   logoPosDesktop: "left",
   logoPosMobile: "left",
   menuPosDesktop: "right",
+  menuStyle: "pill",
   logoHeightDesktop: 40,
   logoHeightMobile: 32,
   ctaButtons: [],
@@ -145,6 +147,7 @@ export default function Header() {
         logoPosDesktop: (d.logo_pos_desktop as any) || "left",
         logoPosMobile: (d.logo_pos_mobile as any) || "left",
         menuPosDesktop: (d.menu_pos_desktop as any) || "right",
+        menuStyle: (d.menu_style as any) || "pill",
         logoHeightDesktop: Number(d.logo_height_desktop) || 40,
         logoHeightMobile: Number(d.logo_height_mobile) || 32,
         ctaButtons,
@@ -186,6 +189,7 @@ export default function Header() {
     logoPosDesktop,
     logoPosMobile,
     menuPosDesktop,
+    menuStyle,
     logoHeightDesktop,
     logoHeightMobile,
     ctaButtons,
@@ -282,10 +286,12 @@ export default function Header() {
                 return (
                   <Link
                     key={item.id}
-                    className={`relative px-3.5 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all duration-200 ease-in-out ${
+                    className={`relative px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-all duration-200 ease-in-out ${
                       isActive
-                        ? "text-[#0d4f4a] bg-[#0d4f4a]/10 font-black shadow-2xs"
-                        : "text-stone-700 hover:text-[#0d4f4a] hover:bg-stone-100/80"
+                        ? menuStyle === "underline"
+                          ? "text-[#0d4f4a] font-black border-b-2 border-[#0d4f4a] bg-transparent rounded-none"
+                          : "text-[#0d4f4a] bg-[#0d4f4a]/10 font-black rounded-xl shadow-2xs"
+                        : "text-stone-700 hover:text-[#0d4f4a] hover:bg-stone-100/80 rounded-xl"
                     }`}
                     href={item.url}
                   >

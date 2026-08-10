@@ -1150,7 +1150,38 @@ export function PromotionalSliderBlock({
     setTimeout(() => setCopiedVoucher(null), 2000);
   };
 
-  // Auto-play interval for Coverflow / Voucher Swiper (every 4 seconds)
+  // Touch Swipe Gesture Handling for Mobile Devices
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null || touchStartY === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+
+    // Trigger horizontal slide transition if horizontal drag > vertical drag and > 25px
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 25) {
+      if (diffX > 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+    }
+
+    setTouchStartX(null);
+    setTouchStartY(null);
+  };
+
+  // Auto-play interval for Coverflow / Voucher Swiper (every 4.5 seconds)
   useEffect(() => {
     if (layout === "COVERFLOW" || layout === "VOUCHER_SWIPER") {
       const timer = setInterval(() => {
@@ -1175,7 +1206,12 @@ export function PromotionalSliderBlock({
       {/* ------------------------------------------------------------- */}
       {layout === "CARD_GRID" && (
         <div className="space-y-6">
-          <div className="relative overflow-visible px-1">
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            style={{ touchAction: "pan-y" }}
+            className="relative overflow-visible px-1"
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 transition-all duration-500">
               {slides.map((slide, idx) => {
                 const isCurrent = idx === activeIdx;
@@ -1251,7 +1287,12 @@ export function PromotionalSliderBlock({
       {/* LAYOUT 2 & 4: SWIPER 3D COVERFLOW VOUCHER SLIDER */}
       {/* ------------------------------------------------------------- */}
       {(layout === "COVERFLOW" || layout === "VOUCHER_SWIPER") && (
-        <div className="voucher-swiper-section relative py-4 px-2 md:px-6 select-none overflow-visible group">
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{ touchAction: "pan-y" }}
+          className="voucher-swiper-section relative py-4 px-2 md:px-6 select-none overflow-visible group"
+        >
           <div className="swiper elementor-main-swiper swiper-coverflow swiper-3d swiper-initialized swiper-horizontal swiper-watch-progress w-full max-w-6xl mx-auto relative">
             {/* Hover Floating Navigation Arrows (Far outer left and right edges, centered vertically, hidden by default, visible on hover) */}
             <button

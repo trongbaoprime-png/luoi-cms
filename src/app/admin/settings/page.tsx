@@ -21,7 +21,8 @@ export default function AdminSettingsPage() {
   const [logoHeightMobile, setLogoHeightMobile] = useState(32);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
-  // Menu Font & Color States
+  // Menu Font & Style States
+  const [menuStyle, setMenuStyle] = useState<"pill" | "underline">("pill");
   const [menuFont, setMenuFont] = useState<"default" | "sans" | "serif" | "mono">("default");
   const [menuColorText, setMenuColorText] = useState("#44403c");
   const [menuColorHover, setMenuColorHover] = useState("#0d4f4a");
@@ -88,7 +89,8 @@ export default function AdminSettingsPage() {
         if (setRes.data.logo_height_desktop) setLogoHeightDesktop(Number(setRes.data.logo_height_desktop));
         if (setRes.data.logo_height_mobile) setLogoHeightMobile(Number(setRes.data.logo_height_mobile));
 
-        // Menu font & color settings
+        // Menu font & style settings
+        if (setRes.data.menu_style) setMenuStyle(setRes.data.menu_style as any);
         if (setRes.data.menu_font) setMenuFont(setRes.data.menu_font as any);
         if (setRes.data.menu_color_text) setMenuColorText(setRes.data.menu_color_text);
         if (setRes.data.menu_color_hover) setMenuColorHover(setRes.data.menu_color_hover);
@@ -138,6 +140,7 @@ export default function AdminSettingsPage() {
           menu_pos_desktop: menuPosDesktop,
           logo_height_desktop: String(logoHeightDesktop),
           logo_height_mobile: String(logoHeightMobile),
+          menu_style: menuStyle,
           menu_font: menuFont,
           menu_color_text: menuColorText,
           menu_color_hover: menuColorHover,
@@ -466,6 +469,52 @@ export default function AdminSettingsPage() {
                     }`}
                   >
                     <span>Phải (Right)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* USER REQUIREMENT: Menu Active Display Style Switcher (Bo tròn Pill vs Gạch chân Underline) */}
+              <div className="space-y-2 pt-2 border-t border-stone-200">
+                <label className="font-bold text-stone-800 flex items-center gap-1.5">
+                  <Layout size={15} className="text-[#0d4f4a]" />
+                  <span>Kiểu hiển thị Tab/Menu Active (Hình 1 &amp; Hình 2):</span>
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMenuStyle("pill")}
+                    className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                      menuStyle === "pill"
+                        ? "border-[#0d4f4a] bg-[#0d4f4a]/5 ring-2 ring-[#0d4f4a] shadow-xs"
+                        : "bg-white border-stone-200 hover:border-stone-300"
+                    }`}
+                  >
+                    <div className="px-2.5 py-1 rounded-xl bg-[#0d4f4a]/10 text-[#0d4f4a] font-bold text-xs shrink-0">
+                      Bo tròn
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-stone-900">1. Bo Tròn (Pill)</div>
+                      <div className="text-[10px] text-stone-500 font-sans">Nền mờ bo tròn xung quanh tab</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMenuStyle("underline")}
+                    className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                      menuStyle === "underline"
+                        ? "border-[#0d4f4a] bg-[#0d4f4a]/5 ring-2 ring-[#0d4f4a] shadow-xs"
+                        : "bg-white border-stone-200 hover:border-stone-300"
+                    }`}
+                  >
+                    <div className="px-2.5 py-1 text-[#0d4f4a] font-bold text-xs border-b-2 border-[#0d4f4a] shrink-0">
+                      Gạch chân
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-stone-900">2. Gạch Chân (Underline)</div>
+                      <div className="text-[10px] text-stone-500 font-sans">Thanh gạch chân đậm chuẩn Minimal</div>
+                    </div>
                   </button>
                 </div>
               </div>
