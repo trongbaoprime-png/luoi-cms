@@ -16,18 +16,23 @@ npm install --production=false
 echo "🗄️ [3/6] Generate & Push Prisma Schemas (Core, CMS, CRM, Omnichannel)..."
 npx prisma generate --schema=prisma/schema.prisma || true
 npx prisma generate --schema=prisma/cms.prisma || true
-npx prisma generate --schema=prisma/crm.prisma || true
-npx prisma generate --schema=prisma/omnichannel.prisma || true
+npx prisma generate --schema=prisma/crm.sqlite.prisma || true
+npx prisma generate --schema=prisma/omnichannel.sqlite.prisma || true
+npx prisma generate --schema=prisma/crm-postgres.prisma || true
+npx prisma generate --schema=prisma/omni-postgres.prisma || true
 
 if [ -n "$CRM_DATABASE_URL" ] && [[ "$CRM_DATABASE_URL" == postgresql* ]]; then
     echo "  -> Pushing PostgreSQL schema for MiniCRM..."
-    npx prisma db push --schema=prisma/crm.prisma --skip-generate || true
+    npx prisma db push --schema=prisma/crm-postgres.prisma --accept-data-loss || true
 fi
 
 if [ -n "$OMNI_DATABASE_URL" ] && [[ "$OMNI_DATABASE_URL" == postgresql* ]]; then
     echo "  -> Pushing PostgreSQL schema for Omnichannel..."
-    npx prisma db push --schema=prisma/omnichannel.prisma --skip-generate || true
+    npx prisma db push --schema=prisma/omni-postgres.prisma --accept-data-loss || true
 fi
+
+echo "🚀 Đồng bộ 48.156 Leads từ SQLite sang PostgreSQL trên VPS..."
+npx tsx scripts/migrate-sqlite-to-postgres.ts || true
 
 echo "🔨 [4/6] Đóng gói Production Build Next.js..."
 npm run build
