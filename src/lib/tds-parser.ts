@@ -361,6 +361,8 @@ export function isNguoiNuocNgoai(value: any): boolean {
   if (!text) return false;
   return (
     text === 'NN' ||
+    text === 'VN' ||
+    text.includes('NN') ||
     text.includes('NGUOI NUOC NGOAI') ||
     text.includes('FOREIGN')
   );

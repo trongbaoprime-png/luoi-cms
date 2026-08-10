@@ -181,8 +181,42 @@ export async function GET(req: Request) {
       crmDb.cRMLead.aggregate({ where: { ...where, isOldCustomer: true, actualRevenue: { gt: 0 } }, _sum: { actualRevenue: true }, _count: { id: true } }),
       // Old Customer PS & Special Segments
       crmDb.cRMLead.aggregate({ where: { ...where, isMonthNote: true }, _sum: { revenue: true }, _count: { id: true } }),
-      crmDb.cRMLead.aggregate({ where: { ...where, isVietKieu: true }, _sum: { revenue: true }, _count: { id: true } }),
-      crmDb.cRMLead.aggregate({ where: { ...where, isNN: true }, _sum: { revenue: true }, _count: { id: true } }),
+      crmDb.cRMLead.aggregate({
+        where: {
+          ...where,
+          OR: [
+            { isVietKieu: true },
+            { phone: { startsWith: "+" } },
+            { note: { contains: "VK" } },
+            { note: { contains: "VIỆT KIỀU" } },
+            { note: { contains: "VIET KIEU" } },
+            { note: { contains: "MỸ" } },
+            { note: { contains: "ÚC" } },
+            { note: { contains: "ĐỨC" } },
+            { note: { contains: "PHÁP" } },
+            { note: { contains: "NHẬT" } },
+            { note: { contains: "HÀN" } },
+            { note: { contains: "CANADA" } },
+            { note: { contains: "ĐÀI LOAN" } },
+            { note: { contains: "SINGAPORE" } },
+          ],
+        },
+        _sum: { revenue: true },
+        _count: { id: true },
+      }),
+      crmDb.cRMLead.aggregate({
+        where: {
+          ...where,
+          OR: [
+            { isNN: true },
+            { note: { contains: "NN" } },
+            { note: { contains: "FOREIGN" } },
+            { note: { contains: "NGƯỜI NƯỚC NGOÀI" } },
+          ],
+        },
+        _sum: { revenue: true },
+        _count: { id: true },
+      }),
       crmDb.cRMLead.aggregate({ where: { ...where, isKoMkt: true }, _sum: { revenue: true }, _count: { id: true } }),
       crmDb.cRMLead.count({ where: { ...where, caTheoRevenue: { gt: 0 } } }),
     ]);
