@@ -12,21 +12,21 @@ export async function GET(req: Request) {
     const totalConversations = await omniDb.omniConversation.count();
 
     // Group count by detectedBranch
-    const branchStats = await omniDb.omniConversation.groupBy({
+    const branchStats = await (omniDb.omniConversation as any).groupBy({
       by: ["detectedBranch"],
       _count: { _all: true },
       orderBy: { _count: { detectedBranch: "desc" } },
     });
 
     // Group count by detectedService
-    const serviceStats = await omniDb.omniConversation.groupBy({
+    const serviceStats = await (omniDb.omniConversation as any).groupBy({
       by: ["detectedService"],
       _count: { _all: true },
       orderBy: { _count: { detectedService: "desc" } },
     });
 
     // Group count by customerIntent
-    const intentStats = await omniDb.omniConversation.groupBy({
+    const intentStats = await (omniDb.omniConversation as any).groupBy({
       by: ["customerIntent"],
       _count: { _all: true },
       orderBy: { _count: { customerIntent: "desc" } },

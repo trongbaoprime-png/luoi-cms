@@ -1,5 +1,5 @@
 import path from "path";
-import { PrismaClient as OmniPrismaClientSQLite } from "@prisma/client-omni";
+import { PrismaClient as OmniPrismaClientSQLite } from "@prisma/client-omni-sqlite";
 import { PrismaClient as OmniPrismaClientPG } from "@prisma/client-omni-pg";
 
 const globalForOmni = globalThis as unknown as {

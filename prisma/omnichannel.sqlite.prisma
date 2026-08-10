@@ -8,7 +8,7 @@ generator client {
   output   = "../node_modules/@prisma/client-omni-sqlite"
 }
 
-// 1. Quản lý Danh sách 60 Fanpages (Sheet ALL PAGE)
+// 1. Quản lý Danh sách 60 Fanpages (PostgreSQL Foundation)
 model OmniFanpage {
   id            String   @id @default(cuid())
   pageId        String   @unique
@@ -22,76 +22,67 @@ model OmniFanpage {
   conversations OmniConversation[]
 }
 
-// 2. Quản lý Thẻ Pancake.vn (Sheet Thẻ Pancake)
+// 2. Quản lý Thẻ Pancake.vn
 model OmniPancakeTag {
-  id        String   @id @default(cuid())
-  tagId     String   @unique
-  tagName   String
-  color     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tagId       String   @unique
+  tagName     String
+  colorHex    String?
+  category    String?
+  createdAt   DateTime @default(now())
 }
 
-// 3. Quản lý Khách hàng Đa kênh (Pancake / Meta / Zalo)
-model OmniCustomer {
-  id            String   @id @default(cuid())
-  psid          String   @unique // Page-Scoped ID từ Meta/Zalo
-  name          String
-  phone         String?
-  email         String?
-  avatar        String?
-  tags          String?  // JSON string các tagId (ví dụ: ["tag_1", "tag_2"])
-  totalSpent    Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  conversations OmniConversation[]
-}
-
-// 4. Quản lý Cuộc hội thoại (Inbox / Comment)
+// 3. Quản lý Hội thoại Đa Kênh
 model OmniConversation {
-  id             String   @id @default(cuid())
-  pageId         String
-  customerId     String
-  snippet        String?  // Tin nhắn cuối cùng
-  unreadCount    Int      @default(0)
-  assignedAgent  String?  // Telesale / Staff phụ trách
-  lastMessageAt  DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default(cuid())
+  pageId            String
+  fanpage           OmniFanpage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
 
-  fanpage        OmniFanpage  @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
-  customer       OmniCustomer @relation(fields: [customerId], references: [psid], onDelete: Cascade)
-  messages       OmniMessage[]
+  psid              String
+  igsid             String?
+  customerName      String?
+  phone             String?
+  pancakeCustomerId String?
+  tags              String?  // JSON Array
 
+  // AI Extracted Intelligence
+  detectedBranch    String?
+  branchStatus      String?
+  detectedService   String?
+  subService        String?
+  quotedBudget      Float?
+  customerIntent    String?
+  aiConfidence      Float    @default(0)
+  aiAnalyzedAt      DateTime?
+
+  lastMessageAt     DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  messages          OmniMessage[]
+
+  @@index([psid])
   @@index([pageId])
-  @@index([customerId])
-  @@index([lastMessageAt])
+  @@index([phone])
+  @@index([detectedBranch])
+  @@index([detectedService])
+  @@index([customerIntent])
 }
 
-// 5. Quản lý Chi tiết Tin nhắn
+// 4. Lịch sử Tin nhắn chi tiết
 model OmniMessage {
-  id             String   @id @default(cuid())
+  id              String           @id @default(cuid())
   conversationId String
-  mid            String   @unique // Message ID từ Platform
-  senderId       String
-  senderType     String   @default("CUSTOMER") // CUSTOMER, PAGE, AGENT, BOT
-  text           String?
-  attachments    String?  // JSON string danh sách URL ảnh/file
-  createdAt      DateTime @default(now())
-
   conversation   OmniConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
-  @@index([createdAt])
-}
+  senderType      String           // "CUSTOMER", "STAFF", "AI_BOT"
+  senderId        String?
+  text            String
+  mid             String?
 
-// 6. Báo cáo Tổng hợp Đa kênh
-model OmniReport {
-  id            String   @id @default(cuid())
-  date          String   @unique // YYYY-MM-DD
-  totalLeads    Int      @default(0)
-  totalMessages Int      @default(0)
-  revenue       Float    @default(0)
-  createdAt     DateTime @default(now())
+  createdAt       DateTime         @default(now())
+
+  @@index([conversationId])
+  @@index([senderType])
+  @@index([createdAt])
 }

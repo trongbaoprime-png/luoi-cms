@@ -1,5 +1,5 @@
 import path from "path";
-import { PrismaClient as CRMPrismaClientSQLite } from "@prisma/client-crm";
+import { PrismaClient as CRMPrismaClientSQLite } from "@prisma/client-crm-sqlite";
 import { PrismaClient as CRMPrismaClientPG } from "@prisma/client-crm-pg";
 
 const globalForCRM = globalThis as unknown as {

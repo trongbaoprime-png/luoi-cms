@@ -56,13 +56,15 @@ model CRMLead {
 }
 
 model CRMStatusHistory {
-  id        String   @id @default(cuid())
-  leadId    String
-  oldStatus String?
-  newStatus String
-  changedBy String?  @default("SYSTEM")
-  note      String?
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  leadId         String
+  oldStatus      String?
+  previousStatus String?
+  newStatus      String
+  changedBy      String?  @default("SYSTEM")
+  updatedBy      String?  @default("SYSTEM")
+  note           String?
+  createdAt      DateTime @default(now())
 
   lead CRMLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
