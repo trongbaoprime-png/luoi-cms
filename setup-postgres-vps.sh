@@ -43,6 +43,8 @@ npx prisma generate --schema=prisma/schema.prisma
 npx prisma generate --schema=prisma/cms.prisma
 npx prisma generate --schema=prisma/crm.prisma
 npx prisma generate --schema=prisma/omnichannel.prisma
+npx prisma generate --schema=prisma/crm.sqlite.prisma
+npx prisma generate --schema=prisma/omnichannel.sqlite.prisma
 
 npx prisma db push --schema=prisma/crm.prisma --accept-data-loss
 npx prisma db push --schema=prisma/omnichannel.prisma --accept-data-loss

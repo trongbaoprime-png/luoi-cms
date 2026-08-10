@@ -1,5 +1,5 @@
-import { PrismaClient as SQLiteCRMClient } from "@prisma/client-crm";
-import { PrismaClient as SQLiteOmniClient } from "@prisma/client-omni";
+import { PrismaClient as SQLiteCRMClient } from "@prisma/client-crm-sqlite";
+import { PrismaClient as SQLiteOmniClient } from "@prisma/client-omni-sqlite";
 import { PrismaClient as PostgresCRMClient } from "@prisma/client-crm";
 import { PrismaClient as PostgresOmniClient } from "@prisma/client-omni";
 

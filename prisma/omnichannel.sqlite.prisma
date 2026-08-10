@@ -5,7 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/@prisma/client-omni"
+  output   = "../node_modules/@prisma/client-omni-sqlite"
 }
 
 // 1. Quản lý Danh sách 60 Fanpages (Sheet ALL PAGE)
