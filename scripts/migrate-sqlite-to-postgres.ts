@@ -1,7 +1,7 @@
 import { PrismaClient as SQLiteCRMClient } from "@prisma/client-crm-sqlite";
 import { PrismaClient as SQLiteOmniClient } from "@prisma/client-omni-sqlite";
-import { PrismaClient as PostgresCRMClient } from "@prisma/client-crm";
-import { PrismaClient as PostgresOmniClient } from "@prisma/client-omni";
+import { PrismaClient as PostgresCRMClient } from "@prisma/client-crm-pg";
+import { PrismaClient as PostgresOmniClient } from "@prisma/client-omni-pg";
 
 /**
  * SCRIPT CHUYỂN ĐỔI TOÀN BỘ DỮ LIỆU TỪ SQLITE SANG POSTGRESQL TRÊN VPS
