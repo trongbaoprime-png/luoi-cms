@@ -1,29 +1,39 @@
 import path from "path";
-import { PrismaClient as CRMPrismaClient } from "@prisma/client-crm";
+import { PrismaClient as CRMPrismaClientSQLite } from "@prisma/client-crm";
+import { PrismaClient as CRMPrismaClientPG } from "@prisma/client-crm-pg";
 
 const globalForCRM = globalThis as unknown as {
-  crmDb: CRMPrismaClient | undefined;
+  crmDb: CRMPrismaClientSQLite | undefined;
 };
 
-function getCrmDatabaseUrl() {
-  const envUrl = process.env.CRM_DATABASE_URL;
-  if (envUrl && envUrl.startsWith("file:")) {
-    return envUrl;
-  }
-  const absoluteDbPath = path.resolve(process.cwd(), "prisma", "minicrm.db");
-  return `file:${absoluteDbPath}`;
-}
+function createCrmClient() {
+  const envUrl = process.env.CRM_DATABASE_URL || process.env.CRM_POSTGRES_URL;
 
-export const crmDb =
-  globalForCRM.crmDb ??
-  new CRMPrismaClient({
+  if (envUrl && envUrl.startsWith("postgresql://")) {
+    return new CRMPrismaClientPG({
+      datasources: {
+        db: {
+          url: envUrl,
+        },
+      },
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    }) as unknown as CRMPrismaClientSQLite;
+  }
+
+  const absoluteDbPath = path.resolve(process.cwd(), "prisma", "minicrm.db");
+  const sqliteUrl = envUrl && envUrl.startsWith("file:") ? envUrl : `file:${absoluteDbPath}`;
+
+  return new CRMPrismaClientSQLite({
     datasources: {
       db: {
-        url: getCrmDatabaseUrl(),
+        url: sqliteUrl,
       },
     },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+}
+
+export const crmDb = globalForCRM.crmDb ?? createCrmClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForCRM.crmDb = crmDb;
