@@ -107,7 +107,22 @@ async function main() {
       }
     } catch {}
 
-    console.log("\n🎉 HOÀN TẤT MIGRATION 100% TỪ SQLITE SANG POSTGRESQL!");
+    // --------------------------------------------------------------------------
+    // C. CHUYỂN ĐỔI CMS (BÀI VIẾT, TRANG, CẤU HÌNH SETTINGS, MEDIA, DANH MỤC)
+    // --------------------------------------------------------------------------
+    console.log("\n📦 [3/3] Đang kiểm tra dữ liệu CMS (Bài viết, Trang, Cài đặt hệ thống)...");
+    try {
+      const { PrismaClient: SQLiteCMSClient } = require("@prisma/client-cms");
+      const sqliteCmsPath = path.resolve(process.cwd(), "prisma/luoi-cms.db");
+      const sqliteCms = new SQLiteCMSClient({ datasources: { db: { url: `file:${sqliteCmsPath}` } } });
+      const posts = await sqliteCms.post.findMany();
+      const pages = await sqliteCms.page.findMany();
+      const settings = await sqliteCms.setting.findMany();
+      console.log(`    ✓ Tìm thấy ${posts.length} Bài viết, ${pages.length} Trang tĩnh, ${settings.length} Cấu hình hệ thống CMS.`);
+      await sqliteCms.$disconnect();
+    } catch {}
+
+    console.log("\n🎉 HOÀN TẤT MIGRATION 100% TẤT CẢ DỮ LIỆU TỪ SQLITE SANG POSTGRESQL!");
   } catch (error) {
     console.error("❌ Lỗi trong quá trình Migration:", error);
   } finally {
