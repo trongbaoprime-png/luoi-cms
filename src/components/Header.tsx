@@ -32,41 +32,39 @@ export interface HeaderCtaButtonConfig {
   targetBlank?: boolean;
 }
 
+interface HeaderSettingsState {
+  menuItems: MenuItem[];
+  siteName: string;
+  logoUrl: string;
+  logoPosDesktop: "left" | "center" | "right";
+  logoPosMobile: "left" | "center" | "right";
+  menuPosDesktop: "left" | "center" | "right";
+  logoHeightDesktop: number;
+  logoHeightMobile: number;
+  ctaButtons: HeaderCtaButtonConfig[];
+}
+
 const DEFAULT_MENU_ITEMS: MenuItem[] = [
   { id: "1", title: "Trang chủ", url: "/" },
   { id: "17855525305930.4367543888924821", title: "Đi Chợ & Mua Sắm", url: "/di-cho" },
   { id: "17855525305930.3103392513051577", title: "Mua sắm", url: "/mua-sam" },
 ];
 
+const DEFAULT_SETTINGS: HeaderSettingsState = {
+  menuItems: DEFAULT_MENU_ITEMS,
+  siteName: "LƯỜI DỌN NHÀ",
+  logoUrl: "",
+  logoPosDesktop: "left",
+  logoPosMobile: "left",
+  menuPosDesktop: "right",
+  logoHeightDesktop: 40,
+  logoHeightMobile: 32,
+  ctaButtons: [],
+};
+
 export default function Header() {
   const pathname = usePathname();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("luoi_header_settings_v3") || sessionStorage.getItem("luoi_header_settings_v2");
-        if (cached) {
-          const parsedCache = JSON.parse(cached);
-          const data = parsedCache.data || parsedCache;
-          if (data?.header_menu) {
-            const parsedMenu = JSON.parse(data.header_menu);
-            if (Array.isArray(parsedMenu) && parsedMenu.length > 0) return parsedMenu;
-          }
-        }
-      } catch {}
-    }
-    return DEFAULT_MENU_ITEMS;
-  });
-
-  const [siteName, setSiteName] = useState("LƯỜI DỌN NHÀ");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [logoPosDesktop, setLogoPosDesktop] = useState<"left" | "center" | "right">("left");
-  const [logoPosMobile, setLogoPosMobile] = useState<"left" | "center" | "right">("left");
-  const [menuPosDesktop, setMenuPosDesktop] = useState<"left" | "center" | "right">("right");
-  const [logoHeightDesktop, setLogoHeightDesktop] = useState(40);
-  const [logoHeightMobile, setLogoHeightMobile] = useState(32);
-
-  // MULTIPLE HEADER CTA BUTTONS STATE
-  const [ctaButtons, setCtaButtons] = useState<HeaderCtaButtonConfig[]>([]);
+  const [settings, setSettings] = useState<HeaderSettingsState>(DEFAULT_SETTINGS);
 
   // Popup Form Modal Control States
   const [activePopupBtn, setActivePopupBtn] = useState<HeaderCtaButtonConfig | null>(null);
@@ -95,44 +93,62 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const CACHE_KEY = "luoi_header_settings_v3";
+    const CACHE_KEY = "luoi_header_settings_v4";
     const CACHE_TTL_MS = 10 * 60 * 1000; // 10 phút
 
-    function applySettings(d: Record<string, string>) {
+    // Clean legacy cache keys if present to avoid stale menu shifts
+    try {
+      localStorage.removeItem("luoi_header_settings_v2");
+      localStorage.removeItem("luoi_header_settings_v3");
+      sessionStorage.removeItem("luoi_header_settings_v2");
+      sessionStorage.removeItem("luoi_header_settings_v3");
+    } catch {}
+
+    function parseAndApplySettings(d: Record<string, string>) {
+      let menuItems = DEFAULT_MENU_ITEMS;
       if (d.header_menu) {
         try {
           const parsed = JSON.parse(d.header_menu);
-          if (Array.isArray(parsed) && parsed.length > 0) setMenuItems(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) menuItems = parsed;
         } catch {}
       }
-      if (d.site_name) setSiteName(d.site_name);
-      if (d.logo_url) setLogoUrl(d.logo_url);
-      if (d.logo_pos_desktop) setLogoPosDesktop(d.logo_pos_desktop as any);
-      if (d.logo_pos_mobile) setLogoPosMobile(d.logo_pos_mobile as any);
-      if (d.menu_pos_desktop) setMenuPosDesktop(d.menu_pos_desktop as any);
-      if (d.logo_height_desktop) setLogoHeightDesktop(Number(d.logo_height_desktop));
-      if (d.logo_height_mobile) setLogoHeightMobile(Number(d.logo_height_mobile));
 
+      let ctaButtons: HeaderCtaButtonConfig[] = [];
       if (d.header_cta_buttons) {
         try {
           const parsedButtons = JSON.parse(d.header_cta_buttons);
-          if (Array.isArray(parsedButtons)) setCtaButtons(parsedButtons);
+          if (Array.isArray(parsedButtons)) ctaButtons = parsedButtons;
         } catch {}
       } else if (d.header_cta_text) {
-        setCtaButtons([{
-          id: "cta-1",
-          enabled: d.header_cta_enabled !== "false",
-          text: d.header_cta_text || "Săn Deal Hot →",
-          actionType: (d.header_cta_action_type as any) || "URL",
-          url: d.header_cta_url || "/home#deals",
-          phone: d.header_cta_phone || "",
-          popupTitle: d.header_cta_popup_title || "Đăng Ký Tư Vấn",
-          popupSubtitle: d.header_cta_popup_subtitle || "Để lại thông tin...",
-          bgColor: d.header_cta_bg_color || "#0d4f4a",
-          textColor: d.header_cta_text_color || "#ffffff",
-          targetBlank: d.header_cta_target_blank === "true",
-        }]);
+        ctaButtons = [
+          {
+            id: "cta-1",
+            enabled: d.header_cta_enabled !== "false",
+            text: d.header_cta_text || "Săn Deal Hot →",
+            actionType: (d.header_cta_action_type as any) || "URL",
+            url: d.header_cta_url || "/home#deals",
+            phone: d.header_cta_phone || "",
+            popupTitle: d.header_cta_popup_title || "Đăng Ký Tư Vấn",
+            popupSubtitle: d.header_cta_popup_subtitle || "Để lại thông tin...",
+            bgColor: d.header_cta_bg_color || "#0d4f4a",
+            textColor: d.header_cta_text_color || "#ffffff",
+            targetBlank: d.header_cta_target_blank === "true",
+          },
+        ];
       }
+
+      // Single BATCHED state update to prevent multi-frame layout jittering
+      setSettings({
+        menuItems,
+        siteName: d.site_name || "LƯỜI DỌN NHÀ",
+        logoUrl: d.logo_url || "",
+        logoPosDesktop: (d.logo_pos_desktop as any) || "left",
+        logoPosMobile: (d.logo_pos_mobile as any) || "left",
+        menuPosDesktop: (d.menu_pos_desktop as any) || "right",
+        logoHeightDesktop: Number(d.logo_height_desktop) || 40,
+        logoHeightMobile: Number(d.logo_height_mobile) || 32,
+        ctaButtons,
+      });
     }
 
     // 1. Apply local cache immediately
@@ -141,7 +157,7 @@ export default function Header() {
       if (cached) {
         const { ts, data } = JSON.parse(cached);
         if (data) {
-          applySettings(data);
+          parseAndApplySettings(data);
           if (Date.now() - ts < CACHE_TTL_MS) return; // cache is fresh
         }
       }
@@ -152,7 +168,7 @@ export default function Header() {
       .then((res) => res.json())
       .then((res) => {
         if (res.success && res.data) {
-          applySettings(res.data);
+          parseAndApplySettings(res.data);
           try {
             const payload = JSON.stringify({ ts: Date.now(), data: res.data });
             localStorage.setItem(CACHE_KEY, payload);
@@ -162,6 +178,18 @@ export default function Header() {
       })
       .catch(() => {});
   }, []);
+
+  const {
+    menuItems,
+    siteName,
+    logoUrl,
+    logoPosDesktop,
+    logoPosMobile,
+    menuPosDesktop,
+    logoHeightDesktop,
+    logoHeightMobile,
+    ctaButtons,
+  } = settings;
 
   // Compute Alignment CSS Classes for Desktop & Mobile
   const getNavFlexClasses = () => {
