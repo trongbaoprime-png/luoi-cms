@@ -66,36 +66,30 @@ async function main() {
     console.log("✅ Hoàn tất chuyển đổi dữ liệu MiniCRM sang PostgreSQL!");
 
     // --------------------------------------------------------------------------
-    // B. CHUYỂN ĐỔI OMNICHANNEL (FANPAGES, TAGS, CUSTOMERS, CONVERSATIONS, MESSAGES)
+    // B. CHUYỂN ĐỔI OMNICHANNEL (FANPAGES, TAGS, CONVERSATIONS, MESSAGES, REPORTS)
     // --------------------------------------------------------------------------
     console.log("\n📦 [2/2] Đang chuyển đổi dữ liệu Omnichannel...");
-    const fanpages = await sqliteOmni.omniFanpage.findMany();
-    if (fanpages.length > 0) {
-      await pgOmni.omniFanpage.createMany({ data: fanpages, skipDuplicates: true });
+    const fanpages = await (sqliteOmni as any).omniFanpage.findMany();
+    if (fanpages && fanpages.length > 0) {
+      await (pgOmni as any).omniFanpage.createMany({ data: fanpages, skipDuplicates: true });
       console.log(`    ✓ Đã đẩy ${fanpages.length} Fanpages vào PostgreSQL.`);
     }
 
-    const tags = await sqliteOmni.omniPancakeTag.findMany();
-    if (tags.length > 0) {
-      await pgOmni.omniPancakeTag.createMany({ data: tags, skipDuplicates: true });
+    const tags = await (sqliteOmni as any).omniPancakeTag.findMany();
+    if (tags && tags.length > 0) {
+      await (pgOmni as any).omniPancakeTag.createMany({ data: tags, skipDuplicates: true });
       console.log(`    ✓ Đã đẩy ${tags.length} Pancake Tags vào PostgreSQL.`);
     }
 
-    const customers = await sqliteOmni.omniCustomer.findMany();
-    if (customers.length > 0) {
-      await pgOmni.omniCustomer.createMany({ data: customers, skipDuplicates: true });
-      console.log(`    ✓ Đã đẩy ${customers.length} Omnichannel Customers vào PostgreSQL.`);
-    }
-
-    const conversations = await sqliteOmni.omniConversation.findMany();
-    if (conversations.length > 0) {
-      await pgOmni.omniConversation.createMany({ data: conversations, skipDuplicates: true });
+    const conversations = await (sqliteOmni as any).omniConversation.findMany();
+    if (conversations && conversations.length > 0) {
+      await (pgOmni as any).omniConversation.createMany({ data: conversations, skipDuplicates: true });
       console.log(`    ✓ Đã đẩy ${conversations.length} Conversations vào PostgreSQL.`);
     }
 
-    const messages = await sqliteOmni.omniMessage.findMany();
-    if (messages.length > 0) {
-      await pgOmni.omniMessage.createMany({ data: messages, skipDuplicates: true });
+    const messages = await (sqliteOmni as any).omniMessage.findMany();
+    if (messages && messages.length > 0) {
+      await (pgOmni as any).omniMessage.createMany({ data: messages, skipDuplicates: true });
       console.log(`    ✓ Đã đẩy ${messages.length} Messages vào PostgreSQL.`);
     }
 
