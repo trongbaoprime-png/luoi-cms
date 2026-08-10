@@ -10,9 +10,9 @@ dist/
 *.db-journal
 *.sqlite
 !prisma/dev.db
-!luoi/cms/cms.db
-!luoi/minicrm/minicrm.db
-!luoi/omni/omni.db
+!prisma/luoi-cms.db
+!prisma/minicrm.db
+!prisma/omnichannel.db
 
 # Environment variables
 .env
