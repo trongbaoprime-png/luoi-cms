@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { PhoneCall, X, CheckCircle2, Sparkles, Send, Code2 } from "lucide-react";
 import ShortcodeContentParser from "./ShortcodeContentParser";
 import SmartPhoneInput from "./SmartPhoneInput";
@@ -38,6 +39,7 @@ const DEFAULT_MENU_ITEMS: MenuItem[] = [
 ];
 
 export default function Header() {
+  const pathname = usePathname();
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -206,10 +208,10 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/95 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full min-h-[64px] border-b border-stone-200/80 bg-white/95 backdrop-blur-md transition-all duration-300 ease-in-out">
         <nav className={`mx-auto flex max-w-[1280px] items-center px-6 py-[14px] ${getNavFlexClasses()}`}>
           {/* Dynamic Logo Link */}
-          <Link aria-label={`${siteName} trang chủ`} className="flex items-center gap-2.5 shrink-0" href="/">
+          <Link aria-label={`${siteName} trang chủ`} className="flex items-center gap-2.5 shrink-0 transition-opacity hover:opacity-90" href="/">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -230,7 +232,7 @@ export default function Header() {
               />
             ) : (
               <>
-                <span className="w-8 h-8 rounded-xl bg-[#0d4f4a] text-white flex items-center justify-center font-mono font-black text-sm shadow-sm">
+                <span className="w-8 h-8 rounded-xl bg-[#0d4f4a] text-white flex items-center justify-center font-mono font-black text-sm shadow-xs">
                   L
                 </span>
                 <span className="font-mono font-bold text-base text-stone-900 tracking-tight uppercase">
@@ -246,16 +248,23 @@ export default function Header() {
             menuPosDesktop === "center" ? "justify-center" :
             "justify-end"
           }`}>
-            <div className="flex items-center gap-6">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.id}
-                  className="font-mono text-xs font-bold text-stone-700 hover:text-[#0d4f4a] uppercase tracking-wider transition-colors"
-                  href={item.url}
-                >
-                  {item.title}
-                </Link>
-              ))}
+            <div className="flex items-center gap-2">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.url || (item.url !== "/" && (pathname?.startsWith(item.url) ?? false));
+                return (
+                  <Link
+                    key={item.id}
+                    className={`relative px-3.5 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all duration-200 ease-in-out ${
+                      isActive
+                        ? "text-[#0d4f4a] bg-[#0d4f4a]/10 font-black shadow-2xs"
+                        : "text-stone-700 hover:text-[#0d4f4a] hover:bg-stone-100/80"
+                    }`}
+                    href={item.url}
+                  >
+                    {item.title}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
