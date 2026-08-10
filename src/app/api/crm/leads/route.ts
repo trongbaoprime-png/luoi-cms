@@ -108,10 +108,15 @@ export async function GET(req: Request) {
               },
             },
             {
-              createdAt: {
-                gte: fromDate,
-                lte: toDate,
-              },
+              AND: [
+                { OR: [{ checkinDate: null }, { checkinDate: "" }] },
+                {
+                  createdAt: {
+                    gte: fromDate,
+                    lte: toDate,
+                  },
+                },
+              ],
             },
           ],
         });
