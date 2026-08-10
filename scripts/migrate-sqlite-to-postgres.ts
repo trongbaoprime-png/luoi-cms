@@ -46,7 +46,7 @@ async function main() {
     const chunkSize = 500;
     for (let i = 0; i < leads.length; i += chunkSize) {
       const chunk = leads.slice(i, i + chunkSize);
-      await pgCrm.cRMLead.createMany({
+      await (pgCrm as any).cRMLead.createMany({
         data: chunk,
         skipDuplicates: true,
       });
@@ -58,7 +58,7 @@ async function main() {
     console.log(` -> Tìm thấy ${histories.length} Status History trong SQLite minicrm.db`);
     for (let i = 0; i < histories.length; i += chunkSize) {
       const chunk = histories.slice(i, i + chunkSize);
-      await pgCrm.cRMStatusHistory.createMany({
+      await (pgCrm as any).cRMStatusHistory.createMany({
         data: chunk,
         skipDuplicates: true,
       });
