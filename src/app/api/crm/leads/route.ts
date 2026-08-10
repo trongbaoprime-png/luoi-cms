@@ -346,7 +346,8 @@ export async function GET(req: Request) {
       },
     });
 
-  } catch (err: unknown) {
+  } catch (err) {
+    console.error("[CRM API Error]", err);
     const errorMsg = err instanceof Error ? err.message : "Fetch leads failed";
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
