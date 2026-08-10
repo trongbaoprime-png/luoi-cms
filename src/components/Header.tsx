@@ -31,13 +31,29 @@ export interface HeaderCtaButtonConfig {
   targetBlank?: boolean;
 }
 
+const DEFAULT_MENU_ITEMS: MenuItem[] = [
+  { id: "1", title: "Trang chủ", url: "/" },
+  { id: "17855525305930.4367543888924821", title: "Đi Chợ & Mua Sắm", url: "/di-cho" },
+  { id: "17855525305930.3103392513051577", title: "Mua sắm", url: "/mua-sam" },
+];
+
 export default function Header() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    { id: "1", title: "Trang chủ", url: "/" },
-    { id: "2", title: "Thiết bị", url: "/products" },
-    { id: "3", title: "Mẹo nhà gọn", url: "/blog" },
-    { id: "4", title: "Mã giảm giá", url: "/deals" },
-  ]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("luoi_header_settings_v3") || sessionStorage.getItem("luoi_header_settings_v2");
+        if (cached) {
+          const parsedCache = JSON.parse(cached);
+          const data = parsedCache.data || parsedCache;
+          if (data?.header_menu) {
+            const parsedMenu = JSON.parse(data.header_menu);
+            if (Array.isArray(parsedMenu) && parsedMenu.length > 0) return parsedMenu;
+          }
+        }
+      } catch {}
+    }
+    return DEFAULT_MENU_ITEMS;
+  });
 
   const [siteName, setSiteName] = useState("LƯỜI DỌN NHÀ");
   const [logoUrl, setLogoUrl] = useState("");
@@ -48,17 +64,7 @@ export default function Header() {
   const [logoHeightMobile, setLogoHeightMobile] = useState(32);
 
   // MULTIPLE HEADER CTA BUTTONS STATE
-  const [ctaButtons, setCtaButtons] = useState<HeaderCtaButtonConfig[]>([
-    {
-      id: "cta-1",
-      enabled: true,
-      text: "Săn Deal Hot →",
-      actionType: "URL",
-      url: "/home#deals",
-      bgColor: "#0d4f4a",
-      textColor: "#ffffff",
-    },
-  ]);
+  const [ctaButtons, setCtaButtons] = useState<HeaderCtaButtonConfig[]>([]);
 
   // Popup Form Modal Control States
   const [activePopupBtn, setActivePopupBtn] = useState<HeaderCtaButtonConfig | null>(null);
@@ -87,8 +93,8 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const CACHE_KEY = "luoi_header_settings_v2";
-    const CACHE_TTL_MS = 5 * 60 * 1000; // 5 phút
+    const CACHE_KEY = "luoi_header_settings_v3";
+    const CACHE_TTL_MS = 10 * 60 * 1000; // 10 phút
 
     function applySettings(d: Record<string, string>) {
       if (d.header_menu) {
@@ -108,7 +114,7 @@ export default function Header() {
       if (d.header_cta_buttons) {
         try {
           const parsedButtons = JSON.parse(d.header_cta_buttons);
-          if (Array.isArray(parsedButtons) && parsedButtons.length > 0) setCtaButtons(parsedButtons);
+          if (Array.isArray(parsedButtons)) setCtaButtons(parsedButtons);
         } catch {}
       } else if (d.header_cta_text) {
         setCtaButtons([{
@@ -127,26 +133,28 @@ export default function Header() {
       }
     }
 
-    // 1. Apply cache immediately (no flash)
+    // 1. Apply local cache immediately
     try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
+      const cached = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
       if (cached) {
         const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < CACHE_TTL_MS) {
+        if (data) {
           applySettings(data);
-          return; // fresh enough — skip fetch
+          if (Date.now() - ts < CACHE_TTL_MS) return; // cache is fresh
         }
       }
     } catch {}
 
-    // 2. Fetch fresh from API
+    // 2. Background revalidation from API
     fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((res) => {
         if (res.success && res.data) {
           applySettings(res.data);
           try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: res.data }));
+            const payload = JSON.stringify({ ts: Date.now(), data: res.data });
+            localStorage.setItem(CACHE_KEY, payload);
+            sessionStorage.setItem(CACHE_KEY, payload);
           } catch {}
         }
       })
