@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const branchGroup = searchParams.get("branchGroup") || "ALL";
     const branch = searchParams.get("branch") || "ALL";
     const serviceGroup = searchParams.get("serviceGroup") || "ALL";
+    const originGroup = searchParams.get("originGroup") || "ALL";
     const dateFrom = searchParams.get("dateFrom") || "";
     const dateTo = searchParams.get("dateTo") || "";
 
@@ -38,7 +39,7 @@ export async function GET(req: Request) {
         ],
       });
     } else {
-      // Khi KHÔNG nhập ô tìm kiếm: Áp dụng đầy đủ bộ lọc phân loại Nguồn, Chi nhánh, Dịch vụ, Khoảng ngày
+      // Khi KHÔNG nhập ô tìm kiếm: Áp dụng đầy đủ bộ lọc phân loại Nguồn, Chi nhánh, Dịch vụ, Khoảng ngày, Khách Việt Kiều
       if (status !== "ALL") {
         if (status === "QUALIFIED") {
           conditions.push({ status: { in: ["QUALIFIED", "SCHEDULED"] } });
@@ -65,6 +66,30 @@ export async function GET(req: Request) {
 
       if (serviceGroup !== "ALL") {
         conditions.push({ serviceGroup });
+      }
+
+      if (originGroup === "VIET_KIEU") {
+        conditions.push({
+          OR: [
+            { isVietKieu: true },
+            { isNN: true },
+            { phone: { startsWith: "+" } },
+          ],
+        });
+      } else if (originGroup === "DOMESTIC") {
+        conditions.push({
+          AND: [
+            {
+              OR: [
+                { phone: { startsWith: "0" } },
+                { phone: { startsWith: "84" } },
+                { phone: { startsWith: "+84" } },
+              ],
+            },
+            { isVietKieu: { not: true } },
+            { isNN: { not: true } },
+          ],
+        });
       }
 
       if (dateFrom || dateTo) {

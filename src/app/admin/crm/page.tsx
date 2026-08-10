@@ -238,6 +238,7 @@ export function MiniCrmAdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sourceFilter, setSourceFilter] = useState("ALL");
+  const [originFilter, setOriginFilter] = useState("ALL");
   const [telesaleFilter, setTelesaleFilter] = useState("ALL");
   const [branchFilter, setBranchFilter] = useState("ALL");
   const [specificBranchFilter, setSpecificBranchFilter] = useState("ALL");
@@ -288,7 +289,7 @@ export function MiniCrmAdminPage() {
   // Reset to page 1 whenever any filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, sourceFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo]);
+  }, [searchTerm, statusFilter, sourceFilter, originFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -297,6 +298,7 @@ export function MiniCrmAdminPage() {
       if (searchTerm) params.append("search", searchTerm);
       if (statusFilter !== "ALL") params.append("status", statusFilter);
       if (sourceFilter !== "ALL") params.append("sourceGroup", sourceFilter);
+      if (originFilter !== "ALL") params.append("originGroup", originFilter);
       if (telesaleFilter !== "ALL") params.append("telesale", telesaleFilter);
       if (branchFilter !== "ALL") params.append("branchGroup", branchFilter);
       if (specificBranchFilter !== "ALL") params.append("branch", specificBranchFilter);
@@ -318,7 +320,7 @@ export function MiniCrmAdminPage() {
       }
     } catch {}
     setLoading(false);
-  }, [searchTerm, statusFilter, sourceFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo, currentPage]);
+  }, [searchTerm, statusFilter, sourceFilter, originFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo, currentPage]);
 
   useEffect(() => {
     fetchLeads();
@@ -1169,6 +1171,17 @@ function onEdit(e) {
               <option value="TIKTOK">TikTok</option>
               <option value="HOTLINE">Hotline</option>
               <option value="KHÁC">Nguồn Khác</option>
+            </select>
+
+            {/* Customer Origin Filter (Khách Việt Kiều / Trong Nước) */}
+            <select
+              value={originFilter}
+              onChange={(e) => setOriginFilter(e.target.value)}
+              className="px-2.5 py-1.5 border rounded-xl text-xs font-semibold text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#0d4f4a]"
+            >
+              <option value="ALL">🌐 Tất cả Khách</option>
+              <option value="DOMESTIC">🇻🇳 Trong Nước</option>
+              <option value="VIET_KIEU">✈️ Việt Kiều / Quốc Tế</option>
             </select>
 
             {/* Branch Group Filter (Khu vực) */}
