@@ -1,10 +1,12 @@
+const path = require("path");
+
 module.exports = {
   apps: [
     {
       name: "luoi-cms",
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",
-      cwd: "./",
+      cwd: __dirname,
       instances: 1,
       exec_mode: "fork",
       autorestart: true,
@@ -18,7 +20,7 @@ module.exports = {
     {
       name: "luoi-crm-sync",
       script: "scripts/auto-sync-worker.js",
-      cwd: "./",
+      cwd: __dirname,
       instances: 1,
       exec_mode: "fork",
       autorestart: true,

@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import { PrismaClient as CMSPrismaClient } from "@prisma/client-cms";
 
 const globalForCMS = globalThis as unknown as {
@@ -6,14 +7,28 @@ const globalForCMS = globalThis as unknown as {
 };
 
 function getCmsDatabaseUrl() {
-  const envUrl = process.env.CMS_DATABASE_URL;
-  if (envUrl && envUrl.startsWith("file:")) {
-    const relPath = envUrl.replace(/^file:/, "");
-    const absPath = path.resolve(process.cwd(), relPath);
-    return `file:${absPath}`;
+  const possiblePaths = [
+    path.resolve(process.cwd(), "prisma", "luoi-cms.db"),
+    path.resolve(__dirname, "../../prisma", "luoi-cms.db"),
+    "/var/www/app/path-app/prisma/luoi-cms.db",
+  ];
+
+  let targetPath = possiblePaths[0];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      targetPath = p;
+      break;
+    }
   }
-  const absoluteDbPath = path.resolve(process.cwd(), "prisma", "luoi-cms.db");
-  return `file:${absoluteDbPath}`;
+
+  // Tự tạo thư mục nếu chưa tồn tại
+  const dir = path.dirname(targetPath);
+  if (!fs.existsSync(dir)) {
+    try { fs.mkdirSync(dir, { recursive: true }); } catch {}
+  }
+
+  return `file:${targetPath}`;
 }
 
 export const cmsDb =
