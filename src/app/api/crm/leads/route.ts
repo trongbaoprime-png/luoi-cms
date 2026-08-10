@@ -96,29 +96,13 @@ export async function GET(req: Request) {
         const fromStr = normalizeToIsoDate(dateFrom) || "2020-01-01";
         const toStr = normalizeToIsoDate(dateTo) || "2030-12-31";
 
-        const fromDate = new Date(`${fromStr}T00:00:00.000Z`);
-        const toDate = new Date(`${toStr}T23:59:59.999Z`);
-
+        // Chỉ lọc theo checkinDate (ngày thực tế khách đến) — không dùng createdAt
+        // vì createdAt là ngày sync vào DB, không phải ngày khách (tất cả sync 1 lúc)
         conditions.push({
-          OR: [
-            {
-              checkinDate: {
-                gte: fromStr,
-                lte: toStr,
-              },
-            },
-            {
-              AND: [
-                { OR: [{ checkinDate: null }, { checkinDate: "" }] },
-                {
-                  createdAt: {
-                    gte: fromDate,
-                    lte: toDate,
-                  },
-                },
-              ],
-            },
-          ],
+          checkinDate: {
+            gte: fromStr,
+            lte: toStr,
+          },
         });
       }
     }
