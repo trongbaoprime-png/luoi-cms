@@ -1,0 +1,97 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./omnichannel.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-omni"
+}
+
+// 1. Quản lý Danh sách 60 Fanpages (Sheet ALL PAGE)
+model OmniFanpage {
+  id            String   @id @default(cuid())
+  pageId        String   @unique
+  pageName      String
+  accessToken   String?
+  category      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversations OmniConversation[]
+}
+
+// 2. Quản lý Thẻ Pancake.vn (Sheet Thẻ Pancake)
+model OmniPancakeTag {
+  id        String   @id @default(cuid())
+  tagId     String   @unique
+  tagName   String
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 3. Quản lý Khách hàng Đa kênh (Pancake / Meta / Zalo)
+model OmniCustomer {
+  id            String   @id @default(cuid())
+  psid          String   @unique // Page-Scoped ID từ Meta/Zalo
+  name          String
+  phone         String?
+  email         String?
+  avatar        String?
+  tags          String?  // JSON string các tagId (ví dụ: ["tag_1", "tag_2"])
+  totalSpent    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversations OmniConversation[]
+}
+
+// 4. Quản lý Cuộc hội thoại (Inbox / Comment)
+model OmniConversation {
+  id             String   @id @default(cuid())
+  pageId         String
+  customerId     String
+  snippet        String?  // Tin nhắn cuối cùng
+  unreadCount    Int      @default(0)
+  assignedAgent  String?  // Telesale / Staff phụ trách
+  lastMessageAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  fanpage        OmniFanpage  @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  customer       OmniCustomer @relation(fields: [customerId], references: [psid], onDelete: Cascade)
+  messages       OmniMessage[]
+
+  @@index([pageId])
+  @@index([customerId])
+  @@index([lastMessageAt])
+}
+
+// 5. Quản lý Chi tiết Tin nhắn
+model OmniMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  mid            String   @unique // Message ID từ Platform
+  senderId       String
+  senderType     String   @default("CUSTOMER") // CUSTOMER, PAGE, AGENT, BOT
+  text           String?
+  attachments    String?  // JSON string danh sách URL ảnh/file
+  createdAt      DateTime @default(now())
+
+  conversation   OmniConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+// 6. Báo cáo Tổng hợp Đa kênh
+model OmniReport {
+  id            String   @id @default(cuid())
+  date          String   @unique // YYYY-MM-DD
+  totalLeads    Int      @default(0)
+  totalMessages Int      @default(0)
+  revenue       Float    @default(0)
+  createdAt     DateTime @default(now())
+}
