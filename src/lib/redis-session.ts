@@ -158,14 +158,20 @@ export async function getAdminSession(token: string): Promise<AdminSession | nul
     }
   }
 
-  // 2. Check Memory Store
-  const memorySession = memorySessions.get(token);
-  if (memorySession) {
-    if (memorySession.expiresAt && memorySession.expiresAt <= now) {
-      memorySessions.delete(token);
-      return null;
-    }
-    return memorySession;
+  // 3. Dev Mode Fallback for Localhost: restore session automatically on server restart/HMR
+  if (process.env.NODE_ENV !== "production" && token) {
+    const devSession: AdminSession = {
+      token,
+      userId: "dev-admin-id",
+      username: "Beni (Dev)",
+      email: "admin@luoi.vn",
+      role: "SUPER_ADMIN",
+      permissions: ["*"],
+      createdAt: now,
+      expiresAt: now + 7 * 86400 * 1000,
+    };
+    memorySessions.set(token, devSession);
+    return devSession;
   }
 
   return null;

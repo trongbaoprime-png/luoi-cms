@@ -5,7 +5,7 @@ import { verifyAdminAuth } from "@/lib/auth-guard";
 
 export async function GET(req: Request) {
   // Server-side Admin Auth Guard
-  const auth = await verifyAdminAuth();
+  const auth = await verifyAdminAuth(req);
   if (!auth.authenticated) {
     return auth.errorResponse;
   }

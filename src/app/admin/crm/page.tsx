@@ -243,13 +243,13 @@ export function MiniCrmAdminPage() {
   const [specificBranchFilter, setSpecificBranchFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
 
-  // Date Filter States
-  const [datePreset, setDatePreset] = useState("thisMonth");
-  const [dateFrom, setDateFrom] = useState(getPresetDates("thisMonth").from);
-  const [dateTo, setDateTo] = useState(getPresetDates("thisMonth").to);
-  const [tempPreset, setTempPreset] = useState("thisMonth");
-  const [tempFrom, setTempFrom] = useState(getPresetDates("thisMonth").from);
-  const [tempTo, setTempTo] = useState(getPresetDates("thisMonth").to);
+  // Date Filter States (Mặc định: Toàn bộ thời gian để load tất cả 47,930 khách)
+  const [datePreset, setDatePreset] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [tempPreset, setTempPreset] = useState("all");
+  const [tempFrom, setTempFrom] = useState("");
+  const [tempTo, setTempTo] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const [copiedCode, setCopiedCode] = useState(false);
