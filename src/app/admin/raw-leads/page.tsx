@@ -64,6 +64,32 @@ export default function RawLeadsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Menu Active Display Style State (Bo tròn vs Gạch chân)
+  const [menuStyle, setMenuStyle] = useState<"pill" | "underline">("pill");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data?.menu_style) setMenuStyle(data.data.menu_style as any);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleMenuStyle = async (newStyle: "pill" | "underline") => {
+    setMenuStyle(newStyle);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menu_style: newStyle }),
+      });
+      localStorage.removeItem("luoi_header_settings_v4");
+      sessionStorage.removeItem("luoi_header_settings_v4");
+      window.dispatchEvent(new Event("storage"));
+    } catch {}
+  };
+
   const fetchRawLeads = async () => {
     setLoading(true);
     try {
@@ -243,44 +269,85 @@ export default function RawLeadsPage() {
       </div>
 
       {/* Navigation & Tab Switcher Bar */}
-      <div className="flex border-b border-stone-200 gap-6 font-mono text-xs pt-1 px-2">
-        <Link
-          href="/admin/crm"
-          className="pb-2.5 font-medium flex items-center gap-1.5 transition-all border-b-2 border-transparent text-stone-500 hover:text-stone-900 cursor-pointer"
-        >
-          <ShieldCheck size={16} />
-          <span>miniCRM (Bảng Quản Lý)</span>
-        </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 font-mono text-xs pt-1 px-2 pb-1">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/crm"
+            className={`font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              menuStyle === "underline"
+                ? "border-b-2 border-transparent text-stone-500 hover:text-stone-900 pb-2 text-xs"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100 px-3.5 py-1.5 rounded-xl"
+            }`}
+          >
+            <ShieldCheck size={16} />
+            <span>miniCRM (Bảng Quản Lý)</span>
+          </Link>
 
-        <button
-          onClick={() => {
-            setActiveTab("FORM");
-            setPage(1);
-          }}
-          className={`pb-2.5 font-bold flex items-center gap-1.5 transition-all cursor-pointer border-b-2 ${
-            activeTab === "FORM"
-              ? "border-[#0d4f4a] text-[#0d4f4a]"
-              : "border-transparent text-stone-500 hover:text-stone-900"
-          }`}
-        >
-          <FileText size={16} />
-          <span>Khách Đăng Ký Form ({stats.totalForms || 0})</span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab("FORM");
+              setPage(1);
+            }}
+            className={`font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeTab === "FORM"
+                ? menuStyle === "underline"
+                  ? "border-b-2 border-[#0d4f4a] text-[#0d4f4a] pb-2 text-xs"
+                  : "bg-[#0d4f4a]/10 text-[#0d4f4a] px-3.5 py-1.5 rounded-xl border border-[#0d4f4a]/20 shadow-2xs"
+                : menuStyle === "underline"
+                ? "border-b-2 border-transparent text-stone-500 hover:text-stone-900 pb-2 text-xs"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100 px-3.5 py-1.5 rounded-xl"
+            }`}
+          >
+            <FileText size={16} />
+            <span>Khách Đăng Ký Form ({stats.totalForms || 0})</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("CLICKS");
-            setPage(1);
-          }}
-          className={`pb-2.5 font-bold flex items-center gap-1.5 transition-all cursor-pointer border-b-2 ${
-            activeTab === "CLICKS"
-              ? "border-[#0d4f4a] text-[#0d4f4a]"
-              : "border-transparent text-stone-500 hover:text-stone-900"
-          }`}
-        >
-          <MousePointerClick size={16} />
-          <span>Thống Kê Click Kênh ({stats.totalClicks || 0})</span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab("CLICKS");
+              setPage(1);
+            }}
+            className={`font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeTab === "CLICKS"
+                ? menuStyle === "underline"
+                  ? "border-b-2 border-[#0d4f4a] text-[#0d4f4a] pb-2 text-xs"
+                  : "bg-[#0d4f4a]/10 text-[#0d4f4a] px-3.5 py-1.5 rounded-xl border border-[#0d4f4a]/20 shadow-2xs"
+                : menuStyle === "underline"
+                ? "border-b-2 border-transparent text-stone-500 hover:text-stone-900 pb-2 text-xs"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100 px-3.5 py-1.5 rounded-xl"
+            }`}
+          >
+            <MousePointerClick size={16} />
+            <span>Thống Kê Click Kênh ({stats.totalClicks || 0})</span>
+          </button>
+        </div>
+
+        {/* Quick Style Switcher Toggle Button (Bo tròn Pill vs Gạch chân Underline) */}
+        <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200 text-[11px] shrink-0">
+          <span className="text-stone-500 font-semibold px-1.5">🎨 Kiểu Menu:</span>
+          <button
+            type="button"
+            onClick={() => handleToggleMenuStyle("pill")}
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              menuStyle === "pill"
+                ? "bg-[#0d4f4a] text-white shadow-xs"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+            }`}
+          >
+            Bo tròn (Hình 1)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleToggleMenuStyle("underline")}
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              menuStyle === "underline"
+                ? "bg-[#0d4f4a] text-white shadow-xs"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+            }`}
+          >
+            Gạch chân (Hình 2)
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}

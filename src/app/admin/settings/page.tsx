@@ -381,189 +381,171 @@ export default function AdminSettingsPage() {
 
             {/* Logo Alignment Controls for Desktop & Mobile */}
             <div className="space-y-5 text-xs font-mono">
-              {/* Desktop Position Switcher */}
-              <div className="space-y-2">
-                <label className="font-bold text-stone-800 flex items-center gap-1.5">
-                  <Monitor size={15} className="text-[#0d4f4a]" />
-                  <span>Vị trí hiển thị trên Desktop (Máy tính):</span>
-                </label>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLogoPosDesktop("left")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      logoPosDesktop === "left"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Trái (Left)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLogoPosDesktop("center")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      logoPosDesktop === "center"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Ở Giữa (Center)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLogoPosDesktop("right")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      logoPosDesktop === "right"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Phải (Right)</span>
-                  </button>
+            {/* USER REQUEST: Gộp gọn vị trí Logo, vị trí Menu và Kiểu Menu Active thành 1 hàng ngang (4 thẻ) */}
+            <div className="space-y-4 text-xs font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 1. Desktop Logo Position */}
+                <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-stone-200 shadow-2xs">
+                  <label className="font-bold text-stone-800 text-[11px] flex items-center gap-1.5">
+                    <Monitor size={14} className="text-[#0d4f4a]" />
+                    <span>Vị trí Logo Desktop:</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-1 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setLogoPosDesktop("left")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        logoPosDesktop === "left"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Trái
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLogoPosDesktop("center")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        logoPosDesktop === "center"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Giữa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLogoPosDesktop("right")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        logoPosDesktop === "right"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Phải
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Desktop Menu Position Switcher */}
-              <div className="space-y-2 pt-2 border-t border-stone-200">
-                <label className="font-bold text-stone-800 flex items-center gap-1.5">
-                  <Monitor size={15} className="text-[#0d4f4a]" />
-                  <span>Vị trí Menu ngang (Máy tính):</span>
-                </label>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMenuPosDesktop("left")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      menuPosDesktop === "left"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Trái (Gần Logo)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMenuPosDesktop("center")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      menuPosDesktop === "center"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Ở Giữa (Center)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMenuPosDesktop("right")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      menuPosDesktop === "right"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Phải (Right)</span>
-                  </button>
+                {/* 2. Desktop Menu Position */}
+                <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-stone-200 shadow-2xs">
+                  <label className="font-bold text-stone-800 text-[11px] flex items-center gap-1.5">
+                    <Monitor size={14} className="text-[#0d4f4a]" />
+                    <span>Vị trí Menu Desktop:</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-1 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setMenuPosDesktop("left")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        menuPosDesktop === "left"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Trái
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMenuPosDesktop("center")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        menuPosDesktop === "center"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Giữa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMenuPosDesktop("right")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        menuPosDesktop === "right"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Phải
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* USER REQUIREMENT: Menu Active Display Style Switcher (Bo tròn Pill vs Gạch chân Underline) */}
-              <div className="space-y-2 pt-2 border-t border-stone-200">
-                <label className="font-bold text-stone-800 flex items-center gap-1.5">
-                  <Layout size={15} className="text-[#0d4f4a]" />
-                  <span>Kiểu hiển thị Tab/Menu Active (Hình 1 &amp; Hình 2):</span>
-                </label>
+                {/* 3. Mobile Logo Position */}
+                <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-stone-200 shadow-2xs">
+                  <label className="font-bold text-stone-800 text-[11px] flex items-center gap-1.5">
+                    <Smartphone size={14} className="text-[#0d4f4a]" />
+                    <span>Vị trí Logo Mobile:</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-1 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setLogoPosMobile("left")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        logoPosMobile === "left"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Trái
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLogoPosMobile("center")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        logoPosMobile === "center"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Giữa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLogoPosMobile("right")}
+                      className={`py-1.5 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        logoPosMobile === "right"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      Phải
+                    </button>
+                  </div>
+                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMenuStyle("pill")}
-                    className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
-                      menuStyle === "pill"
-                        ? "border-[#0d4f4a] bg-[#0d4f4a]/5 ring-2 ring-[#0d4f4a] shadow-xs"
-                        : "bg-white border-stone-200 hover:border-stone-300"
-                    }`}
-                  >
-                    <div className="px-2.5 py-1 rounded-xl bg-[#0d4f4a]/10 text-[#0d4f4a] font-bold text-xs shrink-0">
+                {/* 4. Menu Active Style (Bo tròn vs Gạch chân) */}
+                <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-stone-200 shadow-2xs">
+                  <label className="font-bold text-stone-800 text-[11px] flex items-center gap-1.5">
+                    <Layout size={14} className="text-[#0d4f4a]" />
+                    <span>Kiểu Menu Active:</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setMenuStyle("pill")}
+                      className={`py-1.5 px-2 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        menuStyle === "pill"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
                       Bo tròn
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-stone-900">1. Bo Tròn (Pill)</div>
-                      <div className="text-[10px] text-stone-500 font-sans">Nền mờ bo tròn xung quanh tab</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMenuStyle("underline")}
-                    className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
-                      menuStyle === "underline"
-                        ? "border-[#0d4f4a] bg-[#0d4f4a]/5 ring-2 ring-[#0d4f4a] shadow-xs"
-                        : "bg-white border-stone-200 hover:border-stone-300"
-                    }`}
-                  >
-                    <div className="px-2.5 py-1 text-[#0d4f4a] font-bold text-xs border-b-2 border-[#0d4f4a] shrink-0">
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMenuStyle("underline")}
+                      className={`py-1.5 px-2 rounded-lg border font-bold text-center transition-all cursor-pointer ${
+                        menuStyle === "underline"
+                          ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
+                          : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
                       Gạch chân
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-stone-900">2. Gạch Chân (Underline)</div>
-                      <div className="text-[10px] text-stone-500 font-sans">Thanh gạch chân đậm chuẩn Minimal</div>
-                    </div>
-                  </button>
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Mobile Position Switcher */}
-              <div className="space-y-2 pt-2 border-t border-stone-200">
-                <label className="font-bold text-stone-800 flex items-center gap-1.5">
-                  <Smartphone size={15} className="text-[#0d4f4a]" />
-                  <span>Vị trí hiển thị trên Mobile (Điện thoại):</span>
-                </label>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLogoPosMobile("left")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      logoPosMobile === "left"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Trái (Left)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLogoPosMobile("center")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      logoPosMobile === "center"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Ở Giữa (Center)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLogoPosMobile("right")}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                      logoPosMobile === "right"
-                        ? "bg-[#0d4f4a] text-white border-[#0d4f4a] shadow-xs"
-                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span>Phải (Right)</span>
-                  </button>
-                </div>
-              </div>
+            </div>
 
               {/* Logo Height Sliders */}
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-stone-200">
