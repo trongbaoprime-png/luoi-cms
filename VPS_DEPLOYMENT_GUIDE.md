@@ -14,11 +14,11 @@ Trong thư mục `prisma/` gồm có 4 file SQLite quan trọng:
 > ⚠️ **LƯU Ý QUAN TRỌNG KHI CẬP NHẬT VPS:**
 > 💡 **Lệnh copy nhanh qua SCP từ máy tính:**
 > ```bash
-> scp prisma/*.db root@IP_VPS_CỦA_BẠN:/var/www/app/path-app/luoi/prisma/
+> scp prisma/*.db root@IP_VPS_CỦA_BẠN:/var/www/app/path-app/prisma/
 > ```
 > Sau khi copy, cấp quyền đọc ghi trên VPS:
 > ```bash
-> chmod -R 775 /var/www/app/path-app/luoi/prisma/
+> chmod -R 775 /var/www/app/path-app/prisma/
 > ```
 
 ---
@@ -52,19 +52,19 @@ Hoặc nén thủ công các thư mục/file sau:
 ### Bước 1: Upload và giải nén lên VPS
 ```bash
 # Thư mục dự án chính xác trên VPS:
-cd /var/www/app/path-app/luoi
+cd /var/www/app/path-app
 ```
 
 ### Bước 2: Cấp quyền chạy script deploy
 ```bash
-cd /var/www/app/path-app/luoi
+cd /var/www/app/path-app
 chmod +x deploy-vps.sh
 chmod -R 775 prisma/
 ```
 
 ### Bước 3: Chạy 1 lệnh duy nhất để Deploy
 ```bash
-cd /var/www/app/path-app/luoi
+cd /var/www/app/path-app
 ./deploy-vps.sh
 ```
 *Script sẽ tự động: Cài npm packages -> Generate Prisma -> Build Production Next.js -> Khởi động/Reload PM2 Zero-downtime trên cổng 3000.*
