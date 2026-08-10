@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { sendMetaCAPIEvent, sendTikTokEvent, sendGoogleAdsEvent } from "@/lib/ads-service";
 import { sendTelegramNotification, getVietnamFormattedTime } from "@/lib/notification-service";
-
-const prisma = new PrismaClient();
+import { cmsDb } from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
@@ -25,7 +23,7 @@ export async function POST(req: Request) {
     const eventName = "Contact" as const;
 
     // Save lead interaction record in database
-    await prisma.contactMessage.create({
+    await cmsDb.contactMessage.create({
       data: {
         name: `Khách Bấm ${channelName}`,
         email: `click_${channelName.toLowerCase()}@luoidonnha.com`,
@@ -44,7 +42,7 @@ export async function POST(req: Request) {
     // Fire Ads CAPI & Telegram Notification in Background
     (async () => {
       try {
-        const settings = await prisma.setting.findMany();
+        const settings = await cmsDb.setting.findMany();
         const settingsMap: Record<string, string> = {};
         settings.forEach((s) => (settingsMap[s.key] = s.value));
 

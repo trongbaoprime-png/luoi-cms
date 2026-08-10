@@ -6,9 +6,9 @@ import path from "path";
  */
 export function backupDatabaseSnapshot(): { success: boolean; backupPath?: string; error?: string } {
   try {
-    const dbPath = path.join(process.cwd(), "prisma", "dev.db");
+    const dbPath = path.join(process.cwd(), "prisma", "minicrm.db");
     if (!fs.existsSync(dbPath)) {
-      return { success: false, error: "Database file dev.db not found" };
+      return { success: false, error: "Database file minicrm.db not found" };
     }
 
     const backupsDir = path.join(process.cwd(), "prisma", "backups");
@@ -17,14 +17,14 @@ export function backupDatabaseSnapshot(): { success: boolean; backupPath?: strin
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupFileName = `dev.db.backup.${timestamp}.db`;
+    const backupFileName = `minicrm.db.backup.${timestamp}.db`;
     const backupPath = path.join(backupsDir, backupFileName);
 
     fs.copyFileSync(dbPath, backupPath);
 
     // Keep only the latest 10 backup snapshots to manage disk space
     const files = fs.readdirSync(backupsDir)
-      .filter(f => f.startsWith("dev.db.backup."))
+      .filter(f => f.startsWith("minicrm.db.backup."))
       .sort((a, b) => b.localeCompare(a));
 
     if (files.length > 10) {

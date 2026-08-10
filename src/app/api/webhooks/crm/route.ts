@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { cmsDb } from "@/lib/db";
 import { sendMetaCAPIEvent, sendTikTokEvent, sendGoogleAdsEvent } from "@/lib/ads-service";
-
-const prisma = new PrismaClient();
 
 // Helper: Normalize customer status to EventName
 export function mapStatusToEventName(status: string, revenue?: number): {
@@ -74,7 +72,7 @@ export async function POST(req: Request) {
     const { eventName, isPurchase } = mapStatusToEventName(status || "", numericRevenue);
 
     // Save/update record in Database
-    const savedMessage = await prisma.contactMessage.create({
+    const savedMessage = await cmsDb.contactMessage.create({
       data: {
         name: name || "Khách từ CRM/Google Sheet",
         email: email ? String(email).trim() : "",
@@ -91,7 +89,7 @@ export async function POST(req: Request) {
     });
 
     // Fetch Ads Credentials from Settings DB
-    const settings = await prisma.setting.findMany();
+    const settings = await cmsDb.setting.findMany();
     const settingsMap: Record<string, string> = {};
     settings.forEach((s) => (settingsMap[s.key] = s.value));
 

@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { cmsDb } from "@/lib/db";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -18,7 +16,7 @@ export async function GET(req: Request) {
 
   // Asynchronously log click
   try {
-    await prisma.clickLog.create({
+    await cmsDb.clickLog.create({
       data: {
         productId,
         targetUrl,
@@ -29,7 +27,7 @@ export async function GET(req: Request) {
     });
 
     if (productId) {
-      await prisma.product.update({
+      await cmsDb.product.update({
         where: { id: productId },
         data: { clicks: { increment: 1 } },
       }).catch(() => null);

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { cmsDb, crmDb } from "@/lib/db";
 import { sendMetaCAPIEvent, sendTikTokEvent, sendGoogleAdsEvent } from "@/lib/ads-service";
 import { mapStatusToEventName } from "@/app/api/webhooks/crm/route";
-
-const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const settings = await prisma.setting.findMany();
+    const settings = await cmsDb.setting.findMany();
     const settingsMap: Record<string, string> = {};
     settings.forEach((s) => (settingsMap[s.key] = s.value));
 

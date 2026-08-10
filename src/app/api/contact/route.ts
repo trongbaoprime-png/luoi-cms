@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { ContactFormSchema } from "@/lib/validation";
-import { PrismaClient } from "@prisma/client";
 import { sendMetaCAPIEvent, sendTikTokEvent, sendGoogleAdsEvent } from "@/lib/ads-service";
 import { sendTelegramNotification, pushToGoogleSheetsWebhook, getVietnamFormattedTime } from "@/lib/notification-service";
+import { cmsDb } from "@/lib/db";
 
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
@@ -41,7 +39,7 @@ export async function POST(req: Request) {
     const branch = body.branch || body.address || undefined;
     const gift = body.gift || undefined;
 
-    const message = await prisma.contactMessage.create({
+    const message = await cmsDb.contactMessage.create({
       data: {
         name: validatedData.name,
         email: validatedData.email,
@@ -65,7 +63,7 @@ export async function POST(req: Request) {
     // Background Async Tasks: Fire Meta CAPI, TikTok, Google Ads, Telegram & Google Sheets
     (async () => {
       try {
-        const settings = await prisma.setting.findMany();
+        const settings = await cmsDb.setting.findMany();
         const settingsMap: Record<string, string> = {};
         settings.forEach((s) => (settingsMap[s.key] = s.value));
 

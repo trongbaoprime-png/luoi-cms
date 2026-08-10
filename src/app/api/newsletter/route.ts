@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NewsletterSchema } from "@/lib/validation";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { cmsDb } from "@/lib/db";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
@@ -21,7 +19,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const validatedData = NewsletterSchema.parse(body);
 
-    const subscriber = await prisma.subscriber.upsert({
+    const subscriber = await cmsDb.subscriber.upsert({
       where: { email: validatedData.email },
       update: { status: "ACTIVE", name: validatedData.name },
       create: { email: validatedData.email, name: validatedData.name },
