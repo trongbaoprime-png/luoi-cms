@@ -1,20 +1,25 @@
+import path from "path";
 import { PrismaClient as CMSPrismaClient } from "@prisma/client-cms";
 
 const globalForCMS = globalThis as unknown as {
   cmsDb: CMSPrismaClient | undefined;
 };
 
-const cmsUrl =
-  process.env.CMS_DATABASE_URL ||
-  process.env.DATABASE_URL ||
-  "postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_core?schema=public";
+function getCmsDatabaseUrl() {
+  const envUrl = process.env.CMS_DATABASE_URL;
+  if (envUrl && envUrl.startsWith("file:")) {
+    return envUrl;
+  }
+  const absoluteDbPath = path.resolve(process.cwd(), "prisma", "luoi-cms.db");
+  return `file:${absoluteDbPath}`;
+}
 
 export const cmsDb =
   globalForCMS.cmsDb ??
   new CMSPrismaClient({
     datasources: {
       db: {
-        url: cmsUrl,
+        url: getCmsDatabaseUrl(),
       },
     },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],

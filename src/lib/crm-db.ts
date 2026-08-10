@@ -1,20 +1,25 @@
+import path from "path";
 import { PrismaClient as CRMPrismaClient } from "@prisma/client-crm";
 
 const globalForCRM = globalThis as unknown as {
   crmDb: CRMPrismaClient | undefined;
 };
 
-const crmUrl =
-  process.env.CRM_DATABASE_URL ||
-  process.env.CRM_POSTGRES_URL ||
-  "postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_crm?schema=public";
+function getCrmDatabaseUrl() {
+  const envUrl = process.env.CRM_DATABASE_URL;
+  if (envUrl && envUrl.startsWith("file:")) {
+    return envUrl;
+  }
+  const absoluteDbPath = path.resolve(process.cwd(), "prisma", "minicrm.db");
+  return `file:${absoluteDbPath}`;
+}
 
 export const crmDb =
   globalForCRM.crmDb ??
   new CRMPrismaClient({
     datasources: {
       db: {
-        url: crmUrl,
+        url: getCrmDatabaseUrl(),
       },
     },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
