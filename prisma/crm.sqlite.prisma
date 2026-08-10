@@ -47,7 +47,7 @@ model CRMLead {
   updatedAt         DateTime           @updatedAt
   statusHistory     CRMStatusHistory[]
 
-  @@index([phone])
+  @@unique([phone])
   @@index([status])
   @@index([createdAt])
   @@index([sourceGroup])
