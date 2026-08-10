@@ -20,14 +20,23 @@ sudo -u postgres psql -c "CREATE DATABASE luoi_core OWNER luoi_admin;" || true
 sudo -u postgres psql -c "CREATE DATABASE luoi_crm OWNER luoi_admin;" || true
 sudo -u postgres psql -c "CREATE DATABASE luoi_omni OWNER luoi_admin;" || true
 
-echo "⚙️ [3/6] Cấu hình PostgreSQL Schemas..."
+echo "⚙️ [3/6] Cấu hình PostgreSQL Schemas & cập nhật .env VPS..."
 cp prisma/crm-postgres.prisma prisma/crm.prisma
 cp prisma/omni-postgres.prisma prisma/omnichannel.prisma
 
+# Cập nhật biến môi trường PostgreSQL vào file .env
+sed -i '/CRM_DATABASE_URL/d' .env || true
+sed -i '/OMNI_DATABASE_URL/d' .env || true
+sed -i '/CRM_POSTGRES_URL/d' .env || true
+sed -i '/OMNI_POSTGRES_URL/d' .env || true
+
+echo 'CRM_DATABASE_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_crm?schema=public"' >> .env
+echo 'OMNI_DATABASE_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_omni?schema=public"' >> .env
+echo 'CRM_POSTGRES_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_crm?schema=public"' >> .env
+echo 'OMNI_POSTGRES_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_omni?schema=public"' >> .env
+
 export CRM_DATABASE_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_crm?schema=public"
 export OMNI_DATABASE_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_omni?schema=public"
-export CRM_POSTGRES_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_crm?schema=public"
-export OMNI_POSTGRES_URL="postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_omni?schema=public"
 
 echo "🔨 [4/6] Generate Prisma Client & Push Schemas to PostgreSQL..."
 npx prisma generate --schema=prisma/schema.prisma
