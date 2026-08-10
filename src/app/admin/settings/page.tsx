@@ -333,31 +333,33 @@ export default function AdminSettingsPage() {
             Cấu Hình Logo Header / Menu (Tải Ảnh &amp; Căn Vị Trí Mobile/Desktop)
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50 p-5 rounded-2xl border border-stone-200">
-            {/* Logo Image Upload / URL & Live Preview */}
-            <div className="space-y-3 text-xs font-mono">
-              <label className="block font-bold text-stone-800">Hình Ảnh Logo Website</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://domain.com/logo.png hoặc /uploads/logo.png"
-                  className="flex-1 px-3 py-2 border border-stone-300 rounded-xl bg-white font-mono text-xs focus:ring-1 focus:ring-[#0d4f4a]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsMediaModalOpen(true)}
-                  className="px-3.5 py-2 bg-[#0d4f4a] hover:bg-[#083b37] text-white rounded-xl font-mono font-bold text-xs transition-colors shrink-0 cursor-pointer shadow-xs"
-                >
-                  📁 Thư viện Media
-                </button>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 bg-stone-50 p-5 rounded-2xl border border-stone-200">
+            {/* Logo Image Upload / URL & Live Preview (Compact 4-col layout ~ 33% width) */}
+            <div className="xl:col-span-4 space-y-2.5 text-xs font-mono flex flex-col justify-between">
+              <div>
+                <label className="block font-bold text-stone-800 mb-1.5">Hình Ảnh Logo Website</label>
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="/images/logo.png"
+                    className="flex-1 px-2.5 py-1.5 border border-stone-300 rounded-xl bg-white font-mono text-xs focus:ring-1 focus:ring-[#0d4f4a] truncate"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsMediaModalOpen(true)}
+                    className="px-3 py-1.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white rounded-xl font-mono font-bold text-xs transition-colors shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
+                  >
+                    📁 Media
+                  </button>
+                </div>
               </div>
 
-              {/* Live Preview Box */}
-              <div className="p-4 bg-white rounded-xl border border-stone-200 space-y-2">
-                <span className="text-[11px] font-mono text-stone-500 font-semibold block">Xem trước Logo:</span>
-                <div className="flex items-center justify-center p-4 bg-stone-100/80 rounded-lg min-h-[70px] border border-dashed border-stone-300">
+              {/* Compact Live Preview Box */}
+              <div className="p-2.5 bg-white rounded-xl border border-stone-200 space-y-1 mt-2 flex-1 flex flex-col justify-center">
+                <span className="text-[10px] font-mono text-stone-400 font-semibold block">Xem trước Logo:</span>
+                <div className="flex items-center justify-center p-2.5 bg-stone-100/70 rounded-lg min-h-[50px] border border-dashed border-stone-300">
                   {logoUrl ? (
                     <img
                       src={logoUrl}
@@ -366,11 +368,11 @@ export default function AdminSettingsPage() {
                       className="object-contain transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-xl bg-[#0d4f4a] text-white flex items-center justify-center font-sans font-black text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-6 h-6 rounded-lg bg-[#0d4f4a] text-white flex items-center justify-center font-sans font-black text-xs">
                         L
                       </span>
-                      <span className="font-serif font-bold text-lg text-stone-900">
+                      <span className="font-serif font-bold text-sm text-stone-900">
                         {siteName || "LƯỜI DỌN NHÀ"}
                       </span>
                     </div>
@@ -379,8 +381,8 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
-            {/* Logo Alignment Controls for Desktop & Mobile */}
-            <div className="space-y-5 text-xs font-mono">
+            {/* Logo Alignment Controls for Desktop & Mobile (Spacious 8-col layout ~ 67% width) */}
+            <div className="xl:col-span-8 space-y-3 text-xs font-mono">
             {/* USER REQUEST: Gộp gọn vị trí Logo, vị trí Menu và Kiểu Menu Active thành 1 hàng ngang (4 thẻ) */}
             <div className="space-y-4 text-xs font-mono">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
