@@ -166,8 +166,12 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       if (data.success) {
         setSaved(true);
-        // Xóa sessionStorage cache của Header để cập nhật ngay
-        try { sessionStorage.removeItem("luoi_header_settings_v2"); } catch {}
+        // Xóa sạch cache của Header & Admin để cập nhật ngay lập tức
+        try {
+          localStorage.removeItem("luoi_header_settings_v4");
+          sessionStorage.removeItem("luoi_header_settings_v4");
+          window.dispatchEvent(new Event("storage"));
+        } catch {}
         setTimeout(() => setSaved(false), 3000);
       }
     } catch {}
@@ -621,7 +625,9 @@ export default function AdminSettingsPage() {
 
               {/* Live preview */}
               <div className="p-3 bg-white rounded-xl border border-stone-200">
-                <span className="text-[10px] text-stone-400 font-mono block mb-2">Xem trước menu:</span>
+                <span className="text-[10px] text-stone-400 font-mono block mb-2">
+                  Xem trước menu ({menuStyle === "underline" ? "Gạch chân - Underline" : "Bo tròn - Pill"}):
+                </span>
                 <div
                   className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider"
                   style={{
@@ -633,7 +639,15 @@ export default function AdminSettingsPage() {
                     color: menuColorText,
                   }}
                 >
-                  <span style={{ color: menuColorActive, borderBottom: `2px solid ${menuColorActive}`, paddingBottom: "2px" }}>Trang Chủ</span>
+                  <span
+                    style={
+                      menuStyle === "underline"
+                        ? { color: menuColorActive, borderBottom: `2px solid ${menuColorActive}`, paddingBottom: "2px" }
+                        : { color: menuColorActive, backgroundColor: `${menuColorActive}1a`, padding: "6px 12px", borderRadius: "12px", fontWeight: 900 }
+                    }
+                  >
+                    Trang Chủ
+                  </span>
                   <span>Blog</span>
                   <span style={{ color: menuColorHover }}>Hover</span>
                 </div>

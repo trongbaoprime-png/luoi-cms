@@ -154,19 +154,18 @@ export default function Header() {
       });
     }
 
-    // 1. Apply local cache immediately
+    // 1. Apply local cache immediately for 0ms render
     try {
       const cached = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
       if (cached) {
-        const { ts, data } = JSON.parse(cached);
+        const { data } = JSON.parse(cached);
         if (data) {
           parseAndApplySettings(data);
-          if (Date.now() - ts < CACHE_TTL_MS) return; // cache is fresh
         }
       }
     } catch {}
 
-    // 2. Background revalidation from API
+    // 2. Always revalidate from API in background (SWR pattern)
     fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((res) => {
