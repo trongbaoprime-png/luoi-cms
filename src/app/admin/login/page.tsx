@@ -33,8 +33,7 @@ function LoginFormContent() {
 
       const json = await res.json();
       if (json.success) {
-        router.push(nextUrl);
-        router.refresh();
+        window.location.href = nextUrl;
       } else {
         setError(json.error || "Tên đăng nhập hoặc mật khẩu không đúng!");
       }

@@ -168,13 +168,12 @@ export async function POST(req: Request) {
         ttlSeconds: 60 * 60 * 24 * 7, // 7 days session
       });
 
-      const isProduction = process.env.NODE_ENV === "production";
       const isHttps = req.url.startsWith("https") || req.headers.get("x-forwarded-proto") === "https";
 
       const cookieStore = await cookies();
       cookieStore.set("luoi_admin_session", sessionToken, {
         httpOnly: true,
-        secure: isProduction || isHttps,
+        secure: isHttps,
         sameSite: "lax",
         path: "/",
         maxAge: 60 * 60 * 24 * 7, // 7 days
