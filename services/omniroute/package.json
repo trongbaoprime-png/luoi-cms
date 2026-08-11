@@ -1,0 +1,10 @@
+{
+  "name": "omniroute-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OmniRoute Model Gateway Sidecar Service for LƯỜI BUSINESS OS",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts"
+  }
+}

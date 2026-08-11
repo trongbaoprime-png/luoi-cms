@@ -1,0 +1,10 @@
+{
+  "name": "openclaw-agent-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenClaw Agent Runtime Sidecar Service for LƯỜI BUSINESS OS",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts"
+  }
+}
