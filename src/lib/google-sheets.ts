@@ -125,23 +125,32 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
           String(r.fullName || r.hoTen || r.ho_ten || r.customerName || r.name || "").trim()
         ).trim();
 
+        // === PARSE CHECKIN DATE ===
+        // Không ép year-month nếu date đã có đầy đủ YYYY-MM-DD từ sheet
         let rawCheckinDate = r.checkinDate || (r.appointmentDate ? r.appointmentDate : "");
 
-        if (!isDathen) {
-          const targetYearMonth = `${year}-${String(m).padStart(2, "0")}`;
-          if (rawCheckinDate && /^\d{4}-\d{2}-\d{2}$/.test(rawCheckinDate)) {
-            // Có ngày thật từ sheet → chuẩn hóa đúng năm-tháng
-            const dayPart = rawCheckinDate.slice(8, 10);
-            rawCheckinDate = `${targetYearMonth}-${dayPart}`;
-          } else if (rawCheckinDate && /^\d{1,2}\/\d{1,2}$/.test(rawCheckinDate.trim())) {
-            // Dạng d/m hoặc dd/mm → chuyển sang YYYY-MM-DD
-            const parts = rawCheckinDate.trim().split("/");
-            const d = parts[0].padStart(2, "0");
-            rawCheckinDate = `${targetYearMonth}-${d}`;
+        if (!isDathen && rawCheckinDate) {
+          const trimmed = rawCheckinDate.trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            // Đã có YYYY-MM-DD đầy đủ → giữ nguyên, KHÔNG ép tháng sync
+            rawCheckinDate = trimmed;
+          } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+            // Dạng DD/MM/YYYY → convert
+            const [d, mo, y] = trimmed.split("/");
+            rawCheckinDate = `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+          } else if (/^\d{1,2}\/\d{1,2}$/.test(trimmed)) {
+            // Dạng D/M hoặc DD/MM (không có năm) → dùng năm-tháng sheet đang sync
+            const [d, mo] = trimmed.split("/");
+            rawCheckinDate = `${year}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+          } else if (/^\d{1,2}$/.test(trimmed)) {
+            // Chỉ có số ngày → dùng tháng sheet đang sync
+            rawCheckinDate = `${year}-${String(m).padStart(2, "0")}-${trimmed.padStart(2, "0")}`;
           } else {
-            // Không có ngày thật → để trống, KHÔNG gán ngày mặc định giả
+            // Không parse được → để trống
             rawCheckinDate = "";
           }
+        } else if (!isDathen) {
+          rawCheckinDate = "";
         }
 
         const parsed = parseTdsPayload({
@@ -170,76 +179,87 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
 
         const phoneHash = hashPhone(parsed.phone);
 
+        // Xác định status dựa trên dữ liệu thực từ sheet
         let status = parsed.status;
         if (isDathen) {
           status = "QUALIFIED";
         } else if (r.pass === 1 || r.result === "Đậu") {
           status = "PURCHASE";
-        } else if (r.checkin === 1 || r.result === "Rớt" || r.checkinDate) {
+        } else if (r.checkin === 1 || r.checkinDate || rawCheckinDate) {
           status = "CHECKIN";
         }
 
         parsedRecords.push({ r, parsed, phoneHash, status, isDathen });
       }
 
-      // 2. Upsert-based Chunk Processing (100% idempotent — sync nhiều lần không tạo duplicate)
+      // === UPSERT: phone là anchor duy nhất ===
+      // - phone tồn tại → UPDATE trạng thái (checkinDate, status, revenue, result...)
+      // - phone chưa có → CREATE mới
+      // - Không bao giờ tạo duplicate theo phone
       const CHUNK_SIZE = 200;
-      const targetMonthPrefix = `${year}-${String(m).padStart(2, "0")}`;
 
       for (let cIdx = 0; cIdx < parsedRecords.length; cIdx += CHUNK_SIZE) {
         const chunk = parsedRecords.slice(cIdx, cIdx + CHUNK_SIZE);
 
         for (const item of chunk) {
           const { r, parsed, phoneHash, status, isDathen } = item;
-
-          // Chỉ update checkinDate nếu ngày mới thuộc đúng tháng đang sync
-          // Tránh sync T8 ghi đè checkinDate T6/T7 của cùng khách hàng
-          const newDate = parsed.checkinDate || "";
-          const dateIsForThisMonth = newDate.startsWith(targetMonthPrefix);
+          const checkinDate = parsed.checkinDate || "";
+          const revenue = Number(r.revenue || parsed.revenue || 0);
+          const actualRevenue = Number(r.actualRevenue || parsed.actualRevenue || 0);
+          const caTheoRevenue = Number(r.caTheoRevenue || parsed.caTheoRevenue || 0);
 
           try {
             await (crmDb.cRMLead as any).upsert({
               where: { phone: String(parsed.phone) },
+
+              // Phone tồn tại → chỉ CẬP NHẬT trạng thái & thông tin mới
               update: {
-                fullName: isRealName(parsed.fullName) ? String(parsed.fullName) : undefined,
-                telesale: String(parsed.telesale || "Chưa gán"),
-                branch: String(parsed.branch || "Hồ Chí Minh"),
-                branchGroup: String(parsed.branchGroup || "Hồ Chí Minh"),
-                service: String(parsed.service || "Khám & Tư Vấn"),
-                serviceGroup: String(parsed.serviceGroup || "Nha Khoa Tổng Quát"),
-                // Chỉ ghi đè checkinDate nếu thuộc đúng tháng sync
-                ...(dateIsForThisMonth ? { checkinDate: newDate, isMonthNote: Boolean(parsed.isMonthNote), status } : {}),
+                // Tên: chỉ cập nhật nếu tên mới hợp lệ
+                ...(isRealName(parsed.fullName) ? { fullName: String(parsed.fullName) } : {}),
+                // Trạng thái hành trình
+                status,
+                ...(checkinDate ? { checkinDate } : {}),
+                isMonthNote: Boolean(parsed.isMonthNote),
                 result: parsed.result || undefined,
+                // Thông tin liên hệ & phân loại
+                telesale: String(parsed.telesale || "Chưa gán"),
+                branch: String(parsed.branch || ""),
+                branchGroup: String(parsed.branchGroup || ""),
+                service: String(parsed.service || ""),
+                serviceGroup: String(parsed.serviceGroup || ""),
                 isOldCustomer: Boolean(parsed.isOldCustomer),
-                revenue: Number(r.revenue || parsed.revenue || 0),
-                actualRevenue: Number(r.actualRevenue || parsed.actualRevenue || 0),
-                caTheoRevenue: Number(r.caTheoRevenue || parsed.caTheoRevenue || 0),
+                // Doanh thu
+                revenue,
+                actualRevenue,
+                caTheoRevenue,
                 ref: isDathen ? "App" : "Checkin",
               },
+
+              // Phone chưa có → TẠO MỚI hoàn chỉnh
               create: {
-                fullName: String(parsed.fullName || "Khách Vãng Lai"),
                 phone: String(parsed.phone),
                 phoneHash,
+                fullName: String(parsed.fullName || "Khách"),
                 source: String(parsed.source || "TDS_EXCEL"),
                 sourceGroup: String(parsed.sourceGroup || "Khác"),
                 telesale: String(parsed.telesale || "Chưa gán"),
-                branch: String(parsed.branch || "Hồ Chí Minh"),
-                branchGroup: String(parsed.branchGroup || "Hồ Chí Minh"),
-                service: String(parsed.service || "Khám & Tư Vấn"),
-                serviceGroup: String(parsed.serviceGroup || "Nha Khoa Tổng Quát"),
-                checkinDate: String(parsed.checkinDate || ""),
+                branch: String(parsed.branch || ""),
+                branchGroup: String(parsed.branchGroup || ""),
+                service: String(parsed.service || ""),
+                serviceGroup: String(parsed.serviceGroup || ""),
+                checkinDate,
                 isMonthNote: Boolean(parsed.isMonthNote),
                 result: String(parsed.result || ""),
                 isOldCustomer: Boolean(parsed.isOldCustomer),
-                revenue: Number(r.revenue || parsed.revenue || 0),
-                actualRevenue: Number(r.actualRevenue || parsed.actualRevenue || 0),
-                caTheoRevenue: Number(r.caTheoRevenue || parsed.caTheoRevenue || 0),
+                revenue,
+                actualRevenue,
+                caTheoRevenue,
                 status,
                 ref: isDathen ? "App" : "Checkin",
               },
             });
           } catch {
-            // Bỏ qua nếu phone trùng (race condition) — record đã tồn tại
+            // Bỏ qua lỗi race condition — phone đã được xử lý
           }
 
           monthSyncedCount++;
