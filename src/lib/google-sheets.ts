@@ -130,10 +130,17 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
         if (!isDathen) {
           const targetYearMonth = `${year}-${String(m).padStart(2, "0")}`;
           if (rawCheckinDate && /^\d{4}-\d{2}-\d{2}$/.test(rawCheckinDate)) {
+            // Có ngày thật từ sheet → chuẩn hóa đúng năm-tháng
             const dayPart = rawCheckinDate.slice(8, 10);
             rawCheckinDate = `${targetYearMonth}-${dayPart}`;
+          } else if (rawCheckinDate && /^\d{1,2}\/\d{1,2}$/.test(rawCheckinDate.trim())) {
+            // Dạng d/m hoặc dd/mm → chuyển sang YYYY-MM-DD
+            const parts = rawCheckinDate.trim().split("/");
+            const d = parts[0].padStart(2, "0");
+            rawCheckinDate = `${targetYearMonth}-${d}`;
           } else {
-            rawCheckinDate = `${targetYearMonth}-01`;
+            // Không có ngày thật → để trống, KHÔNG gán ngày mặc định giả
+            rawCheckinDate = "";
           }
         }
 
@@ -177,32 +184,36 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
 
       // 2. Upsert-based Chunk Processing (100% idempotent — sync nhiều lần không tạo duplicate)
       const CHUNK_SIZE = 200;
+      const targetMonthPrefix = `${year}-${String(m).padStart(2, "0")}`;
+
       for (let cIdx = 0; cIdx < parsedRecords.length; cIdx += CHUNK_SIZE) {
         const chunk = parsedRecords.slice(cIdx, cIdx + CHUNK_SIZE);
 
         for (const item of chunk) {
           const { r, parsed, phoneHash, status, isDathen } = item;
 
+          // Chỉ update checkinDate nếu ngày mới thuộc đúng tháng đang sync
+          // Tránh sync T8 ghi đè checkinDate T6/T7 của cùng khách hàng
+          const newDate = parsed.checkinDate || "";
+          const dateIsForThisMonth = newDate.startsWith(targetMonthPrefix);
+
           try {
             await (crmDb.cRMLead as any).upsert({
               where: { phone: String(parsed.phone) },
               update: {
                 fullName: isRealName(parsed.fullName) ? String(parsed.fullName) : undefined,
-                source: String(parsed.source || "TDS_EXCEL"),
-                sourceGroup: String(parsed.sourceGroup || "Khác"),
                 telesale: String(parsed.telesale || "Chưa gán"),
                 branch: String(parsed.branch || "Hồ Chí Minh"),
                 branchGroup: String(parsed.branchGroup || "Hồ Chí Minh"),
                 service: String(parsed.service || "Khám & Tư Vấn"),
                 serviceGroup: String(parsed.serviceGroup || "Nha Khoa Tổng Quát"),
-                checkinDate: parsed.checkinDate || undefined,
-                isMonthNote: Boolean(parsed.isMonthNote),
+                // Chỉ ghi đè checkinDate nếu thuộc đúng tháng sync
+                ...(dateIsForThisMonth ? { checkinDate: newDate, isMonthNote: Boolean(parsed.isMonthNote), status } : {}),
                 result: parsed.result || undefined,
                 isOldCustomer: Boolean(parsed.isOldCustomer),
                 revenue: Number(r.revenue || parsed.revenue || 0),
                 actualRevenue: Number(r.actualRevenue || parsed.actualRevenue || 0),
                 caTheoRevenue: Number(r.caTheoRevenue || parsed.caTheoRevenue || 0),
-                status,
                 ref: isDathen ? "App" : "Checkin",
               },
               create: {
