@@ -154,11 +154,11 @@ export async function GET(req: Request) {
         take: pageSize,
         skip: (page - 1) * pageSize,
       }),
-      // qualifiedCount: Chỉ đếm leads đã đạt trạng thái thực sự qualified trở lên
+      // qualifiedCount: Tổng số khách hàng hợp lệ (không phải Junk/rác)
       crmDb.cRMLead.count({
         where: {
           ...where,
-          status: { in: ["QUALIFIED", "SCHEDULED", "CHECKIN", "PURCHASE"] },
+          status: { not: "JUNK" },
         },
       }),
       // checkinCount: Chỉ đếm leads đã thực sự checkin hoặc mua hàng
