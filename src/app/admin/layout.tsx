@@ -159,6 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       groupTitle: "KHÁCH HÀNG & CRM LEAD",
       icon: Mail,
       items: [
+        { title: "Vertical Slice MVP", href: "/admin/vertical-slice", icon: Activity },
         { title: "miniCRM", href: "/admin/crm", icon: Users },
         { title: "Khách đăng ký", href: "/admin/raw-leads", icon: FileText },
         { title: "Omnichannel & AI Agent", href: "/admin/omnichannel", icon: Bot },
@@ -170,6 +171,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       groupTitle: "HỆ THỐNG & PHÂN QUYỀN",
       icon: Shield,
       items: [
+        { title: "OmniRoute Gateway", href: "/admin/omniroute", icon: Share2 },
+        { title: "OpenClaw Runtime", href: "/admin/openclaw", icon: Bot },
         { title: "Quản lý Users", href: "/admin/users", icon: Shield },
         { title: "Audit Logs & Webhooks", href: "/admin/audit-logs", icon: Activity },
         { title: "Multi-Platform Ads APIs", href: "/admin/ads-setup", icon: Share2 },
