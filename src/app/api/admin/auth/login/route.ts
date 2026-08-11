@@ -72,15 +72,19 @@ export async function POST(req: Request) {
       }
     }
 
+    const cleanUsername = username.trim().toLowerCase();
+
     // 2. Check against Database User Table
     if (!authenticatedUser) {
       try {
         const dbUser = await cmsDb.user.findFirst({
           where: {
             OR: [
-              { email: username },
-              { name: username },
-              ...(username.toLowerCase() === "admin" ? [{ email: "admin@luoidonnha.com" }] : []),
+              { email: cleanUsername },
+              { name: cleanUsername },
+              { email: username.trim() },
+              { name: username.trim() },
+              ...(cleanUsername === "admin" ? [{ email: "admin@luoidonnha.com" }] : []),
             ],
             status: "ACTIVE",
           },
