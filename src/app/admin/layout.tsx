@@ -123,10 +123,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsUserMenuOpen(false);
     if (confirm(`Bạn có chắc chắn muốn đăng xuất khỏi tài khoản ${currentUser.name}?`)) {
-      router.push("/");
+      try {
+        await fetch("/api/admin/auth/logout", { method: "POST" });
+      } catch {}
+      router.push("/admin/login");
+    }
     }
   };
 
