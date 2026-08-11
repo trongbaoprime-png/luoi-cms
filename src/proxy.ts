@@ -4,8 +4,15 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ── Admin Route Protection (Temporarily disabled per user request) ──
-  // Anyone can access /admin routes directly without login redirect
+  // ── Admin Route Protection ──
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !pathname.startsWith("/api/admin/auth/")) {
+    const sessionToken = request.cookies.get("luoi_admin_session")?.value;
+    if (!sessionToken) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
 
   const response = NextResponse.next();
 
