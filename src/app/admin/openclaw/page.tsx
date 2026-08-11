@@ -25,7 +25,7 @@ export default function OpenClawControlPanel() {
   const fetchOpenClawData = useCallback(async () => {
     setLoading(true);
     try {
-      const healthRes = await fetch("http://127.0.0.1:20180/api/health").catch(() => null);
+      const healthRes = await fetch("/api/openclaw/health").catch(() => null);
       if (healthRes && healthRes.ok) {
         const hJson = await healthRes.json();
         setHealthData(hJson);
@@ -33,7 +33,7 @@ export default function OpenClawControlPanel() {
         setHealthData({ status: "DEGRADED", port: 20180 });
       }
 
-      const agentsRes = await fetch("http://127.0.0.1:20180/api/agents").catch(() => null);
+      const agentsRes = await fetch("/api/openclaw/agents").catch(() => null);
       if (agentsRes && agentsRes.ok) {
         const aJson = await agentsRes.json();
         setAgentsList(aJson.agents || []);
@@ -54,7 +54,7 @@ export default function OpenClawControlPanel() {
     setRunResult(null);
 
     try {
-      const res = await fetch("http://127.0.0.1:20180/api/agents/run", {
+      const res = await fetch("/api/openclaw/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

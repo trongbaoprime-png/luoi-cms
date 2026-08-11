@@ -27,7 +27,7 @@ export default function OmniRouteControlPanel() {
   const fetchGatewayData = useCallback(async () => {
     setLoading(true);
     try {
-      const healthRes = await fetch("http://127.0.0.1:20128/v1/health").catch(() => null);
+      const healthRes = await fetch("/api/omniroute/health").catch(() => null);
       if (healthRes && healthRes.ok) {
         const hJson = await healthRes.json();
         setHealthData(hJson);
@@ -35,10 +35,10 @@ export default function OmniRouteControlPanel() {
         setHealthData({ status: "DEGRADED", port: 20128 });
       }
 
-      const modelsRes = await fetch("http://127.0.0.1:20128/v1/models").catch(() => null);
+      const modelsRes = await fetch("/api/omniroute/models").catch(() => null);
       if (modelsRes && modelsRes.ok) {
         const mJson = await modelsRes.json();
-        setModelsData(mJson.data || []);
+        setModelsData(mJson.profiles || mJson.data || []);
       }
     } catch {}
     setLoading(false);
