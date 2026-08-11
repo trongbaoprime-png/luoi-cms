@@ -77,7 +77,11 @@ export async function POST(req: Request) {
       try {
         const dbUser = await cmsDb.user.findFirst({
           where: {
-            OR: [{ email: username }, { name: username }],
+            OR: [
+              { email: username },
+              { name: username },
+              ...(username.toLowerCase() === "admin" ? [{ email: "admin@luoidonnha.com" }] : []),
+            ],
             status: "ACTIVE",
           },
         });
