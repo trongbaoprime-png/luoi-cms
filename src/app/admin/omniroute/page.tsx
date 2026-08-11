@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 export default function OmniRouteControlPanel() {
+  const [viewMode, setViewMode] = useState<"embedded" | "panel">("embedded");
   const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState<any>(null);
   const [modelsData, setModelsData] = useState<any[]>([]);
@@ -89,14 +90,46 @@ export default function OmniRouteControlPanel() {
           </p>
         </div>
 
-        <button
-          onClick={fetchGatewayData}
-          className="flex items-center gap-2 px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/10 cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          <span>Làm Mới Trạng Thái</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewMode("embedded")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "embedded"
+                ? "bg-[#00c9b7] text-[#023835] shadow-md"
+                : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+            }`}
+          >
+            🖥️ Giao diện Trực quan (Official UI)
+          </button>
+          <button
+            onClick={() => setViewMode("panel")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "panel"
+                ? "bg-[#00c9b7] text-[#023835] shadow-md"
+                : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+            }`}
+          >
+            ⚡ Điều khiển Nhanh (Control Panel)
+          </button>
+          <button
+            onClick={fetchGatewayData}
+            className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/10 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
+
+      {viewMode === "embedded" ? (
+        <div className="w-full h-[82vh] bg-stone-900 rounded-2xl overflow-hidden border border-stone-800 shadow-xl relative">
+          <iframe
+            src="/omniroute-app/"
+            className="w-full h-full border-0"
+            title="OmniRoute Official Web Dashboard"
+          />
+        </div>
+      ) : (
+        <>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -242,6 +275,8 @@ export default function OmniRouteControlPanel() {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
