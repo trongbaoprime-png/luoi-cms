@@ -513,10 +513,12 @@ export function parseTdsPayload(body: any): ParsedTdsRow {
 
   const hasSpecificDate = isSpecificDateH(hValue);
   const hasMonthNote = isMonthNoteH(hValue);
+  const hasHValue = String(hValue || '').trim() !== '';
   const isOld = isOldCustomerByColumnO(oValue);
 
   const checkinDateKey = getCheckinDateKey(hValue);
-  const checkin = hasSpecificDate ? 1 : 0;
+  // Sheet nhân viên: Có dữ liệu cột H (ngày checkin hoặc "trong tháng...") => đã checkin (checkin = 1)
+  const checkin = (!isDathen && (hasSpecificDate || hasMonthNote || hasHValue)) ? 1 : 0;
   const result = getResult(jValue, checkin);
 
   const revenue = parseRevenueJ(jValue);
@@ -529,8 +531,8 @@ export function parseTdsPayload(body: any): ParsedTdsRow {
 
   let status: 'CHECKIN' | 'PURCHASE' | 'QUALIFIED' = 'QUALIFIED';
 
-  if (checkin === 1 || hasMonthNote) {
-    if (result === 'Đậu' && revenue > 0) {
+  if (!isDathen && (checkin === 1 || hasMonthNote || hasHValue)) {
+    if (result === 'Đậu' || revenue > 0) {
       status = 'PURCHASE';
     } else {
       status = 'CHECKIN';

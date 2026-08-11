@@ -96,14 +96,37 @@ export async function GET(req: Request) {
         const fromStr = normalizeToIsoDate(dateFrom) || "2020-01-01";
         const toStr = normalizeToIsoDate(dateTo) || "2030-12-31";
 
-        // Chỉ lọc theo checkinDate (ngày thực tế khách đến) — không dùng createdAt
-        // vì createdAt là ngày sync vào DB, không phải ngày khách (tất cả sync 1 lúc)
-        conditions.push({
-          checkinDate: {
-            gte: fromStr,
-            lte: toStr,
-          },
-        });
+        const fromMonth = fromStr.slice(0, 7);
+        const toMonth = toStr.slice(0, 7);
+
+        // Khi lọc cả tháng (từ ngày 01 đến cuối tháng):
+        // Bao gồm cả khách có ngày checkin cụ thể VÀ khách thuộc tháng đó (isMonthNote / checkinMonth)
+        if (fromStr.endsWith("-01")) {
+          conditions.push({
+            OR: [
+              {
+                checkinDate: {
+                  gte: fromStr,
+                  lte: toStr,
+                },
+              },
+              {
+                checkinMonth: {
+                  gte: fromMonth,
+                  lte: toMonth,
+                },
+              },
+            ],
+          });
+        } else {
+          // Khi lọc ngày lẻ cụ thể (ví dụ 15/06 - 18/06): Chỉ lọc theo ngày checkin cụ thể
+          conditions.push({
+            checkinDate: {
+              gte: fromStr,
+              lte: toStr,
+            },
+          });
+        }
       }
     }
 

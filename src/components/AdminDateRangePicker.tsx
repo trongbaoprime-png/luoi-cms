@@ -4,6 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { Calendar as CalendarIcon, ChevronDown, Check, X } from "lucide-react";
 
 export type DatePresetKey =
+  | "MONTH_4"
+  | "MONTH_5"
+  | "MONTH_6"
+  | "MONTH_7"
+  | "MONTH_8"
+  | "MONTH_9"
+  | "MONTH_10"
+  | "MONTH_11"
+  | "MONTH_12"
   | "TODAY"
   | "YESTERDAY"
   | "TODAY_YESTERDAY"
@@ -23,6 +32,15 @@ export interface DatePresetOption {
 }
 
 export const DATE_PRESETS: DatePresetOption[] = [
+  { key: "MONTH_4", label: "Tháng 4 (04/2026)" },
+  { key: "MONTH_5", label: "Tháng 5 (05/2026)" },
+  { key: "MONTH_6", label: "Tháng 6 (06/2026)" },
+  { key: "MONTH_7", label: "Tháng 7 (07/2026)" },
+  { key: "MONTH_8", label: "Tháng 8 (08/2026)" },
+  { key: "MONTH_9", label: "Tháng 9 (09/2026)" },
+  { key: "MONTH_10", label: "Tháng 10 (10/2026)" },
+  { key: "MONTH_11", label: "Tháng 11 (11/2026)" },
+  { key: "MONTH_12", label: "Tháng 12 (12/2026)" },
   { key: "TODAY", label: "Hôm nay" },
   { key: "YESTERDAY", label: "Hôm qua" },
   { key: "TODAY_YESTERDAY", label: "Hôm nay và hôm qua" },

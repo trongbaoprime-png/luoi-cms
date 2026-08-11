@@ -193,10 +193,11 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
       }
 
       // === UPSERT: phone là anchor duy nhất ===
-      // - phone tồn tại → UPDATE trạng thái (checkinDate, status, revenue, result...)
+      // - phone tồn tại → UPDATE trạng thái (checkinDate, checkinMonth, status, revenue, result...)
       // - phone chưa có → CREATE mới
       // - Không bao giờ tạo duplicate theo phone
       const CHUNK_SIZE = 200;
+      const syncMonthStr = `${year}-${String(m).padStart(2, "0")}`;
 
       for (let cIdx = 0; cIdx < parsedRecords.length; cIdx += CHUNK_SIZE) {
         const chunk = parsedRecords.slice(cIdx, cIdx + CHUNK_SIZE);
@@ -204,6 +205,7 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
         for (const item of chunk) {
           const { r, parsed, phoneHash, status, isDathen } = item;
           const checkinDate = parsed.checkinDate || "";
+          const checkinMonth = checkinDate.length >= 7 ? checkinDate.slice(0, 7) : syncMonthStr;
           const revenue = Number(r.revenue || parsed.revenue || 0);
           const actualRevenue = Number(r.actualRevenue || parsed.actualRevenue || 0);
           const caTheoRevenue = Number(r.caTheoRevenue || parsed.caTheoRevenue || 0);
@@ -216,9 +218,9 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
               update: {
                 // Tên: chỉ cập nhật nếu tên mới hợp lệ
                 ...(isRealName(parsed.fullName) ? { fullName: String(parsed.fullName) } : {}),
-                // Trạng thái hành trình
+                // Trạng thái hành trình: nâng cấp trạng thái (PURCHASE > CHECKIN > QUALIFIED)
                 status,
-                ...(checkinDate ? { checkinDate } : {}),
+                ...(checkinDate ? { checkinDate, checkinMonth: checkinDate.slice(0, 7) } : {}),
                 isMonthNote: Boolean(parsed.isMonthNote),
                 result: parsed.result || undefined,
                 // Thông tin liên hệ & phân loại
@@ -248,6 +250,7 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
                 service: String(parsed.service || ""),
                 serviceGroup: String(parsed.serviceGroup || ""),
                 checkinDate,
+                checkinMonth,
                 isMonthNote: Boolean(parsed.isMonthNote),
                 result: String(parsed.result || ""),
                 isOldCustomer: Boolean(parsed.isOldCustomer),

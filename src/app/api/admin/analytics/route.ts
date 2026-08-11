@@ -20,6 +20,42 @@ export async function GET(request: NextRequest) {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 
     switch (datePreset) {
+      case "MONTH_4":
+        startDate = new Date(2026, 3, 1);
+        endDate = new Date(2026, 3, 30, 23, 59, 59);
+        break;
+      case "MONTH_5":
+        startDate = new Date(2026, 4, 1);
+        endDate = new Date(2026, 4, 31, 23, 59, 59);
+        break;
+      case "MONTH_6":
+        startDate = new Date(2026, 5, 1);
+        endDate = new Date(2026, 5, 30, 23, 59, 59);
+        break;
+      case "MONTH_7":
+        startDate = new Date(2026, 6, 1);
+        endDate = new Date(2026, 6, 31, 23, 59, 59);
+        break;
+      case "MONTH_8":
+        startDate = new Date(2026, 7, 1);
+        endDate = new Date(2026, 7, 31, 23, 59, 59);
+        break;
+      case "MONTH_9":
+        startDate = new Date(2026, 8, 1);
+        endDate = new Date(2026, 8, 30, 23, 59, 59);
+        break;
+      case "MONTH_10":
+        startDate = new Date(2026, 9, 1);
+        endDate = new Date(2026, 9, 31, 23, 59, 59);
+        break;
+      case "MONTH_11":
+        startDate = new Date(2026, 10, 1);
+        endDate = new Date(2026, 10, 30, 23, 59, 59);
+        break;
+      case "MONTH_12":
+        startDate = new Date(2026, 11, 1);
+        endDate = new Date(2026, 11, 31, 23, 59, 59);
+        break;
       case "TODAY":
         startDate = todayStart;
         break;

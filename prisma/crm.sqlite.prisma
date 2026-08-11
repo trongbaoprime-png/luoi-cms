@@ -25,6 +25,7 @@ model CRMLead {
   service           String?            // Dịch vụ (CN, IMP, SỨ, TRÁM, CVR...)
   serviceGroup      String?            // Nhóm DV (CHỈNH NHA, IMPLANT, RĂNG SỨ, TỔNG QUÁT)
   checkinDate       String?            // YYYY-MM-DD ngày check-in từ Cột H
+  checkinMonth      String?            // YYYY-MM tháng check-in (VD: 2026-06)
   isMonthNote       Boolean            @default(false) // "TRONG THÁNG X" trong Cột H
   result            String?            // Đậu, Rớt, Chưa có
   isOldCustomer     Boolean            @default(false) // Cột O: OLD/CU/KHACH CU
@@ -50,6 +51,7 @@ model CRMLead {
   @@unique([phone])
   @@index([status])
   @@index([createdAt])
+  @@index([checkinMonth])
   @@index([sourceGroup])
   @@index([telesale])
   @@index([branchGroup])
