@@ -4,15 +4,8 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ── Admin Route Protection (was middleware.ts) ──
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const sessionCookie = request.cookies.get("luoi_admin_session");
-    if (!sessionCookie || !sessionCookie.value) {
-      const loginUrl = new URL("/admin/login", request.url);
-      loginUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
+  // ── Admin Route Protection (Temporarily disabled per user request) ──
+  // Anyone can access /admin routes directly without login redirect
 
   const response = NextResponse.next();
 

@@ -125,6 +125,17 @@ function LoginFormContent() {
           </button>
         </form>
 
+        {/* Direct Bypass Button */}
+        <div className="pt-2 border-t border-stone-800/60 text-center">
+          <a
+            href="/admin"
+            className="inline-flex items-center justify-center w-full py-3 px-4 bg-stone-800/80 hover:bg-stone-800 text-teal-400 font-medium rounded-xl border border-teal-500/30 hover:border-teal-500/60 transition-all text-xs gap-2 shadow-sm"
+          >
+            <span>🔓 Đã Tắt Bắt Buộc Đăng Nhập — Bấm Vào Thẳng Admin Dashboard</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
       </div>
     </div>
   );
