@@ -131,7 +131,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } catch {}
       router.push("/admin/login");
     }
-    }
   };
 
 
