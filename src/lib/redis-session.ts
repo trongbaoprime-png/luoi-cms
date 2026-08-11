@@ -158,6 +158,16 @@ export async function getAdminSession(token: string): Promise<AdminSession | nul
     }
   }
 
+  // 2. Fallback: Read from in-memory session store (works without Redis)
+  const memSession = memorySessions.get(token);
+  if (memSession) {
+    if (memSession.expiresAt <= now) {
+      memorySessions.delete(token);
+      return null;
+    }
+    return memSession;
+  }
+
   // 3. Dev Mode Fallback for Localhost: restore session automatically on server restart/HMR
   if (process.env.NODE_ENV !== "production" && token) {
     const devSession: AdminSession = {

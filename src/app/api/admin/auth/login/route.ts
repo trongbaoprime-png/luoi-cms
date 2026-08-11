@@ -43,13 +43,12 @@ export async function POST(req: Request) {
     const cleanUsername = username.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // Clear rate limit record for master admin login
-    if (
+    // 0. Master Super Admin Guaranteed Authentication (bypass rate limit)
+    const isMasterAdmin =
       (cleanUsername === "admin" || cleanUsername === "admin@luoidonnha.com" || cleanUsername === "beni") &&
-      (cleanPassword === "B@oph@m021991" || cleanPassword === "admin123")
-    ) {
-      loginAttempts.delete(clientIp);
-    } else {
+      (cleanPassword === "B@oph@m021991" || cleanPassword === "admin123");
+
+    if (!isMasterAdmin) {
       const limit = checkRateLimit(clientIp);
       if (!limit.allowed) {
         return NextResponse.json(
@@ -57,6 +56,8 @@ export async function POST(req: Request) {
           { status: 429 }
         );
       }
+    } else {
+      loginAttempts.delete(clientIp);
     }
 
     let authenticatedUser: {
@@ -67,14 +68,8 @@ export async function POST(req: Request) {
       permissions?: string | null;
     } | null = null;
 
-    const cleanUsername = username.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
     // 0. Master Super Admin Guaranteed Authentication
-    if (
-      (cleanUsername === "admin" || cleanUsername === "admin@luoidonnha.com" || cleanUsername === "beni") &&
-      (cleanPassword === "B@oph@m021991" || cleanPassword === "admin123")
-    ) {
+    if (isMasterAdmin) {
       authenticatedUser = {
         id: "master-super-admin",
         username: "admin",
