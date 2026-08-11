@@ -29,22 +29,34 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
 export async function POST(req: Request) {
   try {
     const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "127.0.0.1";
-
-    const limit = checkRateLimit(clientIp);
-    if (!limit.allowed) {
-      return NextResponse.json(
-        { success: false, error: "Bạn đã đăng nhập sai quá 5 lần. Vui lòng thử lại sau 1 phút!" },
-        { status: 429 }
-      );
-    }
-
-    const { username, password } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const username = (body.username || "").toString();
+    const password = (body.password || "").toString();
 
     if (!username || !password) {
       return NextResponse.json(
         { success: false, error: "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!" },
         { status: 400 }
       );
+    }
+
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    // Clear rate limit record for master admin login
+    if (
+      (cleanUsername === "admin" || cleanUsername === "admin@luoidonnha.com" || cleanUsername === "beni") &&
+      (cleanPassword === "B@oph@m021991" || cleanPassword === "admin123")
+    ) {
+      loginAttempts.delete(clientIp);
+    } else {
+      const limit = checkRateLimit(clientIp);
+      if (!limit.allowed) {
+        return NextResponse.json(
+          { success: false, error: "Bạn đã thử sai quá 5 lần. Hệ thống tạm khóa trong 1 phút để bảo mật!" },
+          { status: 429 }
+        );
+      }
     }
 
     let authenticatedUser: {
