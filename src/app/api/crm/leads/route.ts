@@ -99,27 +99,18 @@ export async function GET(req: Request) {
         const fromMonth = fromStr.slice(0, 7);
         const toMonth = toStr.slice(0, 7);
 
-        // Khi lọc cả tháng (từ ngày 01 đến cuối tháng):
-        // Bao gồm cả khách có ngày checkin cụ thể VÀ khách thuộc tháng đó (isMonthNote / checkinMonth)
-        if (fromStr.endsWith("-01")) {
+        // Nếu lọc theo cả tháng đầy đủ (từ ngày 01 đến 28/29/30/31 trong cùng 1 tháng):
+        // Lọc chính xác theo kỳ checkinMonth (VD: checkinMonth = '2026-06') tương tự HTML Dashboard
+        const isFullSingleMonth = fromStr.endsWith("-01") && fromMonth === toMonth && (
+          toStr.endsWith("-28") || toStr.endsWith("-29") || toStr.endsWith("-30") || toStr.endsWith("-31")
+        );
+
+        if (isFullSingleMonth) {
           conditions.push({
-            OR: [
-              {
-                checkinDate: {
-                  gte: fromStr,
-                  lte: toStr,
-                },
-              },
-              {
-                checkinMonth: {
-                  gte: fromMonth,
-                  lte: toMonth,
-                },
-              },
-            ],
+            checkinMonth: fromMonth,
           });
         } else {
-          // Khi lọc ngày lẻ cụ thể (ví dụ 15/06 - 18/06): Chỉ lọc theo ngày checkin cụ thể
+          // Nếu lọc khoảng ngày lẻ cụ thể (ví dụ 15/06 - 18/06): Lọc theo ngày checkinDate cụ thể
           conditions.push({
             checkinDate: {
               gte: fromStr,
