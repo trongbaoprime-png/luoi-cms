@@ -139,92 +139,23 @@ export default function OpenClawControlPanel() {
                 OpenClaw Agent Runtime Control Center
               </h1>
               <p className="text-xs md:text-sm text-[#e6f4f1]/80 mt-0.5">
-                Nhúng 100% Giao diện gốc OpenClaw Agent Hub — Quản lý 4 AI Agents tự động, Skill Tools &amp; Webhook Channels
+                Quản lý 4 AI Agents tự động (CEO, Marketing, Sales, CSKH), Tool Allowlist &amp; Live Execution Sandbox (Port 20180)
               </p>
             </div>
           </div>
         </div>
 
-        {/* Tab Switcher & Quick Actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/10">
-            <button
-              onClick={() => setActiveTab("NATIVE")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === "NATIVE"
-                  ? "bg-[#00c9b7] text-[#023835] shadow-sm"
-                  : "text-white/80 hover:text-white"
-              }`}
-            >
-              <span>🖥️ Giao diện gốc OpenClaw</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("ANALYTICS")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === "ANALYTICS"
-                  ? "bg-[#00c9b7] text-[#023835] shadow-sm"
-                  : "text-white/80 hover:text-white"
-              }`}
-            >
-              <span>📊 Agent Matrix &amp; Sandbox</span>
-            </button>
-          </div>
-
-          <a
-            href="https://luoidonnha.com/openclaw-app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
-          >
-            <span>Mở OpenClaw Tab Mới (HTTPS)</span>
-          </a>
-
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2">
           <button
             onClick={fetchOpenClawData}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#00c9b7]" : ""}`} />
-            <span>Làm Mới</span>
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#00c9b7]" : ""}`} />
+            <span>Làm Mới Trạng Thái</span>
           </button>
         </div>
       </div>
-
-      {/* TAB 1: NATIVE OPENCLAW EMBEDDED DASHBOARD */}
-      {activeTab === "NATIVE" && (
-        <div className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-2xl space-y-3">
-          <div className="bg-stone-950 px-5 py-3 border-b border-stone-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-mono text-xs text-stone-300 font-bold">
-                OpenClaw Native Agent Server — Active Port 20180
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-stone-400">
-                4 Active AI Agents: CEO Executive, Marketing Lead, Sales Consultant, CSKH Support
-              </span>
-              <button
-                onClick={() => setIframeUrl(`/openclaw-app/?t=${Date.now()}`)}
-                className="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded text-[11px] font-bold transition-colors"
-              >
-                Reload Frame
-              </button>
-            </div>
-          </div>
-
-          <div className="w-full h-[850px] relative bg-stone-950">
-            <iframe
-              src={iframeUrl}
-              className="w-full h-full border-0 rounded-b-2xl"
-              title="OpenClaw Official Native Dashboard"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: VISUAL ANALYTICS & SANDBOX */}
-      {activeTab === "ANALYTICS" && (
-        <>
 
       {/* Status Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -433,8 +364,6 @@ export default function OpenClawControlPanel() {
           </div>
         </div>
       </div>
-      </>
-      )}
     </div>
   );
 }
