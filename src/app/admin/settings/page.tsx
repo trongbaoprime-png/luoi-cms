@@ -122,8 +122,15 @@ export default function AdminSettingsPage() {
     });
   }, []);
 
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [saveErrorMsg, setSaveErrorMsg] = useState("");
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSavingSettings(true);
+    setSaveErrorMsg("");
+    setSaved(false);
+
     try {
       const res = await fetch("/api/settings", {
         method: "POST",
@@ -163,18 +170,32 @@ export default function AdminSettingsPage() {
           indexnow_api_key: indexnowApiKey,
         }),
       });
+
       const data = await res.json();
+
       if (data.success) {
         setSaved(true);
-        // Xóa sạch cache của Header & Admin để cập nhật ngay lập tức
+        // Xóa sạch cache client-side ngay lập tức
         try {
           localStorage.removeItem("luoi_header_settings_v4");
-          sessionStorage.removeItem("luoi_header_settings_v4");
+          sessionStorage.clear();
           window.dispatchEvent(new Event("storage"));
         } catch {}
-        setTimeout(() => setSaved(false), 3000);
+
+        // Tự động kích hoạt làm tươi Cache server
+        try {
+          await fetch("/api/admin/clear-cache", { method: "POST" });
+        } catch {}
+
+        setTimeout(() => setSaved(false), 5000);
+      } else {
+        setSaveErrorMsg("Lỗi: " + (data.error || "Không thể lưu cấu hình!"));
       }
-    } catch {}
+    } catch (err: any) {
+      setSaveErrorMsg("Lỗi kết nối máy chủ: " + (err?.message || "Vui lòng thử lại"));
+    } finally {
+      setSavingSettings(false);
+    }
   };
 
   const handleTriggerIndexing = async () => {
@@ -248,6 +269,20 @@ export default function AdminSettingsPage() {
           <span>🧹 Xoá Cache &amp; Làm Tươi Toàn Bộ</span>
         </button>
       </div>
+
+      {/* Floating Toast Notification for Save Feedback (Fixed Top-Right) */}
+      {saved && (
+        <div className="fixed top-6 right-6 z-[9999] bg-emerald-700 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-mono font-bold text-xs border border-emerald-500 animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
+          <span>✅ Đã lưu cài đặt hệ thống &amp; Cập nhật trang chủ thành công!</span>
+        </div>
+      )}
+
+      {saveErrorMsg && (
+        <div className="fixed top-6 right-6 z-[9999] bg-red-700 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-mono font-bold text-xs border border-red-500 animate-in fade-in slide-in-from-top-4 duration-300">
+          <span>❌ {saveErrorMsg}</span>
+        </div>
+      )}
 
       {clearCacheMsg && (
         <div className={`p-4 rounded-xl text-xs font-mono font-bold border ${clearCacheMsg.includes("✓") || clearCacheMsg.includes("thành công") ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-amber-50 text-amber-800 border-amber-300"}`}>
@@ -990,13 +1025,28 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="pt-4 border-t flex justify-end font-mono">
+        <div className="pt-4 border-t flex items-center justify-between font-mono">
+          {saveErrorMsg && (
+            <div className="text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-xl border border-red-200">
+              {saveErrorMsg}
+            </div>
+          )}
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-2.5 bg-[#0d4f4a] text-white font-bold text-xs rounded-xl hover:bg-[#083b37] transition-colors shadow-sm cursor-pointer"
+            disabled={savingSettings}
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-bold text-xs rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 ml-auto"
           >
-            <Save className="w-4 h-4" />
-            Lưu Cài Đặt Hệ Thống
+            {savingSettings ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Đang lưu cài đặt...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Lưu Cài Đặt Hệ Thống
+              </>
+            )}
           </button>
         </div>
       </form>

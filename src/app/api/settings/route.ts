@@ -50,6 +50,7 @@ export async function POST(req: Request) {
 
     // Tức thì làm tươi Cache toàn bộ hệ thống
     try {
+      revalidatePath("/", "layout");
       revalidatePath("/", "page");
       revalidatePath("/[slug]", "page");
       revalidatePath("/blog", "page");
