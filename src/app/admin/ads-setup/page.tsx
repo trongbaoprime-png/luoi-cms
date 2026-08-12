@@ -10,6 +10,8 @@ export default function AdsSetupPage() {
   const [metaPixelId, setMetaPixelId] = useState("1357317496553239");
   const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaTestCode, setMetaTestCode] = useState("test099");
+  const [metaAdAccountIds, setMetaAdAccountIds] = useState("");
+  const [metaAppSecret, setMetaAppSecret] = useState("");
 
   // TikTok Settings
   const [tiktokPixelCode, setTiktokPixelCode] = useState("");
@@ -72,6 +74,8 @@ export default function AdsSetupPage() {
           if (data.data.meta_pixel_id) setMetaPixelId(data.data.meta_pixel_id);
           if (data.data.meta_access_token) setMetaAccessToken(data.data.meta_access_token);
           if (data.data.meta_test_code) setMetaTestCode(data.data.meta_test_code);
+          if (data.data.meta_ad_account_ids) setMetaAdAccountIds(data.data.meta_ad_account_ids);
+          if (data.data.meta_app_secret) setMetaAppSecret(data.data.meta_app_secret);
 
           if (data.data.tiktok_pixel_code) setTiktokPixelCode(data.data.tiktok_pixel_code);
           if (data.data.tiktok_access_token) setTiktokAccessToken(data.data.tiktok_access_token);
@@ -102,6 +106,8 @@ export default function AdsSetupPage() {
         meta_pixel_id: metaPixelId,
         meta_access_token: metaAccessToken,
         meta_test_code: metaTestCode,
+        meta_ad_account_ids: metaAdAccountIds,
+        meta_app_secret: metaAppSecret,
         tiktok_pixel_code: tiktokPixelCode,
         tiktok_access_token: tiktokAccessToken,
         google_conversion_id: googleConversionId,
@@ -487,40 +493,91 @@ export default function AdsSetupPage() {
           {activeTab === "META" && (
             <>
               <div className="flex items-center justify-between border-b pb-3">
-                <h2 className="text-base font-bold font-serif text-[#0f172a]">Meta Conversions API (CAPI)</h2>
+                <h2 className="text-base font-bold font-serif text-[#0f172a]">Meta Conversions API &amp; Graph API v25.0</h2>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono font-bold">
                   ✓ Chuẩn SHA-256 Verified
                 </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-mono font-bold uppercase text-stone-600 mb-1">
-                  Meta Pixel ID *
-                </label>
-                <input
-                  type="text"
-                  value={metaPixelId}
-                  onChange={(e) => setMetaPixelId(e.target.value)}
-                  placeholder="Ví dụ: 1357317496553239"
-                  className="w-full p-2.5 text-sm border border-stone-300 rounded-xl font-mono focus:ring-2 focus:ring-[#0284c7]"
-                />
+              {/* GUIDANCE BOX: HOW TO GET META ACCESS TOKEN IN BM */}
+              <div className="p-4 bg-sky-50/80 border border-sky-200 rounded-2xl space-y-2 text-xs text-sky-900 font-mono">
+                <p className="font-bold text-sky-950 flex items-center gap-1.5">
+                  <Sparkles size={15} className="text-sky-600" />
+                  <span>Hướng dẫn lấy Meta System User Access Token trong Business Manager (BM):</span>
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-sky-800 leading-relaxed">
+                  <li>Truy cập <strong>Meta Business Suite ➔ Cài đặt doanh nghiệp (Business Settings)</strong>.</li>
+                  <li>Mục <strong>Người dùng (Users) ➔ Người dùng hệ thống (System Users)</strong> ➔ Thêm System User vai trò <strong>Admin</strong>.</li>
+                  <li>Bấm <strong>Gán tài sản (Add Assets)</strong> ➔ Thêm <strong>Tài khoản quảng cáo (Ad Accounts)</strong> &amp; <strong>Pixel</strong> với quyền <i>Full Control</i>.</li>
+                  <li>Bấm <strong>Tạo mã mới (Generate New Token)</strong> ➔ Chọn App và tích chọn 3 quyền:
+                    <span className="font-bold text-stone-900 ml-1">ads_read</span>,
+                    <span className="font-bold text-stone-900 ml-1">ads_management</span>,
+                    <span className="font-bold text-stone-900 ml-1">read_insights</span>.
+                  </li>
+                  <li>Sao chép mã Token (bắt đầu bằng <code className="bg-sky-100 px-1 py-0.5 rounded text-sky-950">EAAG...</code>) và dán vào ô bên dưới.</li>
+                </ol>
               </div>
 
               <div>
-                <label className="block text-xs font-mono font-bold uppercase text-stone-600 mb-1">
-                  System User Access Token *
+                <label className="block text-xs font-mono font-bold uppercase text-stone-700 mb-1">
+                  Meta System User Access Token (EAAG...) *
                 </label>
                 <input
                   type="password"
                   value={metaAccessToken}
                   onChange={(e) => setMetaAccessToken(e.target.value)}
-                  placeholder="EAAG..."
-                  className="w-full p-2.5 text-xs border border-stone-300 rounded-xl font-mono focus:ring-2 focus:ring-[#0284c7]"
+                  placeholder="Dán mã Token EAAG... từ Meta Business Suite vào đây"
+                  className="w-full p-2.5 text-xs border border-stone-300 rounded-xl font-mono focus:ring-2 focus:ring-[#0d4f4a] bg-stone-50/50"
                 />
+                <p className="text-[11px] text-stone-500 mt-1">Dùng để truy vấn dữ liệu chi tiêu, tin nhắn, bài viết &amp; bắn sự kiện CAPI realtime.</p>
               </div>
 
               <div>
-                <label className="block text-xs font-mono font-bold uppercase text-stone-600 mb-1">
+                <label className="block text-xs font-mono font-bold uppercase text-stone-700 mb-1">
+                  ID Tài khoản Quảng cáo / BM (Ad Account IDs)
+                </label>
+                <input
+                  type="text"
+                  value={metaAdAccountIds}
+                  onChange={(e) => setMetaAdAccountIds(e.target.value)}
+                  placeholder="Ví dụ: 1234567890, 9876543210 hoặc act_1234567890"
+                  className="w-full p-2.5 text-xs border border-stone-300 rounded-xl font-mono focus:ring-2 focus:ring-[#0d4f4a]"
+                />
+                <p className="text-[11px] text-stone-500 mt-1">Nhập danh sách ID tài khoản quảng cáo trong BM (phân cách bằng dấu phẩy). Để trống nếu muốn tự động dò tất cả tài khoản thuộc Token.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-mono font-bold uppercase text-stone-700 mb-1">
+                    Meta Pixel ID *
+                  </label>
+                  <input
+                    type="text"
+                    value={metaPixelId}
+                    onChange={(e) => setMetaPixelId(e.target.value)}
+                    placeholder="Ví dụ: 1357317496553239"
+                    className="w-full p-2.5 text-xs border border-stone-300 rounded-xl font-mono focus:ring-2 focus:ring-[#0d4f4a]"
+                  />
+                  <p className="text-[10px] text-stone-400 mt-0.5">Pixel ID lấy từ Events Manager</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-bold uppercase text-stone-700 mb-1">
+                    Meta App Secret (Không bắt buộc)
+                  </label>
+                  <input
+                    type="password"
+                    value={metaAppSecret}
+                    onChange={(e) => setMetaAppSecret(e.target.value)}
+                    placeholder="Mã App Secret (tùy chọn)"
+                    className="w-full p-2.5 text-xs border border-stone-300 rounded-xl font-mono focus:ring-2 focus:ring-[#0d4f4a]"
+                  />
+                  <p className="text-[10px] text-stone-400 mt-0.5">Dùng để xác thực appsecret_proof</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase text-stone-700 mb-1">
                   Mã kiểm thử (Test Event Code - Không bắt buộc)
                 </label>
                 <input
