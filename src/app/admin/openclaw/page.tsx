@@ -171,12 +171,12 @@ export default function OpenClawControlPanel() {
           </div>
 
           <a
-            href="http://136.110.2.153:20180"
+            href="https://luoidonnha.com/openclaw-app/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
           >
-            <span>Mở cửa sổ mới (Port 20180)</span>
+            <span>Mở OpenClaw Tab Mới (HTTPS)</span>
           </a>
 
           <button

@@ -208,13 +208,13 @@ export default function OmniRouteControlPanel() {
           </div>
 
           <a
-            href="http://136.110.2.153:20128"
+            href="https://luoidonnha.com/omniroute-app/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
           >
             <Globe size={14} />
-            <span>Mở cửa sổ mới (Port 20128)</span>
+            <span>Mở OmniRoute Tab Mới (HTTPS)</span>
           </a>
 
           <button
