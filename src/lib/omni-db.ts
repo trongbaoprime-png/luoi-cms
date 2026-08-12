@@ -1,32 +1,19 @@
-import path from "path";
-import { PrismaClient as OmniPrismaClientSQLite } from "@prisma/client-omni-sqlite";
 import { PrismaClient as OmniPrismaClientPG } from "@prisma/client-omni-pg";
 
 const globalForOmni = globalThis as unknown as {
-  omniDb: OmniPrismaClientSQLite | undefined;
+  omniDb: OmniPrismaClientPG | undefined;
 };
 
 function createOmniClient() {
-  const envUrl = process.env.OMNI_DATABASE_URL || process.env.OMNI_POSTGRES_URL;
+  const envUrl =
+    process.env.OMNI_DATABASE_URL ||
+    process.env.OMNI_POSTGRES_URL ||
+    "postgresql://postgres:luoicms@127.0.0.1:5432/luoi_omni?schema=public";
 
-  if (envUrl && envUrl.startsWith("postgresql://")) {
-    return new OmniPrismaClientPG({
-      datasources: {
-        db: {
-          url: envUrl,
-        },
-      },
-      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    }) as unknown as OmniPrismaClientSQLite;
-  }
-
-  const absoluteDbPath = path.resolve(process.cwd(), "prisma", "omnichannel.db");
-  const sqliteUrl = envUrl && envUrl.startsWith("file:") ? envUrl : `file:${absoluteDbPath}`;
-
-  return new OmniPrismaClientSQLite({
+  return new OmniPrismaClientPG({
     datasources: {
       db: {
-        url: sqliteUrl,
+        url: envUrl,
       },
     },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
