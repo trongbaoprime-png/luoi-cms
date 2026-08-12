@@ -30,6 +30,7 @@ import {
   User as UserIcon,
   LogOut,
   CheckCircle2,
+  BarChart3,
 } from "lucide-react";
 
 interface MenuItem {
