@@ -324,8 +324,9 @@ export function parseSheetDate(rawVal: any, formattedVal?: string): Date {
 /**
  * Synchronize Qualify leads from Google Sheet "SALE" (Rows B6:J) into miniCRM Database.
  * All leads are assigned status "QUALIFIED". Deduplicates by phone number.
+ * Default minMonth = 3 (March 2026 onwards).
  */
-export async function syncSaleSheet() {
+export async function syncSaleSheet(minMonth: number = 3) {
   try {
     const res = await fetch(`${SALE_SHEET_URL}&t=${Date.now()}`, {
       headers: { "User-Agent": "Mozilla/5.0" },
@@ -362,6 +363,12 @@ export async function syncSaleSheet() {
       if (phone.length === 9 && !phone.startsWith("0")) phone = "0" + phone;
       if (!phone || phone.length < 8) continue;
 
+      const createdAt = parseSheetDate(c[1]?.v, c[1]?.f);
+      // Lọc từ tháng 3 năm 2026 trở đi
+      if (createdAt.getFullYear() === 2026 && (createdAt.getMonth() + 1) < minMonth) {
+        continue;
+      }
+
       const rawName = String(c[2]?.v || "").trim();
       const rawSource = String(c[4]?.v || "").trim();
       const rawBranch = String(c[5]?.v || "").trim();
@@ -375,7 +382,6 @@ export async function syncSaleSheet() {
       const service = normalizeService(rawService);
       const serviceGroup = getServiceGroup(service);
       const telesale = normalizeTelesale(rawTelesale);
-      const createdAt = parseSheetDate(c[1]?.v, c[1]?.f);
 
       if (!leadMap.has(phone)) {
         leadMap.set(phone, {
@@ -414,6 +420,7 @@ export async function syncSaleSheet() {
                 service: item.service,
                 serviceGroup: item.serviceGroup,
                 telesale: item.telesale,
+                createdAt: item.createdAt,
                 ref: "SALE_SHEET",
               },
               create: {
@@ -442,11 +449,11 @@ export async function syncSaleSheet() {
 
     return {
       success: true,
-      sheetName: "SALE",
+      sheetName: "SALE (Tháng 3 trở đi)",
       totalSynced,
       totalRawRows: Math.max(0, rows.length - 4),
       totalUniqueLeads: uniqueLeads.length,
-      message: `Đã đồng bộ ${totalSynced} Khách Qualify từ Sheet SALE vào CRM`,
+      message: `Đã đồng bộ ${totalSynced} Khách Qualify (từ Tháng 03/2026 trở đi) từ Sheet SALE vào CRM`,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Sync SALE sheet failed";
