@@ -96,28 +96,19 @@ export async function GET(req: Request) {
         const fromStr = normalizeToIsoDate(dateFrom) || "2020-01-01";
         const toStr = normalizeToIsoDate(dateTo) || "2030-12-31";
 
+        const fromDateObj = new Date(fromStr + "T00:00:00.000Z");
+        const toDateObj = new Date(toStr + "T23:59:59.999Z");
         const fromMonth = fromStr.slice(0, 7);
         const toMonth = toStr.slice(0, 7);
 
-        // Nếu lọc theo cả tháng đầy đủ (từ ngày 01 đến 28/29/30/31 trong cùng 1 tháng):
-        // Lọc chính xác theo kỳ checkinMonth (VD: checkinMonth = '2026-06') tương tự HTML Dashboard
-        const isFullSingleMonth = fromStr.endsWith("-01") && fromMonth === toMonth && (
-          toStr.endsWith("-28") || toStr.endsWith("-29") || toStr.endsWith("-30") || toStr.endsWith("-31")
-        );
-
-        if (isFullSingleMonth) {
-          conditions.push({
-            checkinMonth: fromMonth,
-          });
-        } else {
-          // Nếu lọc khoảng ngày lẻ cụ thể (ví dụ 15/06 - 18/06): Lọc theo ngày checkinDate cụ thể
-          conditions.push({
-            checkinDate: {
-              gte: fromStr,
-              lte: toStr,
-            },
-          });
-        }
+        // Lọc đồng thời theo createdAt (Cho khách Qualify SALE sheet) HOẶC checkinDate HOẶC checkinMonth
+        conditions.push({
+          OR: [
+            { createdAt: { gte: fromDateObj, lte: toDateObj } },
+            { checkinDate: { gte: fromStr, lte: toStr } },
+            { checkinMonth: { gte: fromMonth, lte: toMonth } },
+          ],
+        });
       }
     }
 

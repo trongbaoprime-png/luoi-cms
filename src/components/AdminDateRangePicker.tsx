@@ -106,41 +106,7 @@ export default function AdminDateRangePicker({
 
       {/* Popover Date Range Picker Dropdown Modal */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-[720px] max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-stone-200 z-50 overflow-hidden font-sans text-xs animate-in fade-in zoom-in-95 duration-150">
-          <div className="flex flex-col md:flex-row min-h-[380px]">
-            {/* Left Sidebar: Presets List with Radio Selectors */}
-            <div className="w-full md:w-56 bg-stone-50 p-3 border-b md:border-b-0 md:border-r border-stone-200 space-y-0.5 overflow-y-auto max-h-[360px] md:max-h-none">
-              {DATE_PRESETS.map((preset) => {
-                const isSelected = tempPreset === preset.key;
-                return (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => {
-                      setTempPreset(preset.key);
-                      onChangePreset(preset.key);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
-                      isSelected
-                        ? "bg-sky-50 text-[#0284c7] font-bold"
-                        : "text-stone-700 hover:bg-stone-200/60"
-                    }`}
-                  >
-                    <span
-                      className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
-                        isSelected
-                          ? "border-[#0284c7] bg-[#0284c7] text-white"
-                          : "border-stone-400 bg-white"
-                      }`}
-                    >
-                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </span>
-                    <span>{preset.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+        <div className="absolute right-0 mt-2 w-[420px] max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-stone-200 z-50 overflow-hidden font-sans text-xs animate-in fade-in zoom-in-95 duration-150 p-4">
 
             {/* Right Main Area: Interactive Dual Month Calendar Grid */}
             <div className="flex-1 p-5 space-y-4 flex flex-col justify-between">
@@ -241,8 +207,6 @@ export default function AdminDateRangePicker({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
       )}
     </div>
   );

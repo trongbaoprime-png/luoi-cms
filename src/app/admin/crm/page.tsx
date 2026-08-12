@@ -269,13 +269,13 @@ export function MiniCrmAdminPage() {
   const [specificBranchFilter, setSpecificBranchFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
 
-  // Date Filter States (Mặc định: Tháng này)
-  const [datePreset, setDatePreset] = useState("thisMonth");
-  const [dateFrom, setDateFrom] = useState(getPresetDates("thisMonth").from);
-  const [dateTo, setDateTo] = useState(getPresetDates("thisMonth").to);
-  const [tempPreset, setTempPreset] = useState("thisMonth");
-  const [tempFrom, setTempFrom] = useState(getPresetDates("thisMonth").from);
-  const [tempTo, setTempTo] = useState(getPresetDates("thisMonth").to);
+  // Date Filter States (Mặc định: Tất cả thời gian để hiển thị toàn bộ 19k+ khách ngay khi vào)
+  const [datePreset, setDatePreset] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [tempPreset, setTempPreset] = useState("all");
+  const [tempFrom, setTempFrom] = useState("");
+  const [tempTo, setTempTo] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const [copiedCode, setCopiedCode] = useState(false);
@@ -637,91 +637,76 @@ function onEdit(e) {
             >
               <CalendarIcon className="w-3.5 h-3.5 text-[#00c9b7]" />
               <span>
-                {activePresetLabel}: {formatVnDate(dateFrom)} – {formatVnDate(dateTo)}
+                {dateFrom && dateTo ? `Khoảng: ${formatVnDate(dateFrom)} – ${formatVnDate(dateTo)}` : "Tất cả thời gian"}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-stone-300" />
             </button>
 
-            {/* Date Range Modal / Popover */}
+            {/* Date Range Modal / Popover (Đã bỏ phần Chọn nhanh kỳ theo yêu cầu) */}
             {isDatePickerOpen && (
-              <div className="absolute right-0 top-11 w-[680px] max-w-[95vw] bg-white text-stone-900 rounded-2xl shadow-2xl border border-stone-200 z-50 p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
-                {/* Left Panel: Radio Presets */}
-                <div className="md:col-span-4 border-r pr-3 space-y-1 text-xs font-mono">
-                  <p className="font-bold text-stone-400 text-[10px] uppercase tracking-wider mb-1.5">Chọn nhanh kỳ</p>
-                  {PRESET_OPTIONS.map((p) => (
-                    <label
-                      key={p.key}
-                      onClick={() => handleSelectPreset(p.key)}
-                      className={`flex items-center gap-2 px-2.5 py-1 rounded-lg font-medium cursor-pointer transition-colors ${
-                        tempPreset === p.key ? "bg-[#0d4f4a]/10 text-[#0d4f4a] font-bold" : "hover:bg-stone-50 text-stone-700"
-                      }`}
-                    >
+              <div className="absolute right-0 top-11 w-[380px] max-w-[95vw] bg-white text-stone-900 rounded-2xl shadow-2xl border border-stone-200 z-50 p-4 font-mono space-y-4">
+                <div>
+                  <h4 className="font-bold text-sm text-stone-900 mb-0.5">Khoảng Thời Gian Lọc Dữ Liệu</h4>
+                  <p className="text-[11px] text-stone-500 mb-3">
+                    Tất cả KPI, tỷ lệ Đậu/Rớt và danh sách Khách hàng sẽ được tính toán lại theo khoảng thời gian này.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-600 block mb-1">Từ Ngày</label>
                       <input
-                        type="radio"
-                        name="datePreset"
-                        checked={tempPreset === p.key}
-                        onChange={() => {}}
-                        className="accent-[#0d4f4a]"
+                        type="date"
+                        value={tempFrom}
+                        onChange={(e) => {
+                          setTempFrom(e.target.value);
+                          setTempPreset("custom");
+                        }}
+                        className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
                       />
-                      <span>{p.label}</span>
-                    </label>
-                  ))}
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-600 block mb-1">Đến Ngày</label>
+                      <input
+                        type="date"
+                        value={tempTo}
+                        onChange={(e) => {
+                          setTempTo(e.target.value);
+                          setTempPreset("custom");
+                        }}
+                        className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-stone-50 rounded-xl text-[11px] text-stone-500 border border-stone-100 flex items-center justify-between">
+                    <span>🕒 Giờ Việt Nam (GMT+7)</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempFrom("");
+                        setTempTo("");
+                        setTempPreset("all");
+                      }}
+                      className="text-[#0d4f4a] underline font-bold hover:text-stone-900 cursor-pointer"
+                    >
+                      Bỏ lọc (Tất cả)
+                    </button>
+                  </div>
                 </div>
 
-                {/* Right Panel: Custom Date Inputs & Action Buttons */}
-                <div className="md:col-span-8 flex flex-col justify-between space-y-3 font-mono">
-                  <div>
-                    <h4 className="font-bold text-sm text-stone-900 mb-0.5">Khoảng Thời Gian Lọc Dữ Liệu</h4>
-                    <p className="text-[11px] text-stone-500 mb-3">
-                      Tất cả KPI, tỷ lệ Đậu/Rớt và danh sách Khách hàng sẽ được tính toán lại theo khoảng thời gian này.
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div>
-                        <label className="text-[11px] font-bold text-stone-600 block mb-1">Từ Ngày</label>
-                        <input
-                          type="date"
-                          value={tempFrom}
-                          onChange={(e) => {
-                            setTempFrom(e.target.value);
-                            setTempPreset("custom");
-                          }}
-                          className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] font-bold text-stone-600 block mb-1">Đến Ngày</label>
-                        <input
-                          type="date"
-                          value={tempTo}
-                          onChange={(e) => {
-                            setTempTo(e.target.value);
-                            setTempPreset("custom");
-                          }}
-                          className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 bg-stone-50 rounded-xl text-[11px] text-stone-500 border border-stone-100">
-                      🕒 Giờ hiển thị theo Múi giờ Việt Nam (GMT+7). Dữ liệu tự động cập nhật khi áp dụng.
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2.5 border-t">
-                    <button
-                      onClick={() => setIsDatePickerOpen(false)}
-                      className="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      onClick={handleApplyDateRange}
-                      className="px-4 py-1.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
-                    >
-                      Cập Nhật
-                    </button>
-                  </div>
+                <div className="flex items-center justify-end gap-2 pt-2.5 border-t">
+                  <button
+                    onClick={() => setIsDatePickerOpen(false)}
+                    className="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleApplyDateRange}
+                    className="px-4 py-1.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
+                  >
+                    Áp Dụng
+                  </button>
                 </div>
               </div>
             )}
