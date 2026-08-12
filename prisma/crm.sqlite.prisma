@@ -44,6 +44,12 @@ model CRMLead {
   syncedToMeta      Boolean            @default(false)
   metaEventResponse String?
   ref               String?            // "Form" (Đăng ký form), "App" (Sheet DATHEN), "Checkin" (Sheet Telesale)
+  appointmentDate   String?            // YYYY-MM-DD Ngày hẹn khám
+  appointmentTime   String?            // HH:mm Giờ hẹn khám (VD: 09:30, 14:00)
+  appointmentBranch String?            // Chi nhánh hẹn khám
+  appointmentDoctor String?            // Bác sĩ / Nhân viên phụ trách lịch hẹn
+  appointmentStatus String?            @default("PENDING") // PENDING, CONFIRMED, REMINDED, CHECKED_IN, NO_SHOW, CANCELLED
+  appointmentNote   String?            // Ghi chú lịch hẹn
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   statusHistory     CRMStatusHistory[]

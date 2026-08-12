@@ -59,6 +59,12 @@ interface LeadItem {
   syncedToMeta: boolean;
   ref?: string;
   note?: string;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  appointmentBranch?: string;
+  appointmentDoctor?: string;
+  appointmentStatus?: string;
+  appointmentNote?: string;
   createdAt: string;
 }
 
@@ -608,7 +614,7 @@ function onEdit(e) {
         <div className="shrink-0">
           <div className="flex items-center gap-2">
             <ShieldCheckIcon className="w-5 h-5 text-[#00c9b7] shrink-0" />
-            <h1 className="text-base sm:text-lg font-bold font-serif text-white tracking-tight whitespace-nowrap">
+            <h1 className="text-base sm:text-lg font-bold font-sans text-white tracking-tight whitespace-nowrap">
               miniCRM — Quản Lý Khách Hàng
             </h1>
           </div>

@@ -1,25 +1,11 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro, Source_Serif_4, JetBrains_Mono } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-sans",
   subsets: ["vietnamese", "latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const sourceSerif4 = Source_Serif_4({
-  variable: "--font-serif",
-  subsets: ["vietnamese", "latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -68,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${beVietnamPro.variable} ${sourceSerif4.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${beVietnamPro.variable} h-full antialiased`}
     >
       <head>
         {/* Preconnect hints cho Google Fonts - giảm font loading latency */}

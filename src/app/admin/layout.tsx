@@ -175,7 +175,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: Shield,
       items: [
         { title: "OmniRoute Gateway", href: "/admin/omniroute", icon: Share2 },
-        { title: "OpenClaw Runtime", href: "/admin/openclaw", icon: Bot },
         { title: "Quản lý Users", href: "/admin/users", icon: Shield },
         { title: "Audit Logs & Webhooks", href: "/admin/audit-logs", icon: Activity },
         { title: "Multi-Platform Ads APIs", href: "/admin/ads-setup", icon: Share2 },
@@ -189,11 +188,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sleek Top Header with Dark Teal Theme & User Profile */}
       <header className="h-14 bg-[#042d2a] border-b border-[#084540] text-white px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <Link href="/admin" className="flex items-center gap-2 font-bold font-serif text-sm text-[#f3efe6]">
+          <Link href="/admin" className="flex items-center gap-2 font-bold font-sans text-sm text-[#f3efe6]">
             <span className="w-7 h-7 rounded-lg bg-[#00c9b7] text-[#023835] flex items-center justify-center font-sans font-black text-xs shadow-xs">
               L
             </span>
-            <span className="tracking-tight text-base font-bold font-serif">
+            <span className="tracking-tight text-base font-bold font-sans">
               LƯỜI CMS
             </span>
           </Link>

@@ -128,6 +128,7 @@ export async function GET(req: Request) {
       totalCount,
       paginatedLeads,
       qualifiedCount,
+      scheduledCount,
       checkinCount,
       passCount,
       failCount,
@@ -159,6 +160,17 @@ export async function GET(req: Request) {
         where: {
           ...where,
           status: { not: "JUNK" },
+        },
+      }),
+      // scheduledCount: Khách đã Đặt Hẹn
+      crmDb.cRMLead.count({
+        where: {
+          ...where,
+          OR: [
+            { status: "SCHEDULED" },
+            { ref: "App" },
+            { appointmentDate: { not: null } },
+          ],
         },
       }),
       // checkinCount: Chỉ đếm leads đã thực sự checkin hoặc mua hàng
@@ -323,7 +335,7 @@ export async function GET(req: Request) {
       kpi: {
         totalLeads: totalCount,
         qualifiedCount,
-        scheduledCount: 0,
+        scheduledCount,
         checkinCount,
         passCount,
         failCount,

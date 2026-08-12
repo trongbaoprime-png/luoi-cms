@@ -78,6 +78,12 @@ export async function PUT(req: Request, { params }: RouteParams) {
         actualRevenue: body.actualRevenue !== undefined ? Number(body.actualRevenue) : existingLead.actualRevenue,
         caTheoRevenue: body.caTheoRevenue !== undefined ? Number(body.caTheoRevenue) : existingLead.caTheoRevenue,
         value: body.value !== undefined ? Number(body.value) : existingLead.value,
+        appointmentDate: body.appointmentDate !== undefined ? body.appointmentDate : existingLead.appointmentDate,
+        appointmentTime: body.appointmentTime !== undefined ? body.appointmentTime : existingLead.appointmentTime,
+        appointmentBranch: body.appointmentBranch !== undefined ? body.appointmentBranch : existingLead.appointmentBranch,
+        appointmentDoctor: body.appointmentDoctor !== undefined ? body.appointmentDoctor : existingLead.appointmentDoctor,
+        appointmentStatus: body.appointmentStatus !== undefined ? body.appointmentStatus : existingLead.appointmentStatus,
+        appointmentNote: body.appointmentNote !== undefined ? body.appointmentNote : existingLead.appointmentNote,
       },
     });
 
@@ -92,8 +98,9 @@ export async function PUT(req: Request, { params }: RouteParams) {
       });
 
       // Dispatch CAPI if status changed
-      let metaEventName: "Lead" | "Contact" | "Purchase" | null = null;
-      if (status === "QUALIFIED" || status === "SCHEDULED") metaEventName = "Lead";
+      let metaEventName: "Lead" | "Contact" | "Schedule" | "Purchase" | null = null;
+      if (status === "QUALIFIED") metaEventName = "Lead";
+      else if (status === "SCHEDULED") metaEventName = "Schedule";
       else if (status === "CHECKIN") metaEventName = "Contact";
       else if (status === "PURCHASE") metaEventName = "Purchase";
 

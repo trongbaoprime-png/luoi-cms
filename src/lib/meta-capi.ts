@@ -24,7 +24,7 @@ export function hashEmail(email: string): string {
 }
 
 export interface MetaCapiPayload {
-  eventName: "Lead" | "Contact" | "Purchase" | "Other";
+  eventName: "Lead" | "Contact" | "Schedule" | "SubmitApplication" | "Purchase" | "Other";
   leadId?: string;
   phone: string;
   email?: string;
