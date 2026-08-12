@@ -1,46 +1,26 @@
-import path from "path";
-import fs from "fs";
 import { PrismaClient as CMSPrismaClient } from "@prisma/client-cms";
 
 const globalForCMS = globalThis as unknown as {
   cmsDb: CMSPrismaClient | undefined;
 };
 
-function getCmsDatabaseUrl() {
-  const possiblePaths = [
-    path.resolve(process.cwd(), "prisma", "luoi-cms.db"),
-    path.resolve(__dirname, "../../prisma", "luoi-cms.db"),
-    "/var/www/app/path-app/prisma/luoi-cms.db",
-  ];
+function createCmsClient() {
+  const envUrl =
+    process.env.CORE_DATABASE_URL ||
+    process.env.CMS_DATABASE_URL ||
+    "postgresql://postgres:luoicms@127.0.0.1:5432/luoi_core?schema=public";
 
-  let targetPath = possiblePaths[0];
-
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      targetPath = p;
-      break;
-    }
-  }
-
-  // Tự tạo thư mục nếu chưa tồn tại
-  const dir = path.dirname(targetPath);
-  if (!fs.existsSync(dir)) {
-    try { fs.mkdirSync(dir, { recursive: true }); } catch {}
-  }
-
-  return `file:${targetPath}`;
-}
-
-export const cmsDb =
-  globalForCMS.cmsDb ??
-  new CMSPrismaClient({
+  return new CMSPrismaClient({
     datasources: {
       db: {
-        url: getCmsDatabaseUrl(),
+        url: envUrl,
       },
     },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+}
+
+export const cmsDb = globalForCMS.cmsDb ?? createCmsClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForCMS.cmsDb = cmsDb;
