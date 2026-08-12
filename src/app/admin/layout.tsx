@@ -164,6 +164,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { title: "Vertical Slice MVP", href: "/admin/vertical-slice", icon: Activity },
         { title: "miniCRM", href: "/admin/crm", icon: Users },
+        { title: "Meta Ads Realtime", href: "/admin/meta-ads", icon: BarChart3 },
         { title: "Khách đăng ký", href: "/admin/raw-leads", icon: FileText },
         { title: "Omnichannel & AI Agent", href: "/admin/omnichannel", icon: Bot },
         { title: "Email Subscribers", href: "/admin/subscribers", icon: Users },
