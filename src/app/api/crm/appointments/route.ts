@@ -175,6 +175,7 @@ export async function POST(req: Request) {
         const apptDateStr = appointmentDate ? `${appointmentTime ? appointmentTime + " " : ""}${appointmentDate}` : "Chờ xác nhận";
         
         await sendTelegramNotification(telegramTokenSetting.value, telegramChatIdSetting.value, {
+          name: `📅 [LỊCH HẸN MỚI] ${updatedLead.fullName}`,
           fullName: `📅 [LỊCH HẸN MỚI] ${updatedLead.fullName}`,
           phone: updatedLead.phone,
           service: updatedLead.service || "Khám & Tư Vấn",

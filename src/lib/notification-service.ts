@@ -1,6 +1,7 @@
 export interface LeadDataPayload {
   time?: string;
   name: string;
+  fullName?: string;
   phone: string;
   email?: string;
   service?: string;
@@ -10,6 +11,8 @@ export interface LeadDataPayload {
   url?: string;
   source?: string;
   medium?: string;
+  note?: string;
+  createdAt?: string;
   ip?: string;
   device?: string;
   userAgent?: string;
