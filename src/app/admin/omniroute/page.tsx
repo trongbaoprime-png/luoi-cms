@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 export default function OmniRouteControlPanel() {
+  const [activeTab, setActiveTab] = useState<"NATIVE" | "ANALYTICS">("NATIVE");
   const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState<any>(null);
   const [modelsData, setModelsData] = useState<any[]>([]);
@@ -30,6 +31,7 @@ export default function OmniRouteControlPanel() {
   const [testPrompt, setTestPrompt] = useState("Phân tích nhu cầu làm răng sứ cho khách hàng và đề xuất câu hỏi tư vấn.");
   const [testResult, setTestResult] = useState<any>(null);
   const [testingModel, setTestingModel] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState("/omniroute/");
 
   const fetchGatewayData = useCallback(async () => {
     setLoading(true);
@@ -163,7 +165,7 @@ export default function OmniRouteControlPanel() {
   return (
     <div className="w-full space-y-6 pb-12 font-sans text-stone-900">
       {/* Top Header Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white p-6 rounded-2xl shadow-xl border border-[#084540]">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white p-6 rounded-2xl shadow-xl border border-[#084540]">
         <div>
           <div className="flex items-center gap-3">
             <span className="w-9 h-9 rounded-xl bg-[#00c9b7] text-[#023835] flex items-center justify-center font-bold shadow-md">
@@ -171,23 +173,99 @@ export default function OmniRouteControlPanel() {
             </span>
             <div>
               <h1 className="text-xl md:text-2xl font-bold font-serif text-white tracking-tight">
-                OmniRoute Model Gateway — Visual Operating Dashboard
+                OmniRoute AI Gateway &amp; Provider Connection Hub
               </h1>
               <p className="text-xs md:text-sm text-[#e6f4f1]/80 mt-0.5">
-                Gateway tập trung định tuyến 291 AI Models, tự động Fallback, tối ưu chi phí &amp; quản lý Quota (Port 20128 / OpenAI Endpoint)
+                Nhúng 100% Giao diện gốc OmniRoute v3.8.49 — Quản lý 151 AI Providers, API Keys, Combos &amp; Quotas
               </p>
             </div>
           </div>
         </div>
 
-        <button
-          onClick={fetchGatewayData}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#00c9b7]" : ""}`} />
-          <span>Làm Mới Trạng Thái</span>
-        </button>
+        {/* Tab Switcher & Quick Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/10">
+            <button
+              onClick={() => setActiveTab("NATIVE")}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "NATIVE"
+                  ? "bg-[#00c9b7] text-[#023835] shadow-sm"
+                  : "text-white/80 hover:text-white"
+              }`}
+            >
+              <span>🖥️ Giao diện gốc OmniRoute</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("ANALYTICS")}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "ANALYTICS"
+                  ? "bg-[#00c9b7] text-[#023835] shadow-sm"
+                  : "text-white/80 hover:text-white"
+              }`}
+            >
+              <span>📊 Visual Analytics &amp; Sandbox</span>
+            </button>
+          </div>
+
+          <a
+            href="http://136.110.2.153:20128"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
+          >
+            <Globe size={14} />
+            <span>Mở cửa sổ mới (Port 20128)</span>
+          </a>
+
+          <button
+            onClick={fetchGatewayData}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#00c9b7]" : ""}`} />
+            <span>Làm Mới</span>
+          </button>
+        </div>
       </div>
+
+      {/* TAB 1: NATIVE OMNIROUTE EMBEDDED DASHBOARD */}
+      {activeTab === "NATIVE" && (
+        <div className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-2xl space-y-3">
+          <div className="bg-stone-950 px-5 py-3 border-b border-stone-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-mono text-xs text-stone-300 font-bold">
+                OmniRoute Native UI Server — Active Port 20128
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-stone-400">
+                Providers (151 Active) | Groq, OpenAI, Anthropic, Gemini, DeepSeek, Cerebras, OpenRouter
+              </span>
+              <button
+                onClick={() => setIframeUrl(`/omniroute/?t=${Date.now()}`)}
+                className="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded text-[11px] font-bold transition-colors"
+              >
+                Reload Frame
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full h-[850px] relative bg-stone-950">
+            <iframe
+              src={iframeUrl}
+              className="w-full h-full border-0 rounded-b-2xl"
+              title="OmniRoute Official Native Dashboard"
+              onError={() => {
+                setIframeUrl("http://136.110.2.153:20128");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: VISUAL ANALYTICS & SANDBOX */}
+      {activeTab === "ANALYTICS" && (
+        <>
 
       {/* Overview Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -397,6 +475,8 @@ export default function OmniRouteControlPanel() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
