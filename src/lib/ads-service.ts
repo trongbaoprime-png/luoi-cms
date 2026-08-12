@@ -29,7 +29,7 @@ export async function sendMetaCAPIEvent(
 ) {
   if (!pixelId || !accessToken) return { success: false, message: "Thiếu Pixel ID hoặc Access Token" };
 
-  const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`;
+  const url = `https://graph.facebook.com/v22.0/${pixelId.trim()}/events?access_token=${accessToken.trim()}`;
   const now = Math.floor(Date.now() / 1000);
 
   // Normalize phone & email for Meta CAPI Customer Matching
@@ -73,18 +73,35 @@ export async function sendMetaCAPIEvent(
     ],
   };
 
-  if (testCode) {
-    payload.test_event_code = testCode;
+  if (testCode && testCode.trim()) {
+    payload.test_event_code = testCode.trim();
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  const data = await res.json();
-  return { success: res.ok, data };
+    const data = await res.json();
+    const isSuccess = res.ok && data?.events_received > 0;
+
+    let friendlyMessage = "";
+    if (data?.error?.code === 100) {
+      friendlyMessage = "Mã Meta Pixel ID không tồn tại hoặc Access Token chưa có quyền quản lý Pixel này. Vui lòng kiểm tra lại Pixel ID chính xác từ Meta Events Manager.";
+    } else if (data?.error?.code === 190) {
+      friendlyMessage = "Access Token đã hết hạn hoặc không hợp lệ. Vui lòng tạo System User Token mới trong Meta Business Suite.";
+    }
+
+    return {
+      success: isSuccess,
+      data,
+      message: friendlyMessage || (isSuccess ? "Đã bắn sự kiện sang Meta CAPI thành công!" : "Lỗi phản hồi từ Meta Graph API"),
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Lỗi kết nối Meta CAPI" };
+  }
 }
 
 // 2. TikTok Events API
