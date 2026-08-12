@@ -1,6 +1,17 @@
 import { crmDb } from "@/lib/crm-db";
 import { db } from "@/lib/db";
-import { parseTdsPayload, isRealName, getPriorityRef } from "@/lib/tds-parser";
+import {
+  parseTdsPayload,
+  isRealName,
+  getPriorityRef,
+  normalizeSource,
+  getSourceGroup,
+  normalizeBranch,
+  getBranchGroup,
+  normalizeService,
+  getServiceGroup,
+  normalizeTelesale,
+} from "@/lib/tds-parser";
 import { hashPhone } from "@/lib/meta-capi";
 
 export interface SheetLeadPayload {
@@ -286,4 +297,159 @@ export async function syncAllTdsSheets(monthsToSync?: number[], yearNum?: number
     totalErrors,
     logs,
   };
+}
+
+export const SALE_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1OFV2VM_KbCHZUFTZ-qgrmcC0FTxfs7HPoMeGMU_d4So/gviz/tq?tqx=out:json&sheet=SALE";
+
+export function parseSheetDate(rawVal: any, formattedVal?: string): Date {
+  if (formattedVal) {
+    const match = String(formattedVal).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    if (match) {
+      const [_, d, m, y, h = "0", min = "0", s = "0"] = match;
+      return new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min), Number(s));
+    }
+  }
+  const strVal = String(rawVal || "");
+  if (strVal.startsWith("Date(")) {
+    const parts = strVal.replace("Date(", "").replace(")", "").split(",").map(Number);
+    if (parts.length >= 3) {
+      return new Date(parts[0], parts[1], parts[2], parts[3] || 0, parts[4] || 0, parts[5] || 0);
+    }
+  }
+  const parsed = new Date(strVal);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+/**
+ * Synchronize Qualify leads from Google Sheet "SALE" (Rows B6:J) into miniCRM Database.
+ * All leads are assigned status "QUALIFIED". Deduplicates by phone number.
+ */
+export async function syncSaleSheet() {
+  try {
+    const res = await fetch(`${SALE_SHEET_URL}&t=${Date.now()}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      redirect: "follow",
+    });
+
+    if (!res.ok) {
+      return { success: false, message: `Lỗi kết nối Google Sheet HTTP ${res.status}` };
+    }
+
+    const text = await res.text();
+    const jsonStr = text.substring(47, text.length - 2);
+    const data = JSON.parse(jsonStr);
+    const rows = data.table?.rows || [];
+
+    const leadMap = new Map<string, {
+      phone: string;
+      fullName: string;
+      source: string;
+      sourceGroup: string;
+      branch: string;
+      branchGroup: string;
+      service: string;
+      serviceGroup: string;
+      telesale: string;
+      createdAt: Date;
+    }>();
+
+    for (let i = 4; i < rows.length; i++) {
+      const c = rows[i]?.c;
+      if (!c) continue;
+
+      let phone = String(c[3]?.v || "").trim().replace(/\D/g, "");
+      if (phone.length === 9 && !phone.startsWith("0")) phone = "0" + phone;
+      if (!phone || phone.length < 8) continue;
+
+      const rawName = String(c[2]?.v || "").trim();
+      const rawSource = String(c[4]?.v || "").trim();
+      const rawBranch = String(c[5]?.v || "").trim();
+      const rawService = String(c[6]?.v || "").trim();
+      const rawTelesale = String(c[9]?.v || "").trim();
+
+      const source = normalizeSource(rawSource);
+      const sourceGroup = getSourceGroup(source);
+      const branch = normalizeBranch(rawBranch);
+      const branchGroup = getBranchGroup(branch);
+      const service = normalizeService(rawService);
+      const serviceGroup = getServiceGroup(service);
+      const telesale = normalizeTelesale(rawTelesale);
+      const createdAt = parseSheetDate(c[1]?.v, c[1]?.f);
+
+      if (!leadMap.has(phone)) {
+        leadMap.set(phone, {
+          phone,
+          fullName: isRealName(rawName) ? rawName : "Khách",
+          source,
+          sourceGroup,
+          branch,
+          branchGroup,
+          service,
+          serviceGroup,
+          telesale,
+          createdAt,
+        });
+      }
+    }
+
+    const uniqueLeads = Array.from(leadMap.values());
+    let totalSynced = 0;
+    const CHUNK_SIZE = 100;
+
+    for (let idx = 0; idx < uniqueLeads.length; idx += CHUNK_SIZE) {
+      const chunk = uniqueLeads.slice(idx, idx + CHUNK_SIZE);
+      await Promise.all(
+        chunk.map(async (item) => {
+          const phoneHash = hashPhone(item.phone);
+          try {
+            await (crmDb.cRMLead as any).upsert({
+              where: { phone: item.phone },
+              update: {
+                fullName: item.fullName,
+                source: item.source,
+                sourceGroup: item.sourceGroup,
+                branch: item.branch,
+                branchGroup: item.branchGroup,
+                service: item.service,
+                serviceGroup: item.serviceGroup,
+                telesale: item.telesale,
+                ref: "SALE_SHEET",
+              },
+              create: {
+                phone: item.phone,
+                phoneHash,
+                fullName: item.fullName,
+                source: item.source,
+                sourceGroup: item.sourceGroup,
+                branch: item.branch,
+                branchGroup: item.branchGroup,
+                service: item.service,
+                serviceGroup: item.serviceGroup,
+                telesale: item.telesale,
+                status: "QUALIFIED",
+                ref: "SALE_SHEET",
+                createdAt: item.createdAt,
+              },
+            });
+            totalSynced++;
+          } catch {
+            // Ignore race conditions
+          }
+        })
+      );
+    }
+
+    return {
+      success: true,
+      sheetName: "SALE",
+      totalSynced,
+      totalRawRows: Math.max(0, rows.length - 4),
+      totalUniqueLeads: uniqueLeads.length,
+      message: `Đã đồng bộ ${totalSynced} Khách Qualify từ Sheet SALE vào CRM`,
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Sync SALE sheet failed";
+    return { success: false, error: errorMsg };
+  }
 }

@@ -1,32 +1,25 @@
 import { NextResponse } from "next/server";
-import { syncAllTdsSheets } from "@/lib/google-sheets";
+import { syncSaleSheet } from "@/lib/google-sheets";
 
 /**
- * Automated Cron Endpoint for Daily / Realtime Schedule Sync
- * Can be invoked by Cron-job.org, Vercel Cron, or Google Apps Script Triggers.
+ * Automated Cron Endpoint for Realtime Schedule & SALE Sheet Sync
  */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const key = searchParams.get("key");
 
-    // Optional secret key check for security if needed
     const expectedKey = process.env.CRON_SECRET || "luoidonnha_cron_sync_2026";
     if (key && key !== expectedKey) {
       return NextResponse.json({ success: false, error: "Unauthorized cron key" }, { status: 401 });
     }
 
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const months = Array.from(new Set([prevMonth, currentMonth]));
-
-    const result = await syncAllTdsSheets(months, now.getFullYear());
+    const result = await syncSaleSheet();
 
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
-      message: `Tự động đồng bộ thành công ${result.totalSynced} dòng dữ liệu cho các tháng (${result.sheetName})!`,
+      message: result.message,
       data: result,
     });
   } catch (err: unknown) {
