@@ -101,6 +101,29 @@ export default function MetaAdsReportPage() {
   // Content Modal View
   const [selectedContent, setSelectedContent] = useState<MetaContentRow | null>(null);
 
+  // 365-Day Sync State
+  const [syncing365, setSyncing365] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleSync365 = async () => {
+    setSyncing365(true);
+    setSyncMessage("Đang quét và lưu toàn bộ dữ liệu 365 ngày từ Meta Ads vào PostgreSQL Database...");
+    try {
+      const res = await fetch("/api/ads/batch-sync-365?days=365");
+      const data = await res.json();
+      if (data.ok) {
+        setSyncMessage(`✓ ${data.message}`);
+        loadData(true);
+      } else {
+        setSyncMessage(`⚠️ ${data.message}`);
+      }
+    } catch (err: any) {
+      setSyncMessage(`❌ Lỗi đồng bộ 365 ngày: ${err.message}`);
+    } finally {
+      setSyncing365(false);
+    }
+  };
+
   const loadData = async (fresh = false) => {
     if (fresh) setRefreshing(true);
     else setLoading(true);
@@ -227,11 +250,20 @@ export default function MetaAdsReportPage() {
 
           <button
             onClick={() => loadData(true)}
-            disabled={refreshing}
+            disabled={refreshing || syncing365}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
           >
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             <span>{refreshing ? "Đang cập nhật..." : "Làm mới Meta"}</span>
+          </button>
+
+          <button
+            onClick={handleSync365}
+            disabled={syncing365}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0d4f4a] text-white rounded-xl text-xs font-bold hover:bg-[#083834] transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={syncing365 ? "animate-spin" : ""} />
+            <span>{syncing365 ? "Đang lưu DB 365 ngày..." : "Đồng bộ 365 ngày (Lưu DB)"}</span>
           </button>
 
           <Link
@@ -243,6 +275,19 @@ export default function MetaAdsReportPage() {
           </Link>
         </div>
       </div>
+
+      {/* Sync Message Alert */}
+      {syncMessage && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-emerald-800 text-xs font-bold">
+          <span>{syncMessage}</span>
+          <button
+            onClick={() => setSyncMessage(null)}
+            className="text-emerald-600 hover:text-emerald-900 font-mono text-xs cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Connection Status Notice if Not Configured */}
       {!configured && (

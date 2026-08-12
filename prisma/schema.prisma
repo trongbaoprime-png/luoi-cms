@@ -300,4 +300,33 @@ model CRMStatusHistory {
   createdAt      DateTime @default(now())
 }
 
+model MetaAdDailyStat {
+  id             String   @id @default(cuid())
+  date           String   // YYYY-MM-DD
+  accountId      String   // act_830836643076983 or 830836643076983
+  accountName    String?
+  campaignId     String
+  campaignName   String?
+  adsetId        String   @default("")
+  adsetName      String?
+  spend          Float    @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  clicks         Int      @default(0)
+  cpm            Float    @default(0)
+  ctr            Float    @default(0)
+  cpc            Float    @default(0)
+  messagesNew    Int      @default(0)
+  messagingTotal Int      @default(0)
+  leads          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([date, accountId, campaignId, adsetId], name: "meta_daily_stat_key")
+  @@index([date])
+  @@index([accountId])
+  @@index([campaignId])
+}
+
+
 

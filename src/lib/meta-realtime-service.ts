@@ -36,18 +36,6 @@ function readCache(key: string, maxAgeMs: number): any | null {
   }
 }
 
-function readAnyCache(key: string): any | null {
-  try {
-    ensureCacheDir();
-    const filePath = getCacheFilePath(key);
-    if (!fs.existsSync(filePath)) return null;
-    const content = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(content);
-  } catch {
-    return null;
-  }
-}
-
 function writeCache(key: string, data: any) {
   try {
     ensureCacheDir();
@@ -190,7 +178,7 @@ export async function discoverAdAccounts(accessToken: string): Promise<string[]>
   return [];
 }
 
-// Main Realtime Data Fetcher with Parallel Account Processing
+// Main Realtime Data Fetcher with Parallel Processing & DB Storage
 export async function getMetaRealtimeData(
   scope: string,
   since: string,
@@ -218,7 +206,7 @@ export async function getMetaRealtimeData(
   const isToday = startDate <= today && endDate >= today;
   const ttlMs = isToday ? 5 * 60 * 1000 : 24 * 60 * 60 * 1000; // 5 min for today, 24h for historical
 
-  // Read cache if not forced fresh
+  // 1. Read file cache if not forced fresh
   if (!fresh) {
     const cached = readCache(cacheKey, ttlMs);
     if (cached) {
@@ -226,7 +214,95 @@ export async function getMetaRealtimeData(
     }
   }
 
-  // Auto-discover accounts if empty
+  // 2. Read PostgreSQL Database historical data if range is historical and not fresh
+  if (!fresh && startDate < today) {
+    try {
+      const dbStats = await db.metaAdDailyStat.findMany({
+        where: {
+          date: { gte: startDate, lte: endDate },
+        },
+      });
+
+      if (dbStats && dbStats.length > 0) {
+        // Group by account and campaign
+        const campaignMap: Record<string, any> = {};
+        const accountSet = new Map<string, any>();
+
+        dbStats.forEach((stat) => {
+          accountSet.set(stat.accountId, {
+            account_id: stat.accountId,
+            ad_account_id: `act_${stat.accountId}`,
+            account_name: stat.accountName || `Tài khoản ${stat.accountId.slice(-4)}`,
+            account_status: 1,
+            currency: "VND",
+            timezone_name: "Asia/Ho_Chi_Minh",
+          });
+
+          const key = `${stat.accountId}_${stat.campaignId}_${stat.adsetId}`;
+          if (!campaignMap[key]) {
+            campaignMap[key] = {
+              date_start: startDate,
+              date_stop: endDate,
+              account_id: stat.accountId,
+              ad_account_id: `act_${stat.accountId}`,
+              account_name: stat.accountName,
+              campaign_id: stat.campaignId,
+              campaign_name: stat.campaignName,
+              adset_id: stat.adsetId,
+              adset_name: stat.adsetName,
+              effective_status: "ACTIVE",
+              configured_status: "ACTIVE",
+              spend: 0,
+              reach: 0,
+              impressions: 0,
+              frequency: 0,
+              cpm: 0,
+              ctr: 0,
+              cpc: 0,
+              clicks: 0,
+              messagesNew: 0,
+              totalMessagingContacts: 0,
+              leads: 0,
+            };
+          }
+
+          const c = campaignMap[key];
+          c.spend += stat.spend;
+          c.impressions += stat.impressions;
+          c.reach += stat.reach;
+          c.clicks += stat.clicks;
+          c.messagesNew += stat.messagesNew;
+          c.totalMessagingContacts += stat.messagingTotal;
+          c.leads += stat.leads;
+        });
+
+        const campaigns = Object.values(campaignMap);
+        const accounts = Array.from(accountSet.values());
+
+        const dbPayload = {
+          ok: true,
+          source: "postgres-database",
+          scope,
+          generatedAt: new Date().toISOString(),
+          since: startDate,
+          until: endDate,
+          campaigns,
+          contentAds: [],
+          genderBreakdowns: [],
+          hourlyBreakdowns: [],
+          geoBreakdowns: [],
+          accounts,
+        };
+
+        writeCache(cacheKey, dbPayload);
+        return { ...dbPayload, servedFromDatabase: true };
+      }
+    } catch (dbReadErr) {
+      console.error("[MetaRealtime] Error reading PostgreSQL stats:", dbReadErr);
+    }
+  }
+
+  // 3. Fallback: Fetch directly from Meta Graph API
   let accountIds = config.accountIds;
   if (accountIds.length === 0) {
     accountIds = await discoverAdAccounts(config.accessToken);
@@ -241,12 +317,10 @@ export async function getMetaRealtimeData(
 
   const timeRange = JSON.stringify({ since: startDate, until: endDate });
 
-  // PARALLEL CONCURRENT FETCHING across all Ad Accounts using Promise.allSettled
   const results = await Promise.allSettled(
     accountIds.map(async (accId) => {
       const actId = accId.startsWith("act_") ? accId : `act_${accId}`;
 
-      // 1. Fetch Account Info
       const accInfo = await fetchMetaGraph(actId, config.accessToken, {
         fields: "id,name,account_status,currency,timezone_name,amount_spent",
       });
@@ -264,7 +338,6 @@ export async function getMetaRealtimeData(
       const localGender: any[] = [];
       const localHourly: any[] = [];
 
-      // 2. Fetch Core Insights
       if (scope === "core" || scope === "all") {
         try {
           const insights = await fetchMetaGraph(`${actId}/insights`, config.accessToken, {
@@ -307,7 +380,6 @@ export async function getMetaRealtimeData(
         } catch {}
       }
 
-      // 3. Fetch Breakdowns
       if (scope === "breakdowns" || scope === "all") {
         try {
           const genderRes = await fetchMetaGraph(`${actId}/insights`, config.accessToken, {
@@ -346,7 +418,6 @@ export async function getMetaRealtimeData(
     })
   );
 
-  // Aggregate results from parallel executions
   results.forEach((res) => {
     if (res.status === "fulfilled" && res.value) {
       accounts.push(res.value.accObj);
@@ -371,8 +442,6 @@ export async function getMetaRealtimeData(
     accounts,
   };
 
-  // Cache in background file cache
   writeCache(cacheKey, resultPayload);
-
   return resultPayload;
 }
