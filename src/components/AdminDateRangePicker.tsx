@@ -110,6 +110,7 @@ export default function AdminDateRangePicker({
 }: AdminDateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempPreset, setTempPreset] = useState<DatePresetKey>(selectedPreset);
+  const [enableCompare, setEnableCompare] = useState(false);
   const initialDates = getPresetDates(selectedPreset);
   const [startDate, setStartDate] = useState(initialDates.from);
   const [endDate, setEndDate] = useState(initialDates.to);
