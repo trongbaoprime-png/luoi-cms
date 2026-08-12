@@ -171,9 +171,21 @@ export default function AdminSettingsPage() {
         }),
       });
 
-      const data = await res.json();
+      // Safe JSON parse — tránh crash khi server trả về HTML/empty body
+      let data: any = {};
+      try {
+        const text = await res.text();
+        if (text) data = JSON.parse(text);
+      } catch {
+        // response body không phải JSON hợp lệ
+      }
 
-      if (data.success) {
+      if (!res.ok && !data.success) {
+        setSaveErrorMsg("Lỗi " + res.status + ": " + (data.error || "Không thể lưu cấu hình!"));
+        return;
+      }
+
+      if (data.success !== false) {
         setSaved(true);
         // Xóa sạch cache client-side ngay lập tức
         try {
@@ -182,10 +194,8 @@ export default function AdminSettingsPage() {
           window.dispatchEvent(new Event("storage"));
         } catch {}
 
-        // Tự động kích hoạt làm tươi Cache server
-        try {
-          await fetch("/api/admin/clear-cache", { method: "POST" });
-        } catch {}
+        // Tự động kích hoạt làm tươi Cache server — suppress lỗi hoàn toàn
+        fetch("/api/admin/clear-cache", { method: "POST" }).catch(() => {});
 
         setTimeout(() => setSaved(false), 5000);
       } else {
