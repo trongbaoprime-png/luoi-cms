@@ -8,13 +8,13 @@ import "@puckeditor/core/dist/index.css";
 ──────────────────────────────────────────────────────────────────────────── */
 import "./puck-scroll.css";
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Eye, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Eye } from "lucide-react";
+import dynamic from "next/dynamic";
+import { getPuckConfig } from "@/lib/puck-config";
 
 // Dynamically import Puck to avoid SSR issues
-import dynamic from "next/dynamic";
-
 const PuckEditor = dynamic(
   () => import("@puckeditor/core").then((m) => m.Puck),
   { ssr: false, loading: () => <PuckLoadingScreen /> }
@@ -33,71 +33,82 @@ function PuckLoadingScreen() {
 
 export default function PuckBuilderPage() {
   const params = useParams();
-  const router = useRouter();
-  const slug = (params?.slug as string) || "home";
+  const rawSlug = params?.slug;
+  const slug = (Array.isArray(rawSlug) ? rawSlug[0] : (rawSlug as string)) || "home";
 
-  const [puckConfig, setPuckConfig] = useState<any>(null);
-  const [initialData, setInitialData] = useState<any>(undefined);
+  // Initialize config synchronously so it is never null
+  const [puckConfig, setPuckConfig] = useState<any>(() => getPuckConfig([]));
+  const [initialData, setInitialData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load puck config and shortcodes
+  // 1. Asynchronously load shortcode options to enrich puckConfig options
   useEffect(() => {
-    Promise.all([
-      fetch("/api/shortcode-blocks").then((r) => r.json()),
-      import("@/lib/puck-config"),
-    ])
-      .then(([blocksRes, m]) => {
-        let options: { label: string; value: string }[] = [];
-        if (blocksRes?.blocks) {
-          options = blocksRes.blocks.map((b: any) => ({
+    fetch("/api/shortcode-blocks")
+      .then((r) => r.json())
+      .then((blocksRes) => {
+        if (blocksRes?.blocks && Array.isArray(blocksRes.blocks)) {
+          const options = blocksRes.blocks.map((b: any) => ({
             label: `${b.name} (${b.type})`,
             value: b.key,
           }));
+          setPuckConfig(getPuckConfig(options));
         }
-        setPuckConfig(m.getPuckConfig(options));
       })
       .catch((err) => {
         console.error("Failed to load shortcodes", err);
-        import("@/lib/puck-config").then((m) => {
-          setPuckConfig(m.getPuckConfig([]));
-        });
       });
   }, []);
 
-  // Load saved layout from API
+  // 2. Load saved layout from API
   useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
     fetch(`/api/builder/${slug}`)
       .then((r) => r.json())
       .then((res) => {
-        setInitialData(res.data || { content: [], root: {} });
+        if (isMounted) {
+          setInitialData(res.data || { content: [], root: {} });
+        }
       })
       .catch(() => {
-        setInitialData({ content: [], root: {} });
+        if (isMounted) {
+          setInitialData({ content: [], root: {} });
+        }
       })
-      .finally(() => setLoading(false));
-  }, [slug]);
-
-  const handlePublish = useCallback(async (data: any) => {
-    setSaving(true);
-    setSaved(false);
-    try {
-      await fetch(`/api/builder/${slug}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      console.error("Lưu thất bại:", err);
-    } finally {
-      setSaving(false);
-    }
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
-  if (loading || !puckConfig || initialData === undefined) {
+  const handlePublish = useCallback(
+    async (data: any) => {
+      setSaving(true);
+      setSaved(false);
+      try {
+        await fetch(`/api/builder/${slug}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } catch (err) {
+        console.error("Lưu thất bại:", err);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [slug]
+  );
+
+  if (loading || !initialData || !puckConfig) {
     return <PuckLoadingScreen />;
   }
 
