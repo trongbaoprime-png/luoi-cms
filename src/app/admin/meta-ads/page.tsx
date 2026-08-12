@@ -23,7 +23,7 @@ import {
   X,
   Filter,
 } from "lucide-react";
-import AdminDateRangePicker, { DatePresetKey } from "@/components/AdminDateRangePicker";
+import AdminDateRangePicker, { DatePresetKey, getPresetDates } from "@/components/AdminDateRangePicker";
 
 // Types
 export interface MetaCampaignRow {
@@ -108,8 +108,9 @@ export default function MetaAdsReportPage() {
     try {
       const scope = "all";
       let url = `/api/ads/meta-realtime?scope=${scope}`;
-      if (customFrom && customTo) {
-        url += `&since=${customFrom}&until=${customTo}`;
+      const dates = customFrom && customTo ? { from: customFrom, to: customTo } : getPresetDates(selectedPreset);
+      if (dates.from && dates.to) {
+        url += `&since=${dates.from}&until=${dates.to}`;
       }
       if (fresh) url += `&fresh=1`;
 
