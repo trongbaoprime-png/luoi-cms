@@ -62,9 +62,10 @@ export async function POST(req: Request) {
       success: true,
       message: "Đã cập nhật cấu hình thành công và làm tươi bộ nhớ đệm Cache!",
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("POST /api/settings error:", error);
     return NextResponse.json(
-      { success: false, error: "Lỗi lưu cấu hình" },
+      { success: false, error: "Lỗi lưu cấu hình: " + (error?.message || String(error)) },
       { status: 500 }
     );
   }
