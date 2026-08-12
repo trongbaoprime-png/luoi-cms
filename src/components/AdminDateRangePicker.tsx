@@ -43,8 +43,61 @@ export const DATE_PRESETS: DatePresetOption[] = [
   { key: "LAST_14_DAYS", label: "14 ngày qua" },
   { key: "LAST_28_DAYS", label: "28 ngày qua" },
   { key: "LAST_30_DAYS", label: "30 ngày qua" },
-  { key: "ALL_TIME", label: "Tối đa" },
+  { key: "ALL_TIME", label: "Tất cả thời gian" },
 ];
+
+export function getPresetDates(preset: DatePresetKey): { from: string; to: string } {
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+
+  const getDaysAgo = (days: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split("T")[0];
+  };
+
+  switch (preset) {
+    case "TODAY":
+      return { from: todayStr, to: todayStr };
+    case "YESTERDAY": {
+      const y = getDaysAgo(1);
+      return { from: y, to: y };
+    }
+    case "TODAY_YESTERDAY":
+      return { from: getDaysAgo(1), to: todayStr };
+    case "LAST_7_DAYS":
+      return { from: getDaysAgo(6), to: todayStr };
+    case "LAST_14_DAYS":
+      return { from: getDaysAgo(13), to: todayStr };
+    case "LAST_28_DAYS":
+      return { from: getDaysAgo(27), to: todayStr };
+    case "LAST_30_DAYS":
+      return { from: getDaysAgo(29), to: todayStr };
+    case "THIS_MONTH": {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+      return { from: start, to: todayStr };
+    }
+    case "LAST_MONTH": {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
+      const end = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
+      return { from: start, to: end };
+    }
+    case "THIS_WEEK": {
+      const day = now.getDay() || 7;
+      const start = getDaysAgo(day - 1);
+      return { from: start, to: todayStr };
+    }
+    case "LAST_WEEK": {
+      const day = now.getDay() || 7;
+      const end = getDaysAgo(day);
+      const start = getDaysAgo(day + 6);
+      return { from: start, to: end };
+    }
+    case "ALL_TIME":
+    default:
+      return { from: "2024-01-01", to: todayStr };
+  }
+}
 
 interface AdminDateRangePickerProps {
   selectedPreset: DatePresetKey;
@@ -57,10 +110,18 @@ export default function AdminDateRangePicker({
 }: AdminDateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempPreset, setTempPreset] = useState<DatePresetKey>(selectedPreset);
-  const [enableCompare, setEnableCompare] = useState(false);
-  const [startDate, setStartDate] = useState("2026-08-04");
-  const [endDate, setEndDate] = useState("2026-08-04");
+  const initialDates = getPresetDates(selectedPreset);
+  const [startDate, setStartDate] = useState(initialDates.from);
+  const [endDate, setEndDate] = useState(initialDates.to);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Sync state if prop changes
+  useEffect(() => {
+    setTempPreset(selectedPreset);
+    const d = getPresetDates(selectedPreset);
+    setStartDate(d.from);
+    setEndDate(d.to);
+  }, [selectedPreset]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -90,7 +151,7 @@ export default function AdminDateRangePicker({
       >
         <CalendarIcon size={15} className="text-[#0d9488]" />
         <span>
-          {activeOption.label}: 4 Tháng 8, 2026
+          {activeOption.label} {startDate ? `(${startDate === endDate ? startDate : `${startDate} đến ${endDate}`})` : ""}
         </span>
         <ChevronDown size={14} className="text-stone-500" />
       </button>

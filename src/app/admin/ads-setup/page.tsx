@@ -589,6 +589,19 @@ export default function AdsSetupPage() {
                 />
               </div>
 
+              {/* SAVE BUTTON FOR META CONFIG */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings}
+                  className="w-full py-3.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-mono font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {saveSuccess ? <Check size={18} className="text-emerald-300" /> : <Save size={18} />}
+                  <span>{savingSettings ? "Đang lưu cấu hình Meta..." : saveSuccess ? "✓ ĐÃ LƯU THÀNH CÔNG!" : "💾 LƯU CẤU HÌNH META ADS & TOKEN"}</span>
+                </button>
+              </div>
+
               <div className="pt-3 border-t border-stone-100 space-y-3">
                 <h3 className="text-xs font-bold font-mono uppercase text-stone-700">Bắn Thử Sự Kiện Sang Meta</h3>
                 <div className="grid grid-cols-2 gap-3">
