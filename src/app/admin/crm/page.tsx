@@ -150,23 +150,18 @@ const getSourceBadgeStyle = (src?: string) => {
 };
 
 const PRESET_OPTIONS = [
-  { key: "month4", label: "Tháng 4 (04/2026)" },
-  { key: "month5", label: "Tháng 5 (05/2026)" },
-  { key: "month6", label: "Tháng 6 (06/2026)" },
-  { key: "month7", label: "Tháng 7 (07/2026)" },
-  { key: "month8", label: "Tháng 8 (08/2026)" },
-  { key: "thisMonth", label: "Tháng này" },
-  { key: "lastMonth", label: "Tháng trước" },
   { key: "today", label: "Hôm nay" },
   { key: "yesterday", label: "Hôm qua" },
   { key: "today_yesterday", label: "Hôm nay và hôm qua" },
+  { key: "thisMonth", label: "Tháng này" },
+  { key: "lastMonth", label: "Tháng trước" },
+  { key: "thisWeek", label: "Tuần này" },
+  { key: "lastWeek", label: "Tuần trước" },
   { key: "7days", label: "7 ngày qua" },
   { key: "14days", label: "14 ngày qua" },
   { key: "28days", label: "28 ngày qua" },
   { key: "30days", label: "30 ngày qua" },
-  { key: "thisWeek", label: "Tuần này" },
-  { key: "lastWeek", label: "Tuần trước" },
-  { key: "all", label: "Tối đa" },
+  { key: "all", label: "Tất cả thời gian" },
 ];
 
 const getPresetDates = (presetKey: string) => {
@@ -642,71 +637,104 @@ function onEdit(e) {
               <ChevronDown className="w-3.5 h-3.5 text-stone-300" />
             </button>
 
-            {/* Date Range Modal / Popover (Đã bỏ phần Chọn nhanh kỳ theo yêu cầu) */}
+            {/* Date Range Modal / Popover */}
             {isDatePickerOpen && (
-              <div className="absolute right-0 top-11 w-[380px] max-w-[95vw] bg-white text-stone-900 rounded-2xl shadow-2xl border border-stone-200 z-50 p-4 font-mono space-y-4">
-                <div>
-                  <h4 className="font-bold text-sm text-stone-900 mb-0.5">Khoảng Thời Gian Lọc Dữ Liệu</h4>
-                  <p className="text-[11px] text-stone-500 mb-3">
-                    Tất cả KPI, tỷ lệ Đậu/Rớt và danh sách Khách hàng sẽ được tính toán lại theo khoảng thời gian này.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-stone-600 block mb-1">Từ Ngày</label>
-                      <input
-                        type="date"
-                        value={tempFrom}
-                        onChange={(e) => {
-                          setTempFrom(e.target.value);
-                          setTempPreset("custom");
+              <div className="absolute right-0 top-11 w-[620px] max-w-[95vw] bg-white text-stone-900 rounded-2xl shadow-2xl border border-stone-200 z-50 p-4 grid grid-cols-1 md:grid-cols-12 gap-4 font-mono">
+                {/* Left Sidebar: Quick Presets (Hôm nay, Hôm qua, Tháng này, Tháng trước, Tuần này...) */}
+                <div className="md:col-span-5 border-r pr-3 space-y-1 text-xs max-h-[300px] overflow-y-auto">
+                  <p className="font-bold text-stone-400 text-[10px] uppercase tracking-wider mb-1.5">Lọc nhanh thời gian</p>
+                  {PRESET_OPTIONS.map((p) => {
+                    const isSelected = tempPreset === p.key;
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => {
+                          setTempPreset(p.key);
+                          const { from, to } = getPresetDates(p.key);
+                          setTempFrom(from);
+                          setTempTo(to);
                         }}
-                        className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-stone-600 block mb-1">Đến Ngày</label>
-                      <input
-                        type="date"
-                        value={tempTo}
-                        onChange={(e) => {
-                          setTempTo(e.target.value);
-                          setTempPreset("custom");
-                        }}
-                        className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 bg-stone-50 rounded-xl text-[11px] text-stone-500 border border-stone-100 flex items-center justify-between">
-                    <span>🕒 Giờ Việt Nam (GMT+7)</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempFrom("");
-                        setTempTo("");
-                        setTempPreset("all");
-                      }}
-                      className="text-[#0d4f4a] underline font-bold hover:text-stone-900 cursor-pointer"
-                    >
-                      Bỏ lọc (Tất cả)
-                    </button>
-                  </div>
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium text-left cursor-pointer transition-colors ${
+                          isSelected ? "bg-[#0d4f4a]/10 text-[#0d4f4a] font-bold" : "hover:bg-stone-50 text-stone-700"
+                        }`}
+                      >
+                        <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${
+                          isSelected ? "border-[#0d4f4a] bg-[#0d4f4a] text-white" : "border-stone-300"
+                        }`}>
+                          {isSelected && "✓"}
+                        </span>
+                        <span>{p.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2.5 border-t">
-                  <button
-                    onClick={() => setIsDatePickerOpen(false)}
-                    className="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    onClick={handleApplyDateRange}
-                    className="px-4 py-1.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
-                  >
-                    Áp Dụng
-                  </button>
+                {/* Right Panel: Custom Date Inputs & Action Buttons */}
+                <div className="md:col-span-7 flex flex-col justify-between space-y-3">
+                  <div>
+                    <h4 className="font-bold text-sm text-stone-900 mb-0.5">Khoảng Thời Gian Lọc Dữ Liệu</h4>
+                    <p className="text-[11px] text-stone-500 mb-3">
+                      Tất cả KPI, tỷ lệ Đậu/Rớt và danh sách Khách hàng sẽ được tính toán lại theo khoảng thời gian này.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-600 block mb-1">Từ Ngày</label>
+                        <input
+                          type="date"
+                          value={tempFrom}
+                          onChange={(e) => {
+                            setTempFrom(e.target.value);
+                            setTempPreset("custom");
+                          }}
+                          className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-600 block mb-1">Đến Ngày</label>
+                        <input
+                          type="date"
+                          value={tempTo}
+                          onChange={(e) => {
+                            setTempTo(e.target.value);
+                            setTempPreset("custom");
+                          }}
+                          className="w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 bg-stone-50 rounded-xl text-[11px] text-stone-500 border border-stone-100 flex items-center justify-between">
+                      <span>🕒 Giờ Việt Nam (GMT+7)</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempFrom("");
+                          setTempTo("");
+                          setTempPreset("all");
+                        }}
+                        className="text-[#0d4f4a] underline font-bold hover:text-stone-900 cursor-pointer"
+                      >
+                        Bỏ lọc (Tất cả)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2.5 border-t">
+                    <button
+                      onClick={() => setIsDatePickerOpen(false)}
+                      className="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleApplyDateRange}
+                      className="px-4 py-1.5 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
+                    >
+                      Áp Dụng
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

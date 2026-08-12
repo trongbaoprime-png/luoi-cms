@@ -121,42 +121,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="w-full max-w-[1536px] mx-auto space-y-6 pb-12">
-      {/* Top Welcome Header with Meta Events Manager Style Date Picker */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold font-serif text-stone-900 tracking-tight">
-            Bảng Quản Trị Multi-Platform Analytics &amp; Real-time Visitors
-          </h1>
-          <p className="text-xs text-stone-500 mt-1">
-            Thống kê lượt xem, đăng ký form, Qualified Lead &amp; Doanh thu thực tế theo từng nền tầng Meta, Google, TikTok, Zalo &amp; SEO.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* USER REQUIREMENT: META EVENTS MANAGER STYLE DATE RANGE PICKER DROPDOWN */}
-          <AdminDateRangePicker
-            selectedPreset={selectedDatePreset}
-            onChangePreset={handleChangeDatePreset}
-          />
-
-          <Link
-            href="/admin/ads-setup"
-            aria-label="Cấu Hình Ads APIs"
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-800 border border-sky-200 rounded-xl text-xs font-semibold hover:bg-sky-100 transition-colors shadow-2xs"
-          >
-            <Share2 size={15} />
-            <span>Cấu Hình Ads APIs</span>
-          </Link>
-          <Link
-            href="/admin/articles/new"
-            aria-label="Bài viết mới"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0d9488] text-white rounded-xl text-xs font-bold hover:bg-[#0f766e] transition-colors shadow-sm"
-          >
-            <Plus size={15} />
-            <span>Bài viết mới</span>
-          </Link>
-        </div>
-      </div>
 
       {/* VPS SYSTEM INFRASTRUCTURE & AI MICROSERVICES LIVE MONITOR */}
       <div className="bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] p-5 rounded-2xl shadow-lg border border-[#084540] text-white">
