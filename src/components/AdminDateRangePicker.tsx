@@ -207,6 +207,7 @@ export default function AdminDateRangePicker({
                 </div>
               </div>
             </div>
+        </div>
       )}
     </div>
   );
