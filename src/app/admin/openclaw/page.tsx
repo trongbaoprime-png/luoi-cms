@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 export default function OpenClawControlPanel() {
-  const [activeTab, setActiveTab] = useState<"NATIVE" | "ANALYTICS">("NATIVE");
+  const [activeTab, setActiveTab] = useState<"ANALYTICS" | "NATIVE">("ANALYTICS");
   const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState<any>(null);
   const [selectedAgent, setSelectedAgent] = useState("SALES");
