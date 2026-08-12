@@ -31,7 +31,7 @@ export default function OmniRouteControlPanel() {
   const [testPrompt, setTestPrompt] = useState("Phân tích nhu cầu làm răng sứ cho khách hàng và đề xuất câu hỏi tư vấn.");
   const [testResult, setTestResult] = useState<any>(null);
   const [testingModel, setTestingModel] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("/omniroute/");
+  const [iframeUrl, setIframeUrl] = useState("/omniroute-app/");
 
   const fetchGatewayData = useCallback(async () => {
     setLoading(true);
@@ -242,7 +242,7 @@ export default function OmniRouteControlPanel() {
                 Providers (151 Active) | Groq, OpenAI, Anthropic, Gemini, DeepSeek, Cerebras, OpenRouter
               </span>
               <button
-                onClick={() => setIframeUrl(`/omniroute/?t=${Date.now()}`)}
+                onClick={() => setIframeUrl(`/omniroute-app/?t=${Date.now()}`)}
                 className="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded text-[11px] font-bold transition-colors"
               >
                 Reload Frame

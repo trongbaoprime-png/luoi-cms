@@ -22,12 +22,14 @@ import {
 } from "lucide-react";
 
 export default function OpenClawControlPanel() {
+  const [activeTab, setActiveTab] = useState<"NATIVE" | "ANALYTICS">("NATIVE");
   const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState<any>(null);
   const [selectedAgent, setSelectedAgent] = useState("SALES");
   const [taskPrompt, setTaskPrompt] = useState("Soạn tin nhắn chào mừng và tư vấn trồng răng Implant cho khách hàng.");
   const [runResult, setRunResult] = useState<any>(null);
   const [executingAgent, setExecutingAgent] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState("/openclaw-app/");
 
   const fetchOpenClawData = useCallback(async () => {
     setLoading(true);
@@ -126,7 +128,7 @@ export default function OpenClawControlPanel() {
   return (
     <div className="w-full space-y-6 pb-12 font-sans text-stone-900">
       {/* Top Header Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white p-6 rounded-2xl shadow-xl border border-[#084540]">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white p-6 rounded-2xl shadow-xl border border-[#084540]">
         <div>
           <div className="flex items-center gap-3">
             <span className="w-9 h-9 rounded-xl bg-[#00c9b7] text-[#023835] flex items-center justify-center font-bold shadow-md">
@@ -134,23 +136,95 @@ export default function OpenClawControlPanel() {
             </span>
             <div>
               <h1 className="text-xl md:text-2xl font-bold font-serif text-white tracking-tight">
-                OpenClaw Agent Runtime — Visual Control Panel
+                OpenClaw Agent Runtime Control Center
               </h1>
               <p className="text-xs md:text-sm text-[#e6f4f1]/80 mt-0.5">
-                Quản lý 4 AI Agents tự động (CEO, Marketing, Sales, CSKH), Skill Execution &amp; Channel Bridge Adapter (Port 20180)
+                Nhúng 100% Giao diện gốc OpenClaw Agent Hub — Quản lý 4 AI Agents tự động, Skill Tools &amp; Webhook Channels
               </p>
             </div>
           </div>
         </div>
 
-        <button
-          onClick={fetchOpenClawData}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#00c9b7]" : ""}`} />
-          <span>Làm Mới Trạng Thái</span>
-        </button>
+        {/* Tab Switcher & Quick Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/10">
+            <button
+              onClick={() => setActiveTab("NATIVE")}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "NATIVE"
+                  ? "bg-[#00c9b7] text-[#023835] shadow-sm"
+                  : "text-white/80 hover:text-white"
+              }`}
+            >
+              <span>🖥️ Giao diện gốc OpenClaw</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("ANALYTICS")}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "ANALYTICS"
+                  ? "bg-[#00c9b7] text-[#023835] shadow-sm"
+                  : "text-white/80 hover:text-white"
+              }`}
+            >
+              <span>📊 Agent Matrix &amp; Sandbox</span>
+            </button>
+          </div>
+
+          <a
+            href="http://136.110.2.153:20180"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
+          >
+            <span>Mở cửa sổ mới (Port 20180)</span>
+          </a>
+
+          <button
+            onClick={fetchOpenClawData}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-sm transition-all border border-white/15 cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#00c9b7]" : ""}`} />
+            <span>Làm Mới</span>
+          </button>
+        </div>
       </div>
+
+      {/* TAB 1: NATIVE OPENCLAW EMBEDDED DASHBOARD */}
+      {activeTab === "NATIVE" && (
+        <div className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-2xl space-y-3">
+          <div className="bg-stone-950 px-5 py-3 border-b border-stone-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-mono text-xs text-stone-300 font-bold">
+                OpenClaw Native Agent Server — Active Port 20180
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-stone-400">
+                4 Active AI Agents: CEO Executive, Marketing Lead, Sales Consultant, CSKH Support
+              </span>
+              <button
+                onClick={() => setIframeUrl(`/openclaw-app/?t=${Date.now()}`)}
+                className="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded text-[11px] font-bold transition-colors"
+              >
+                Reload Frame
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full h-[850px] relative bg-stone-950">
+            <iframe
+              src={iframeUrl}
+              className="w-full h-full border-0 rounded-b-2xl"
+              title="OpenClaw Official Native Dashboard"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: VISUAL ANALYTICS & SANDBOX */}
+      {activeTab === "ANALYTICS" && (
+        <>
 
       {/* Status Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -359,6 +433,8 @@ export default function OpenClawControlPanel() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
