@@ -115,6 +115,15 @@ export default function MetaAdsReportPage() {
       if (fresh) url += `&fresh=1`;
 
       const res = await fetch(url);
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !contentType.includes("application/json")) {
+        const text = await res.text();
+        if (text.startsWith("<")) {
+          throw new Error("Hệ thống đang đồng bộ dữ liệu Meta Graph API song song. Vui lòng bấm nút 'Làm mới Meta' sau vài giây.");
+        }
+        throw new Error(`Lỗi phản hồi từ server Meta (${res.status})`);
+      }
+
       const data = await res.json();
 
       setConfigured(data.ok !== false);

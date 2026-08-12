@@ -19,7 +19,7 @@ function getCacheFilePath(key: string): string {
   return path.join(CACHE_DIR, `meta_${safeKey}.json`);
 }
 
-function readCache(key: string, ttlMs: number): any | null {
+function readCache(key: string, maxAgeMs: number): any | null {
   try {
     ensureCacheDir();
     const filePath = getCacheFilePath(key);
@@ -27,8 +27,20 @@ function readCache(key: string, ttlMs: number): any | null {
 
     const stat = fs.statSync(filePath);
     const ageMs = Date.now() - stat.mtimeMs;
-    if (ageMs > ttlMs) return null;
+    if (ageMs > maxAgeMs) return null;
 
+    const content = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+function readAnyCache(key: string): any | null {
+  try {
+    ensureCacheDir();
+    const filePath = getCacheFilePath(key);
+    if (!fs.existsSync(filePath)) return null;
     const content = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(content);
   } catch {
@@ -102,7 +114,7 @@ async function fetchMetaGraph(
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s per request timeout
 
   try {
     const res = await fetch(url.toString(), {
@@ -178,7 +190,7 @@ export async function discoverAdAccounts(accessToken: string): Promise<string[]>
   return [];
 }
 
-// Main Realtime Data Fetcher
+// Main Realtime Data Fetcher with Parallel Account Processing
 export async function getMetaRealtimeData(
   scope: string,
   since: string,
@@ -204,7 +216,7 @@ export async function getMetaRealtimeData(
 
   const cacheKey = `${scope}_${startDate}_${endDate}_${config.accountIds.join("-")}`;
   const isToday = startDate <= today && endDate >= today;
-  const ttlMs = isToday ? 5 * 60 * 1000 : 60 * 60 * 1000; // 5 min for today, 1h for historical
+  const ttlMs = isToday ? 5 * 60 * 1000 : 24 * 60 * 60 * 1000; // 5 min for today, 24h for historical
 
   // Read cache if not forced fresh
   if (!fresh) {
@@ -229,25 +241,30 @@ export async function getMetaRealtimeData(
 
   const timeRange = JSON.stringify({ since: startDate, until: endDate });
 
-  for (const accId of accountIds) {
-    const actId = accId.startsWith("act_") ? accId : `act_${accId}`;
+  // PARALLEL CONCURRENT FETCHING across all Ad Accounts using Promise.allSettled
+  const results = await Promise.allSettled(
+    accountIds.map(async (accId) => {
+      const actId = accId.startsWith("act_") ? accId : `act_${accId}`;
 
-    try {
       // 1. Fetch Account Info
       const accInfo = await fetchMetaGraph(actId, config.accessToken, {
         fields: "id,name,account_status,currency,timezone_name,amount_spent",
       });
 
-      accounts.push({
+      const accObj = {
         account_id: accId,
         ad_account_id: actId,
         account_name: accInfo.name || `Tài khoản ${accId.slice(-4)}`,
         account_status: accInfo.account_status,
         currency: accInfo.currency || "VND",
         timezone_name: accInfo.timezone_name || "Asia/Ho_Chi_Minh",
-      });
+      };
 
-      // 2. Fetch Core Insights (Adsets & Campaigns)
+      const localCampaigns: any[] = [];
+      const localGender: any[] = [];
+      const localHourly: any[] = [];
+
+      // 2. Fetch Core Insights
       if (scope === "core" || scope === "all") {
         try {
           const insights = await fetchMetaGraph(`${actId}/insights`, config.accessToken, {
@@ -261,7 +278,7 @@ export async function getMetaRealtimeData(
           if (insights?.data && Array.isArray(insights.data)) {
             insights.data.forEach((row: any) => {
               const metrics = parseActionMetrics(row.actions);
-              campaignRows.push({
+              localCampaigns.push({
                 date_start: row.date_start || startDate,
                 date_stop: row.date_stop || endDate,
                 account_id: accId,
@@ -287,12 +304,10 @@ export async function getMetaRealtimeData(
               });
             });
           }
-        } catch (e) {
-          console.error(`Core insights fetch error for ${actId}:`, e);
-        }
+        } catch {}
       }
 
-      // 3. Fetch Breakdowns (Gender, Hourly, Geo)
+      // 3. Fetch Breakdowns
       if (scope === "breakdowns" || scope === "all") {
         try {
           const genderRes = await fetchMetaGraph(`${actId}/insights`, config.accessToken, {
@@ -305,7 +320,7 @@ export async function getMetaRealtimeData(
           if (genderRes?.data) {
             genderRes.data.forEach((r: any) => {
               const m = parseActionMetrics(r.actions);
-              genderRows.push({ ...r, spend: Number(r.spend || 0), messagesNew: m.messagesNew, leads: m.leads });
+              localGender.push({ ...r, spend: Number(r.spend || 0), messagesNew: m.messagesNew, leads: m.leads });
             });
           }
         } catch {}
@@ -321,19 +336,29 @@ export async function getMetaRealtimeData(
           if (hourlyRes?.data) {
             hourlyRes.data.forEach((r: any) => {
               const m = parseActionMetrics(r.actions);
-              hourlyRows.push({ ...r, spend: Number(r.spend || 0), messagesNew: m.messagesNew, leads: m.leads });
+              localHourly.push({ ...r, spend: Number(r.spend || 0), messagesNew: m.messagesNew, leads: m.leads });
             });
           }
         } catch {}
       }
-    } catch (err: any) {
-      console.error(`Error processing account ${accId}:`, err);
+
+      return { accObj, localCampaigns, localGender, localHourly };
+    })
+  );
+
+  // Aggregate results from parallel executions
+  results.forEach((res) => {
+    if (res.status === "fulfilled" && res.value) {
+      accounts.push(res.value.accObj);
+      campaignRows.push(...res.value.localCampaigns);
+      genderRows.push(...res.value.localGender);
+      hourlyRows.push(...res.value.localHourly);
     }
-  }
+  });
 
   const resultPayload = {
     ok: true,
-    source: "meta-graph-direct",
+    source: "meta-graph-parallel",
     scope,
     generatedAt: new Date().toISOString(),
     since: startDate,
