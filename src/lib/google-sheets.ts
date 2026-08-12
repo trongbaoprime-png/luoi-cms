@@ -370,6 +370,10 @@ export async function syncSaleSheet(minMonth: number = 3) {
       }
 
       const rawName = String(c[2]?.v || "").trim();
+      // BẮT BUỘC KHÁCH HÀNG PHẢI CÓ HỌ TÊN THẬT (Bỏ qua khách không có tên hoặc tên dạng 'Khách')
+      if (!isRealName(rawName)) {
+        continue;
+      }
       const rawSource = String(c[4]?.v || "").trim();
       const rawBranch = String(c[5]?.v || "").trim();
       const rawService = String(c[6]?.v || "").trim();
