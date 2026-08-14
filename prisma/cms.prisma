@@ -48,13 +48,18 @@ model Post {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  posts       Post[]
-  products    Product[]
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  description    String?
+  seoTitle       String?
+  seoDescription String?
+  ogImage        String?
+  canonicalUrl   String?
+  schemaJson     String?
+  posts          Post[]
+  products       Product[]
+  createdAt      DateTime  @default(now())
 }
 
 model Author {
@@ -77,18 +82,25 @@ model Media {
 }
 
 model Page {
-  id             String   @id @default(cuid())
-  title          String
-  slug           String   @unique
-  content        String?
-  blocks         String?  // JSON string of UX Builder visual blocks array
-  seoTitle       String?
-  seoDescription String?
-  isPublished    Boolean  @default(true)
-  useDefaultHeader Boolean @default(true)
-  useDefaultFooter Boolean @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  content          String?
+  blocks           String?  // JSON string of UX Builder visual blocks array
+  seoTitle         String?
+  seoDescription   String?
+  ogImage          String?
+  ogTitle          String?
+  ogDescription    String?
+  canonicalUrl     String?
+  keywords         String?
+  noIndex          Boolean  @default(false)
+  schemaJson       String?
+  isPublished      Boolean  @default(true)
+  useDefaultHeader Boolean  @default(true)
+  useDefaultFooter Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Setting {

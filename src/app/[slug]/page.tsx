@@ -52,37 +52,76 @@ function formatArticleHtmlContent(rawContent: string): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const canonicalUrl = `https://luoidonnha.com/${slug}`;
+  try {
+    const { slug } = await params;
+    const canonicalUrl = `https://luoidonnha.com/${slug}`;
 
-  // 1. Check if slug is a Category
-  const category = await db.category.findUnique({ where: { slug } });
-  if (category) {
-    return {
-      title: `${category.name} | Lười Dọn Nhà`,
-      description: category.description || `Danh mục ${category.name} tại LuoiDonNha.com`,
-      alternates: { canonical: canonicalUrl },
-    };
-  }
+    // 1. Check if slug is a Category
+    const category = await db.category.findUnique({ where: { slug } }).catch(() => null);
+    if (category) {
+      const title = category.seoTitle || `${category.name} - Chuyên mục | Lười Dọn Nhà`;
+      const description = category.seoDescription || category.description || `Xem các bài viết, sản phẩm và dịch vụ thuộc chuyên mục ${category.name} tại LuoiDonNha.com`;
+      return {
+        title,
+        description,
+        alternates: { canonical: category.canonicalUrl || canonicalUrl },
+        openGraph: {
+          title,
+          description,
+          url: category.canonicalUrl || canonicalUrl,
+          siteName: "Lười Dọn Nhà",
+          locale: "vi_VN",
+          type: "website",
+          images: category.ogImage ? [{ url: category.ogImage, width: 1200, height: 630 }] : undefined,
+        },
+      };
+    }
 
-  // 2. Check if slug is a Static Page
-  const page = await db.page.findUnique({ where: { slug } });
-  if (page) {
-    return {
-      title: page.seoTitle || page.title + " | Lười Dọn Nhà",
-      description: page.seoDescription || "Trang " + page.title + " tại LuoiDonNha.com",
-      alternates: { canonical: canonicalUrl },
-    };
-  }
+    // 2. Check if slug is a Static Landing Page (Puck / Visual Builder)
+    const page = await db.page.findUnique({ where: { slug } }).catch(() => null);
+    if (page) {
+      const title = page.seoTitle || `${page.title} | Lười Dọn Nhà`;
+      const description = page.seoDescription || `Trang thông tin ${page.title} tại LuoiDonNha.com`;
+      return {
+        title,
+        description,
+        keywords: page.keywords ? page.keywords.split(",").map((k) => k.trim()) : undefined,
+        alternates: { canonical: page.canonicalUrl || canonicalUrl },
+        openGraph: {
+          title: page.ogTitle || title,
+          description: page.ogDescription || description,
+          url: page.canonicalUrl || canonicalUrl,
+          siteName: "Lười Dọn Nhà",
+          locale: "vi_VN",
+          type: "website",
+          images: page.ogImage ? [{ url: page.ogImage, width: 1200, height: 630 }] : undefined,
+        },
+        robots: page.noIndex ? { index: false, follow: false } : { index: true, follow: true },
+      };
+    }
 
-  // 3. Check if slug is a Post / Article
-  const post = await db.post.findUnique({ where: { slug } });
-  if (post) {
-    return {
-      title: post.seoTitle || post.title + " | Lười Dọn Nhà",
-      description: post.seoDescription || post.summary || "Bài viết " + post.title + " tại LuoiDonNha.com",
-      alternates: { canonical: canonicalUrl },
-    };
+    // 3. Check if slug is a Post / Article
+    const post = await db.post.findUnique({ where: { slug } }).catch(() => null);
+    if (post) {
+      const title = post.seoTitle || `${post.title} | Lười Dọn Nhà`;
+      const description = post.seoDescription || post.summary || `Bài viết ${post.title} tại LuoiDonNha.com`;
+      return {
+        title,
+        description,
+        alternates: { canonical: canonicalUrl },
+        openGraph: {
+          title,
+          description,
+          url: canonicalUrl,
+          siteName: "Lười Dọn Nhà",
+          locale: "vi_VN",
+          type: "article",
+          images: post.coverImage ? [{ url: post.coverImage, width: 1200, height: 630 }] : undefined,
+        },
+      };
+    }
+  } catch {
+    // Fallback gracefully on any DB glitch
   }
 
   return { title: "Không tìm thấy trang - Lười Dọn Nhà" };
@@ -107,7 +146,7 @@ export default async function UniversalTopLevelSlugPage({ params }: Props) {
         orderBy: { createdAt: "desc" },
       },
     },
-  });
+  }).catch(() => null);
 
   if (category) {
     return (
@@ -200,6 +239,18 @@ export default async function UniversalTopLevelSlugPage({ params }: Props) {
 
         <TrustBadges />
         <LuoiFooter />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              name: category.seoTitle || category.name,
+              description: category.seoDescription || category.description || `Chuyên mục ${category.name}`,
+              url: `https://luoidonnha.com/${category.slug}`,
+            }),
+          }}
+        />
       </div>
     );
   }
@@ -209,11 +260,11 @@ export default async function UniversalTopLevelSlugPage({ params }: Props) {
   // -------------------------------------------------------------
   const page = await db.page.findUnique({
     where: { slug },
-  });
+  }).catch(() => null);
 
   // Try to load Puck layout first
   const puckKey = `puck_layout_${slug}`;
-  const puckSetting = await db.setting.findUnique({ where: { key: puckKey } });
+  const puckSetting = await db.setting.findUnique({ where: { key: puckKey } }).catch(() => null);
 
     if (puckSetting?.value) {
       try {
@@ -225,6 +276,18 @@ export default async function UniversalTopLevelSlugPage({ params }: Props) {
               <PuckPageRenderer data={puckData} />
             </main>
             {page?.useDefaultFooter !== false && <LuoiFooter />}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "WebPage",
+                  name: page?.seoTitle || page?.title || "Lười Dọn Nhà",
+                  description: page?.seoDescription || "Trang đích dịch vụ Lười Dọn Nhà",
+                  url: `https://luoidonnha.com/${page?.slug || slug}`,
+                }),
+              }}
+            />
           </div>
         );
       } catch {}
@@ -239,8 +302,8 @@ export default async function UniversalTopLevelSlugPage({ params }: Props) {
     } catch {}
 
     const [products, deals] = await Promise.all([
-      db.product.findMany({ take: 6, orderBy: { clicks: "desc" } }),
-      db.deal.findMany({ take: 4, where: { isActive: true }, orderBy: { createdAt: "desc" } }),
+      db.product.findMany({ take: 6, orderBy: { clicks: "desc" } }).catch(() => []),
+      db.deal.findMany({ take: 4, where: { isActive: true }, orderBy: { createdAt: "desc" } }).catch(() => []),
     ]);
 
     return (
@@ -479,7 +542,7 @@ export default async function UniversalTopLevelSlugPage({ params }: Props) {
       category: true,
       author: true,
     },
-  });
+  }).catch(() => null);
 
   if (post) {
     // Increment view counter in background

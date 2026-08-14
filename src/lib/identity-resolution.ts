@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 /**
  * LƯỜI BUSINESS OS — Customer 360 Identity Resolution Engine
  * Normalizes Vietnamese phone numbers, unifies multi-channel identities, and manages profile merges.
@@ -62,6 +64,14 @@ export function normalizeVnPhone(phoneStr: string): string {
 export function normalizeEmail(emailStr: string): string {
   if (!emailStr) return "";
   return emailStr.trim().toLowerCase();
+}
+
+/**
+ * SHA-256 Hasher for PII (Phone / Email) compliance with Meta CAPI & Google Ads
+ */
+export function hashSha256(val: string): string {
+  if (!val) return "";
+  return crypto.createHash("sha256").update(val.trim().toLowerCase()).digest("hex");
 }
 
 /**

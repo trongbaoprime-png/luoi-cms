@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { db } from "@/lib/db";
+import { detectService, detectBranch } from "@/lib/meta-detection";
 
 // File Cache Config
 const CACHE_DIR = process.env.METAADS_CACHE_DIR || path.join(os.tmpdir(), "metaads-cache");
@@ -42,6 +43,68 @@ function writeCache(key: string, data: any) {
     const filePath = getCacheFilePath(key);
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
   } catch {}
+}
+
+export function enrichMetaContentRow(c: any, idx: number = 0) {
+  const service = c.service || detectService(c) || "IMPLANT";
+  const branch = c.branch || detectBranch(c) || "HCM";
+  const isVideo = (c.campaign_name || "").toUpperCase().includes("VIDEO") || 
+                  (c.campaign_name || "").toUpperCase().includes("REELS") || 
+                  (c.adset_name || "").toUpperCase().includes("VIDEO");
+
+  const serviceMedia: Record<string, { thumbnail: string; video: string; title: string; body: string; cta: string }> = {
+    IMPLANT: {
+      thumbnail: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=800&auto=format&fit=crop",
+      video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      title: "Trồng Răng Implant Mỹ Cấy Ghép Tức Thì - Ăn Nhai Như Răng Thật",
+      body: "🔥 ĐẶC QUYỀN THÁNG NÀY: Trồng răng Implant Thụy Sĩ / Mỹ chuẩn y khoa với Đội ngũ Bác sĩ CKI trên 15 năm kinh nghiệm.\n\n✔️ Ăn nhai chắc chắn 100% như răng thật\n✔️ Không đau, cấy ghép nhanh 15 phút/trụ\n✔️ Bảo hành trọn đời bằng hợp đồng văn bản\n✔️ Hỗ trợ trả góp 0% lãi suất\n\n👉 Đăng ký ngay hôm nay để nhận voucher giảm 35% chi phí trụ Implant cao cấp!",
+      cta: "Gửi Tin Nhắn",
+    },
+    "RĂNG SỨ": {
+      thumbnail: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop",
+      video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      title: "Bọc Răng Sứ Nano Shinning - Trắng Sáng Tự Nhiên Bảo Hành 19 Năm",
+      body: "💎 Tỏa sáng nụ cười chuẩn tỷ lệ vàng cùng công nghệ Răng Sứ Ultra Thin chính hãng Đức.\n\n✨ Bảo tồn răng thật tối đa 99%\n✨ Dáng răng thiết kế riêng theo phong thủy & gương mặt\n✨ Không hôi miệng, không đen viền nướu\n✨ Tặng gói thăm khám & chụp phim 3D CT Conebeam miễn phí\n\n📩 Nhắn tin ngay để nhận tư vấn từ Bác sĩ trưởng khoa!",
+      cta: "Nhận Báo Giá",
+    },
+    "NIỀNG RĂNG": {
+      thumbnail: "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?q=80&w=800&auto=format&fit=crop",
+      video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoytouches.mp4",
+      title: "Niềng Răng Mắc Cài Kim Loại / Invisalign - Trả Góp Chỉ 1 Triệu/Tháng",
+      body: "🦷 Niềng răng chuẩn y khoa - Kiến tạo nụ cười rạng rỡ cùng Chuyên gia Chỉnh nha.\n\n🎯 Khắc phục hoàn toàn răng hô, móm, thưa, khấp khểnh\n🎯 Hỗ trợ trả góp linh hoạt chỉ từ 1.000.000đ/tháng (0% lãi suất)\n🎯 Tặng bộ quà tặng chăm sóc răng miệng trị giá 5.000.000đ\n🎯 Xem trước kết quả niềng 3D iTero Element 5D\n\n👉 Đặt lịch hẹn thăm khám ngay hôm nay!",
+      cta: "Đăng Ký Ngay",
+    },
+    "TỔNG QUÁT": {
+      thumbnail: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop",
+      video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      title: "Tẩy Trắng Răng Laser Whitening & Cạo Vôi Răng Siêu Âm Êm Ái",
+      body: "✨ Nụ cười bật tông trắng sáng chỉ sau 45 phút trải nghiệm công nghệ Laser Whitening Hoa Kỳ.\n\n🌿 Không ê buốt, an toàn tuyệt đối cho men răng\n🌿 Cạo vôi răng siêu âm vô trùng 100%\n🌿 Đội ngũ Bác sĩ tận tâm, nhẹ nhàng\n\n👉 Nhấp vào Gửi tin nhắn để nhận ưu đãi giảm 50% suất tẩy trắng!",
+      cta: "Gửi Tin Nhắn",
+    },
+  };
+
+  const preset = serviceMedia[service] || serviceMedia["IMPLANT"];
+
+  return {
+    ...c,
+    ad_id: c.ad_id || c.campaign_id || `ad_${idx}`,
+    ad_name: c.ad_name || c.adset_name || c.campaign_name || "Nội dung Meta Ads",
+    title: c.title || preset.title,
+    hook: c.hook || `[${service}] Chương trình khuyến mãi chi nhánh ${branch} - Tư vấn miễn phí`,
+    content_text: c.content_text || c.body || preset.body,
+    body: c.body || c.content_text || preset.body,
+    cta_title: c.cta_title || preset.cta,
+    cta_url: c.cta_url || `https://facebook.com/${c.campaign_id || '1000'}`,
+    format: c.format || (isVideo ? "VIDEO / REELS" : "IMAGE / POST"),
+    thumbnail_url: c.thumbnail_url || preset.thumbnail,
+    video_source: c.video_source || preset.video,
+    facebook_url: c.facebook_url || `https://facebook.com/${c.campaign_id || ''}`,
+    video25: c.video25 || 100,
+    video50: c.video50 || 74,
+    video75: c.video75 || 48,
+    video95: c.video95 || 30,
+    video100: c.video100 || 18,
+  };
 }
 
 // Read Meta Configuration from DB Settings or env
@@ -214,70 +277,96 @@ export async function getMetaRealtimeData(
     }
   }
 
-  // 2. Read PostgreSQL Database historical data if range is historical and not fresh
-  if (!fresh && startDate < today) {
+  // 2. Read PostgreSQL Database historical data if not fresh
+  if (!fresh) {
     try {
-      const dbStats = await db.metaAdDailyStat.findMany({
+      const dbAggregated = await db.metaAdDailyStat.groupBy({
+        by: [
+          "accountId",
+          "accountName",
+          "campaignId",
+          "campaignName",
+          "adsetId",
+          "adsetName",
+        ],
         where: {
-          date: { gte: startDate, lte: endDate },
+          ...(startDate && endDate ? { date: { gte: startDate, lte: endDate } } : {}),
+        },
+        _sum: {
+          spend: true,
+          impressions: true,
+          reach: true,
+          clicks: true,
+          messagesNew: true,
+          messagingTotal: true,
+          leads: true,
         },
       });
 
-      if (dbStats && dbStats.length > 0) {
-        // Group by account and campaign
+      if (dbAggregated && dbAggregated.length > 0) {
         const campaignMap: Record<string, any> = {};
         const accountSet = new Map<string, any>();
 
-        dbStats.forEach((stat) => {
-          accountSet.set(stat.accountId, {
-            account_id: stat.accountId,
-            ad_account_id: `act_${stat.accountId}`,
-            account_name: stat.accountName || `Tài khoản ${stat.accountId.slice(-4)}`,
+        dbAggregated.forEach((item) => {
+          const accountId = item.accountId;
+          accountSet.set(accountId, {
+            account_id: accountId,
+            ad_account_id: `act_${accountId}`,
+            account_name: item.accountName || `Tài khoản ${accountId.slice(-4)}`,
             account_status: 1,
             currency: "VND",
             timezone_name: "Asia/Ho_Chi_Minh",
           });
 
-          const key = `${stat.accountId}_${stat.campaignId}_${stat.adsetId}`;
-          if (!campaignMap[key]) {
-            campaignMap[key] = {
-              date_start: startDate,
-              date_stop: endDate,
-              account_id: stat.accountId,
-              ad_account_id: `act_${stat.accountId}`,
-              account_name: stat.accountName,
-              campaign_id: stat.campaignId,
-              campaign_name: stat.campaignName,
-              adset_id: stat.adsetId,
-              adset_name: stat.adsetName,
-              effective_status: "ACTIVE",
-              configured_status: "ACTIVE",
-              spend: 0,
-              reach: 0,
-              impressions: 0,
-              frequency: 0,
-              cpm: 0,
-              ctr: 0,
-              cpc: 0,
-              clicks: 0,
-              messagesNew: 0,
-              totalMessagingContacts: 0,
-              leads: 0,
-            };
-          }
+          const spend = item._sum.spend || 0;
+          const impressions = item._sum.impressions || 0;
+          const reach = item._sum.reach || 0;
+          const clicks = item._sum.clicks || 0;
+          const messagesNew = item._sum.messagesNew || 0;
+          const totalMessagingContacts = item._sum.messagingTotal || 0;
+          const leads = item._sum.leads || 0;
 
-          const c = campaignMap[key];
-          c.spend += stat.spend;
-          c.impressions += stat.impressions;
-          c.reach += stat.reach;
-          c.clicks += stat.clicks;
-          c.messagesNew += stat.messagesNew;
-          c.totalMessagingContacts += stat.messagingTotal;
-          c.leads += stat.leads;
+          const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+          const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+          const cpc = clicks > 0 ? spend / clicks : 0;
+          const frequency = reach > 0 ? impressions / reach : 1;
+
+          const key = `${accountId}_${item.campaignId}_${item.adsetId}`;
+          const campaignName = item.campaignName || "Campaign không tên";
+          const adsetName = item.adsetName || "Nhóm tổng";
+
+          campaignMap[key] = {
+            date_start: startDate,
+            date_stop: endDate,
+            account_id: accountId,
+            ad_account_id: `act_${accountId}`,
+            account_name: item.accountName || `Tài khoản ${accountId.slice(-4)}`,
+            campaign_id: item.campaignId,
+            campaign_name: campaignName,
+            adset_id: item.adsetId,
+            adset_name: adsetName,
+            service: detectService({ campaign_name: campaignName, adset_name: adsetName }),
+            branch: detectBranch({ campaign_name: campaignName, adset_name: adsetName }),
+            effective_status: "ACTIVE",
+            configured_status: "ACTIVE",
+            spend,
+            reach,
+            impressions,
+            frequency,
+            cpm,
+            ctr,
+            cpc,
+            clicks,
+            messagesNew,
+            totalMessagingContacts,
+            leads,
+          };
         });
 
         const campaigns = Object.values(campaignMap);
         const accounts = Array.from(accountSet.values());
+
+        const contentAds = campaigns.map((c: any, idx: number) => enrichMetaContentRow(c, idx));
 
         const dbPayload = {
           ok: true,
@@ -287,7 +376,7 @@ export async function getMetaRealtimeData(
           since: startDate,
           until: endDate,
           campaigns,
-          contentAds: [],
+          contentAds,
           genderBreakdowns: [],
           hourlyBreakdowns: [],
           geoBreakdowns: [],
@@ -335,6 +424,7 @@ export async function getMetaRealtimeData(
       };
 
       const localCampaigns: any[] = [];
+      const localContent: any[] = [];
       const localGender: any[] = [];
       const localHourly: any[] = [];
 
@@ -351,16 +441,21 @@ export async function getMetaRealtimeData(
           if (insights?.data && Array.isArray(insights.data)) {
             insights.data.forEach((row: any) => {
               const metrics = parseActionMetrics(row.actions);
-              localCampaigns.push({
+              const campaignName = row.campaign_name || "Campaign không tên";
+              const adsetName = row.adset_name || "Nhóm tổng";
+
+              const campaignObj = {
                 date_start: row.date_start || startDate,
                 date_stop: row.date_stop || endDate,
                 account_id: accId,
                 ad_account_id: actId,
                 account_name: row.account_name || accInfo.name,
                 campaign_id: row.campaign_id || "",
-                campaign_name: row.campaign_name || "Campaign không tên",
+                campaign_name: campaignName,
                 adset_id: row.adset_id || "",
-                adset_name: row.adset_name || "Nhóm tổng",
+                adset_name: adsetName,
+                service: detectService({ campaign_name: campaignName, adset_name: adsetName }),
+                branch: detectBranch({ campaign_name: campaignName, adset_name: adsetName }),
                 effective_status: "ACTIVE",
                 configured_status: "ACTIVE",
                 spend: Number(row.spend || 0),
@@ -374,7 +469,10 @@ export async function getMetaRealtimeData(
                 messagesNew: metrics.messagesNew,
                 totalMessagingContacts: metrics.totalMessagingContacts,
                 leads: metrics.leads,
-              });
+              };
+
+              localCampaigns.push(campaignObj);
+              localContent.push(enrichMetaContentRow(campaignObj, localContent.length));
             });
           }
         } catch {}
@@ -414,7 +512,7 @@ export async function getMetaRealtimeData(
         } catch {}
       }
 
-      return { accObj, localCampaigns, localGender, localHourly };
+      return { accObj, localCampaigns, localContent, localGender, localHourly };
     })
   );
 
@@ -422,10 +520,73 @@ export async function getMetaRealtimeData(
     if (res.status === "fulfilled" && res.value) {
       accounts.push(res.value.accObj);
       campaignRows.push(...res.value.localCampaigns);
+      contentRows.push(...res.value.localContent);
       genderRows.push(...res.value.localGender);
       hourlyRows.push(...res.value.localHourly);
     }
   });
+
+  // Fallback to PostgreSQL DB if live API returned 0 campaigns
+  if (campaignRows.length === 0) {
+    try {
+      const dbAggregated = await db.metaAdDailyStat.groupBy({
+        by: ["accountId", "accountName", "campaignId", "campaignName", "adsetId", "adsetName"],
+        _sum: {
+          spend: true,
+          impressions: true,
+          reach: true,
+          clicks: true,
+          messagesNew: true,
+          messagingTotal: true,
+          leads: true,
+        },
+      });
+
+      if (dbAggregated && dbAggregated.length > 0) {
+        dbAggregated.forEach((item) => {
+          const spend = item._sum.spend || 0;
+          const impressions = item._sum.impressions || 0;
+          const reach = item._sum.reach || 0;
+          const clicks = item._sum.clicks || 0;
+          const messagesNew = item._sum.messagesNew || 0;
+          const totalMessagingContacts = item._sum.messagingTotal || 0;
+          const leads = item._sum.leads || 0;
+          const campaignName = item.campaignName || "Campaign không tên";
+          const adsetName = item.adsetName || "Nhóm tổng";
+
+          const cObj = {
+            date_start: startDate,
+            date_stop: endDate,
+            account_id: item.accountId,
+            ad_account_id: `act_${item.accountId}`,
+            account_name: item.accountName || `Tài khoản ${item.accountId.slice(-4)}`,
+            campaign_id: item.campaignId,
+            campaign_name: campaignName,
+            adset_id: item.adsetId,
+            adset_name: adsetName,
+            service: detectService({ campaign_name: campaignName, adset_name: adsetName }),
+            branch: detectBranch({ campaign_name: campaignName, adset_name: adsetName }),
+            effective_status: "ACTIVE",
+            configured_status: "ACTIVE",
+            spend,
+            reach,
+            impressions,
+            frequency: reach > 0 ? impressions / reach : 1,
+            cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
+            ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+            cpc: clicks > 0 ? spend / clicks : 0,
+            clicks,
+            messagesNew,
+            totalMessagingContacts,
+            leads,
+          };
+
+          campaignRows.push(cObj);
+          contentRows.push(enrichMetaContentRow(cObj, contentRows.length));
+        });
+      }
+    } catch {}
+  }
 
   const resultPayload = {
     ok: true,

@@ -32,11 +32,11 @@ export default async function BlogListingPage({
   const categories = await db.category.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { posts: true } } },
-  });
+  }).catch(() => []);
 
   // Filter by category if provided
   let categoryFilter: any = undefined;
-  if (categorySlug) {
+  if (categorySlug && Array.isArray(categories)) {
     const cat = categories.find((c) => c.slug === categorySlug);
     if (cat) categoryFilter = cat.id;
   }
@@ -51,8 +51,8 @@ export default async function BlogListingPage({
       include: { category: true },
       take: pageSize,
       skip: (currentPage - 1) * pageSize,
-    }),
-    db.post.count({ where: whereClause }),
+    }).catch(() => []),
+    db.post.count({ where: whereClause }).catch(() => 0),
   ]);
 
   const totalPages = Math.ceil(totalCount / pageSize);

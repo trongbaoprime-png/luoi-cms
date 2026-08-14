@@ -3,12 +3,45 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guard";
 
-export async function GET() {
+const SENSITIVE_KEYS = [
+  "meta_access_token",
+  "meta_app_secret",
+  "tiktok_access_token",
+  "telegram_bot_token",
+  "google_sheets_webhook_url",
+];
+
+function maskSecret(val: string): string {
+  if (!val) return "";
+  if (val.length <= 8) return "••••••••";
+  return `${val.slice(0, 4)}...${val.slice(-4)}`;
+}
+
+function isMaskedValue(val: string): boolean {
+  if (!val) return false;
+  return val.includes("...") || val.includes("••••");
+}
+
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const wantUnmasked = searchParams.get("unmask") === "1";
+
+    let authorized = false;
+    if (wantUnmasked) {
+      const perm = await requirePermission("settings:edit", req);
+      authorized = perm.authorized;
+    }
+
     const settings = await db.setting.findMany();
     const settingsMap: Record<string, string> = {};
+
     settings.forEach((s) => {
-      settingsMap[s.key] = s.value;
+      if (SENSITIVE_KEYS.includes(s.key) && !authorized) {
+        settingsMap[s.key] = maskSecret(s.value);
+      } else {
+        settingsMap[s.key] = s.value;
+      }
     });
 
     return NextResponse.json(
@@ -38,13 +71,21 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const updates = Object.entries(body).map(([key, value]) =>
-      db.setting.upsert({
-        where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value) },
+    // Filter out masked values to avoid overwriting real keys with masked placeholders
+    const updates = Object.entries(body)
+      .filter(([key, value]) => {
+        if (SENSITIVE_KEYS.includes(key) && isMaskedValue(String(value))) {
+          return false; // Skip updating token if user submitted masked string
+        }
+        return true;
       })
-    );
+      .map(([key, value]) =>
+        db.setting.upsert({
+          where: { key },
+          update: { value: String(value) },
+          create: { key, value: String(value) },
+        })
+      );
 
     await Promise.all(updates);
 
@@ -70,3 +111,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

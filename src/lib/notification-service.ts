@@ -170,3 +170,55 @@ export async function pushToGoogleSheetsWebhook(
     return { success: false, error: err instanceof Error ? err.message : "Lỗi kết nối Google Sheets Webhook" };
   }
 }
+
+// 3. Send Telegram SLA Violation Alert for Telesales
+export async function sendTelegramSlaAlert(
+  botToken: string,
+  chatId: string,
+  slaInfo: {
+    leadId: string;
+    fullName: string;
+    phone: string;
+    service?: string;
+    branch?: string;
+    source?: string;
+    elapsedMinutes: number;
+    assignedTelesale?: string;
+  }
+) {
+  if (!botToken || !chatId) return { success: false, message: "Thiếu Telegram Bot Token hoặc Chat ID" };
+
+  const crmUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://luoidonnha.com"}/admin/crm`;
+
+  const msg = `🚨 *CẢNH BÁO VI PHẠM SLA TELESALE (QUÁ 5 PHÚT CHƯA GỌI)* 🚨
+━━━━━━━━━━━━━━━━━━━━
+👤 *Khách hàng:* *${slaInfo.fullName}*
+📞 *Số điện thoại:* \`${slaInfo.phone}\`
+🦷 *Dịch vụ:* ${slaInfo.service || "Chưa xác định"}
+🏢 *Chi nhánh:* ${slaInfo.branch || "Hồ Chí Minh"}
+📣 *Nguồn:* \`${slaInfo.source || "Website / Ads"}\`
+⏱️ *Thời gian chờ:* 🔥 *${slaInfo.elapsedMinutes} phút* (Vượt mức 5 phút)
+👩‍💼 *Telesale phụ trách:* ${slaInfo.assignedTelesale || "Chưa nhận ca"}
+━━━━━━━━━━━━━━━━━━━━
+👉 [Nhấn vào đây để xem & Gọi khách ngay trên CRM](${crmUrl})`;
+
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: msg,
+        parse_mode: "Markdown",
+        disable_web_page_preview: false,
+      }),
+    });
+
+    const data = await res.json();
+    return { success: res.ok, data };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Lỗi gửi SLA Telegram" };
+  }
+}

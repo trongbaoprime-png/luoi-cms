@@ -38,12 +38,12 @@ export default async function ProductsPublicPage({
       orderBy: [{ isFeatured: "desc" }, { clicks: "desc" }],
       include: { category: true },
       take: 24,
-    }),
+    }).catch(() => []),
     db.deal.findMany({
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
       take: 4,
-    }),
+    }).catch(() => []),
   ]);
 
   const merchants = ["Shopee", "Lazada", "Tiki"];

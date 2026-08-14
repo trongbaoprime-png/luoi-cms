@@ -44,6 +44,111 @@ function parseActionMetrics(actions: any[] = []) {
   return { messagesNew, totalMessagingContacts, leads };
 }
 
+// Split total days into 30-day chunks for memory safety
+function getChunkedDateRanges(daysToSync: number): Array<{ since: string; until: string }> {
+  const ranges: Array<{ since: string; until: string }> = [];
+  const chunkSize = 30;
+  const now = new Date();
+
+  for (let offset = 0; offset < daysToSync; offset += chunkSize) {
+    const untilDate = new Date(now);
+    untilDate.setDate(untilDate.getDate() - offset);
+
+    const sinceDate = new Date(now);
+    const sinceDays = Math.min(offset + chunkSize - 1, daysToSync - 1);
+    sinceDate.setDate(sinceDate.getDate() - sinceDays);
+
+    ranges.push({
+      since: sinceDate.toISOString().split("T")[0],
+      until: untilDate.toISOString().split("T")[0],
+    });
+  }
+  return ranges;
+}
+
+// Batch upsert stats to PostgreSQL using $transaction (chunk size 50)
+async function batchUpsertStats(rows: any[], accId: string): Promise<number> {
+  if (!rows || rows.length === 0) return 0;
+  let savedCount = 0;
+  const BATCH_SIZE = 50;
+
+  const upsertOps = rows
+    .map((row) => {
+      const date = row.date_start;
+      if (!date) return null;
+
+      const metrics = parseActionMetrics(row.actions);
+      const campaignId = row.campaign_id || "unknown";
+      const adsetId = row.adset_id || "";
+
+      return db.metaAdDailyStat.upsert({
+        where: {
+          meta_daily_stat_key: {
+            date,
+            accountId: accId,
+            campaignId,
+            adsetId,
+          },
+        },
+        create: {
+          date,
+          accountId: accId,
+          accountName: row.account_name || "",
+          campaignId,
+          campaignName: row.campaign_name || "",
+          adsetId,
+          adsetName: row.adset_name || "",
+          spend: Number(row.spend || 0),
+          impressions: Number(row.impressions || 0),
+          reach: Number(row.reach || 0),
+          clicks: Number(row.clicks || 0),
+          cpm: Number(row.cpm || 0),
+          ctr: Number(row.ctr || 0),
+          cpc: Number(row.cpc || 0),
+          messagesNew: metrics.messagesNew,
+          messagingTotal: metrics.totalMessagingContacts,
+          leads: metrics.leads,
+        },
+        update: {
+          accountName: row.account_name || "",
+          campaignName: row.campaign_name || "",
+          adsetName: row.adset_name || "",
+          spend: Number(row.spend || 0),
+          impressions: Number(row.impressions || 0),
+          reach: Number(row.reach || 0),
+          clicks: Number(row.clicks || 0),
+          cpm: Number(row.cpm || 0),
+          ctr: Number(row.ctr || 0),
+          cpc: Number(row.cpc || 0),
+          messagesNew: metrics.messagesNew,
+          messagingTotal: metrics.totalMessagingContacts,
+          leads: metrics.leads,
+          updatedAt: new Date(),
+        },
+      });
+    })
+    .filter(Boolean) as any[];
+
+  for (let i = 0; i < upsertOps.length; i += BATCH_SIZE) {
+    const chunk = upsertOps.slice(i, i + BATCH_SIZE);
+    try {
+      await db.$transaction(chunk);
+      savedCount += chunk.length;
+    } catch {
+      for (const op of chunk) {
+        try {
+          if (op) {
+            await op;
+            savedCount++;
+          }
+        } catch {}
+      }
+    }
+  }
+
+  return savedCount;
+}
+
 export async function syncMetaAds365Days(options: SyncOptions = {}) {
   const daysToSync = options.days || 365;
   const config = await getMetaConfig();
@@ -67,118 +172,60 @@ export async function syncMetaAds365Days(options: SyncOptions = {}) {
     };
   }
 
-  const now = new Date();
-  const endDateStr = now.toISOString().split("T")[0];
+  const dateRanges = getChunkedDateRanges(daysToSync);
+  const startDateStr = dateRanges[dateRanges.length - 1].since;
+  const endDateStr = dateRanges[0].until;
 
-  const startDateObj = new Date(now);
-  startDateObj.setDate(startDateObj.getDate() - daysToSync);
-  const startDateStr = startDateObj.toISOString().split("T")[0];
-
-  console.log(`[Meta365Sync] Starting ${daysToSync}-day sync from ${startDateStr} to ${endDateStr} for ${accountIds.length} accounts...`);
+  console.log(`[Meta365Sync] Starting optimized ${daysToSync}-day sync in ${dateRanges.length} date chunks for ${accountIds.length} accounts...`);
 
   let totalRecordsSaved = 0;
   const accountSummaries: Record<string, number> = {};
 
-  // Process all accounts in parallel batches
-  await Promise.allSettled(
-    accountIds.map(async (accId) => {
-      const actId = accId.startsWith("act_") ? accId : `act_${accId}`;
+  // Process accounts with limited concurrency (max 2 at a time) to prevent CPU spikes
+  const CONCURRENCY = 2;
+  for (let i = 0; i < accountIds.length; i += CONCURRENCY) {
+    const batchAccounts = accountIds.slice(i, i + CONCURRENCY);
 
-      try {
-        const url = new URL(`https://graph.facebook.com/v25.0/${actId}/insights`);
-        url.searchParams.set("access_token", config.accessToken);
-        url.searchParams.set("level", "adset");
-        url.searchParams.set(
-          "fields",
-          "account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,date_start,date_stop,spend,reach,impressions,cpm,ctr,cpc,clicks,actions"
-        );
-        url.searchParams.set("time_range", JSON.stringify({ since: startDateStr, until: endDateStr }));
-        url.searchParams.set("time_increment", "1"); // Daily level breakdown
-        url.searchParams.set("limit", "500");
+    await Promise.allSettled(
+      batchAccounts.map(async (accId) => {
+        const actId = accId.startsWith("act_") ? accId : `act_${accId}`;
+        let accTotalSaved = 0;
 
-        const res = await fetch(url.toString(), {
-          headers: { Accept: "application/json" },
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error(`[Meta365Sync] Error fetching account ${actId}:`, errText);
-          return;
-        }
-
-        const data = await res.json();
-        const rows = data.data || [];
-        let accSaved = 0;
-
-        for (const row of rows) {
-          const date = row.date_start;
-          if (!date) continue;
-
-          const metrics = parseActionMetrics(row.actions);
-          const campaignId = row.campaign_id || "unknown";
-          const adsetId = row.adset_id || "";
-
+        for (const range of dateRanges) {
           try {
-            await db.metaAdDailyStat.upsert({
-              where: {
-                meta_daily_stat_key: {
-                  date,
-                  accountId: accId,
-                  campaignId,
-                  adsetId,
-                },
-              },
-              create: {
-                date,
-                accountId: accId,
-                accountName: row.account_name || "",
-                campaignId,
-                campaignName: row.campaign_name || "",
-                adsetId,
-                adsetName: row.adset_name || "",
-                spend: Number(row.spend || 0),
-                impressions: Number(row.impressions || 0),
-                reach: Number(row.reach || 0),
-                clicks: Number(row.clicks || 0),
-                cpm: Number(row.cpm || 0),
-                ctr: Number(row.ctr || 0),
-                cpc: Number(row.cpc || 0),
-                messagesNew: metrics.messagesNew,
-                messagingTotal: metrics.totalMessagingContacts,
-                leads: metrics.leads,
-              },
-              update: {
-                accountName: row.account_name || "",
-                campaignName: row.campaign_name || "",
-                adsetName: row.adset_name || "",
-                spend: Number(row.spend || 0),
-                impressions: Number(row.impressions || 0),
-                reach: Number(row.reach || 0),
-                clicks: Number(row.clicks || 0),
-                cpm: Number(row.cpm || 0),
-                ctr: Number(row.ctr || 0),
-                cpc: Number(row.cpc || 0),
-                messagesNew: metrics.messagesNew,
-                messagingTotal: metrics.totalMessagingContacts,
-                leads: metrics.leads,
-                updatedAt: new Date(),
-              },
-            });
-            accSaved++;
-          } catch (dbErr) {
-            console.error(`[Meta365Sync] DB Upsert error:`, dbErr);
+            let nextUrl: string | null = `https://graph.facebook.com/v25.0/${actId}/insights?access_token=${encodeURIComponent(config.accessToken)}&level=adset&fields=account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,date_start,date_stop,spend,reach,impressions,cpm,ctr,cpc,clicks,actions&time_range=${encodeURIComponent(JSON.stringify(range))}&time_increment=1&limit=500`;
+
+            while (nextUrl) {
+              const res: Response = await fetch(nextUrl, {
+                headers: { Accept: "application/json" },
+              });
+
+              if (!res.ok) {
+                const errText = await res.text();
+                console.error(`[Meta365Sync] Error fetching account ${actId} range ${range.since}-${range.until}:`, errText);
+                break;
+              }
+
+              const data: any = await res.json();
+              const rows = data.data || [];
+              const saved = await batchUpsertStats(rows, accId);
+              accTotalSaved += saved;
+
+              nextUrl = data.paging?.next || null;
+            }
+          } catch (err: any) {
+            console.error(`[Meta365Sync] Failed chunk ${range.since}-${range.until} for account ${actId}:`, err.message);
           }
         }
 
-        accountSummaries[accId] = accSaved;
-        totalRecordsSaved += accSaved;
-      } catch (err: any) {
-        console.error(`[Meta365Sync] Failed to process account ${actId}:`, err.message);
-      }
-    })
-  );
+        accountSummaries[accId] = (accountSummaries[accId] || 0) + accTotalSaved;
+        totalRecordsSaved += accTotalSaved;
+      })
+    );
+  }
 
-  return {
+  const syncTimestamp = new Date().toISOString();
+  const summaryPayload = {
     ok: true,
     message: `Đồng bộ thành công ${totalRecordsSaved} bản ghi dữ liệu Meta Ads (${daysToSync} ngày qua) vào PostgreSQL Database!`,
     daysSynced: daysToSync,
@@ -187,5 +234,30 @@ export async function syncMetaAds365Days(options: SyncOptions = {}) {
     totalRecordsSaved,
     accountsCount: accountIds.length,
     accountSummaries,
+    lastSyncedAt: syncTimestamp,
   };
+
+  try {
+    await db.setting.upsert({
+      where: { key: "meta_last_daily_sync" },
+      create: { key: "meta_last_daily_sync", value: JSON.stringify(summaryPayload) },
+      update: { value: JSON.stringify(summaryPayload), updatedAt: new Date() },
+    });
+  } catch (err) {
+    console.error("[Meta365Sync] Failed to save sync timestamp setting:", err);
+  }
+
+  return summaryPayload;
+}
+
+export async function getLastMetaSyncInfo() {
+  try {
+    const setting = await db.setting.findUnique({
+      where: { key: "meta_last_daily_sync" },
+    });
+    if (setting && setting.value) {
+      return JSON.parse(setting.value);
+    }
+  } catch {}
+  return null;
 }

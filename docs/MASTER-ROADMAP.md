@@ -2,7 +2,9 @@
 
 ## Vision
 **LƯỜI BUSINESS OS** is an enterprise-grade Customer 360 & Operations Platform tailored for Vietnamese businesses. It unifies the end-to-end customer journey:
-`Anonymous Visitor` → `Content Consumer` → `Form/Chat Lead` → `Sales Assignment` → `Consultation & Quote` → `Order Conversion` → `Post-Purchase Support` → `Retention & Referral`.
+`60 Fanpages / Zalo / WhatsApp / Webchat / Form` → `1 Unified CRM` → `Data Classification & Routing` → `Customer Care & SLA` → `Remarketing & Multi-Platform CAPI` → `Attribution & P&L per Page`.
+
+> **Scope Note**: VTtech Chrome Extension is a standalone external tool and is strictly excluded from LƯỜI CMS core scope.
 
 ---
 
@@ -11,7 +13,7 @@
 ```mermaid
 flowchart LR
     P0[Phase 0: Foundation & Core] --> P1[Phase 1: CMS & Brand Hub]
-    P1 --> P2[Phase 2: Sites & Web Tracking]
+    P1 --> P2[Phase 2: Sites & Multi-CAPI Tracking]
     P2 --> P3[Phase 3: Customer 360 & CRM]
     P3 --> P4[Phase 4: Omnichannel Inbox]
     P4 --> P5[Phase 5: OpenClaw & OmniRoute]
@@ -22,73 +24,70 @@ flowchart LR
 
 ---
 
-### Phase 0 — Foundation & System Architecture (In Progress)
+### Phase 0 — Foundation & System Architecture (Completed)
 - [x] Repository audit & architectural specification
 - [x] Setup comprehensive documentation (`docs/*`, `TASKS.md`, `CHANGELOG.md`)
-- [ ] Implement Workspace Scoping & 9-Tier RBAC Engine (`src/lib/rbac.ts`)
-- [ ] Implement Append-Only Audit Logging Engine (`src/lib/audit.ts`)
-- [ ] Implement AES-256-GCM Secret Encryption (`src/lib/crypto.ts`)
-- [ ] Implement OmniRoute Model Gateway Client & 6 Routing Profiles (`src/lib/omniroute.ts`)
-- [ ] Implement OpenClaw Agent Sidecar Adapter (`src/lib/openclaw.ts`)
-- [ ] Implement Business MCP Hub Namespace Registry & Handlers (`src/lib/mcp-hub.ts`)
-- [ ] Implement Approval Center Engine & Policies (`src/lib/approval.ts`)
-- [ ] Implement Customer 360 Identity Resolution Engine (`src/lib/identity-resolution.ts`)
-- [ ] System Health & Diagnostics Endpoints (`/api/system/health`)
+- [x] Implement Workspace Scoping & 9-Tier RBAC Engine (`src/lib/rbac.ts`)
+- [x] Implement Append-Only Audit Logging Engine (`src/lib/audit.ts`)
+- [x] Implement AES-256-GCM Secret Encryption (`src/lib/crypto.ts`)
+- [x] Implement OmniRoute Model Gateway Client & 6 Routing Profiles (`src/lib/omniroute.ts`)
+- [x] Implement OpenClaw Agent Sidecar Adapter (`src/lib/openclaw.ts`)
+- [x] Implement Business MCP Hub Namespace Registry & Handlers (`src/lib/mcp-hub.ts`)
+- [x] Implement Approval Center Engine & Policies (`src/lib/approval.ts`)
+- [x] Implement Customer 360 Identity Resolution Engine (`src/lib/identity-resolution.ts`)
+- [x] System Health & Diagnostics Endpoints (`/api/system/health`)
 
-### Phase 1 — Lười CMS & Brand Hub
-- [ ] Brand & Product catalog models (Products, Variants, Services, Offers)
-- [ ] Persona & Audience definitions
-- [ ] Campaign & Content Calendar management
+### Phase 1 — Lười CMS & Taxonomy SEO Hub (In Progress)
+- [x] Brand & Product catalog models (Products, Variants, Categories, Shortcodes)
+- [x] **Category Taxonomy Full SEO Engine**: SEO Title, SEO Description, Canonical URL, OG Image, JSON-LD Schema (`/admin/categories`)
 - [ ] Content Library & Media Asset quarantine pipeline
 - [ ] Multi-version publishing with approval hooks
 
-### Phase 2 — Lười Sites & Web Tracking
-- [ ] Block-based Landing Page Builder (Puck-based with custom schemas)
-- [ ] Form Builder with Server-side validation, rate limiting & anti-spam
+### Phase 2 — Lười Sites & Multi-Platform Ad CAPI (In Progress)
+- [x] **Visual Studio / Puck Builder with Full SEO Suite**: SEO Title, Description, OG Image, Canonical, Keywords, NoIndex, SERP Preview (`/admin/pages/[id]/builder`)
+- [x] Form Builder with Server-side validation, rate limiting & anti-spam
+- [x] **Meta Conversions API (CAPI) Multi-Stage Protocol**:
+  - `CompleteRegistration`: Realtime web/landing page form submission
+  - `Lead`: Triggered on Qualify/Schedule/Checkin status in CRM
+  - `Purchase`: Triggered on actual in-store payment (`actualRevenue` in VND)
+- [x] **Google Ads AI Learning & Server-Side OCI Engine**:
+  - Enhanced Conversions for Web with SHA-256 hashed phone (+84/E.164) & email
+  - Multi-Click ID tracking: `gclid`, `gbraid`, `wbraid`
+  - Offline Conversion Import (OCI) payload builder for Lead, Schedule, Purchase (`src/lib/google-ads.ts`)
 - [ ] Embedded Web Chat Widget SDK (Lightweight, async, consent-aware)
-- [ ] First-touch & Last-touch UTM Attribution Tracker
-- [ ] Server-Side Meta CAPI / Conversion API Event Adapters
 
-### Phase 3 — Customer 360 & Unified CRM
-- [ ] Unified Customer Profile UI & Data Schema
-- [ ] Automatic VN Phone Number Normalization & Identity Merging
-- [ ] Timeline Event Stream (Page views, Form fills, Chats, Orders, Tickets)
-- [ ] Lead Management, Pipelines & Stage Transition Rules
-- [ ] Báo giá (Quotes), Đơn hàng (Orders) & Lịch hẹn (Appointments) tracking
+### Phase 3 — Customer 360 & Unified CRM (In Progress)
+- [x] Unified Customer Profile UI & Data Schema (`CRMLead`, `CRMStatusHistory`)
+- [x] Automatic VN Phone Number Normalization & SHA-256 Hash
+- [x] Google Sheets TDS Parser 2-way sync (DATHEN & Telesale checkin sheets)
+- [x] Multi-Filter CRM Dashboard (Telesale, Branch, Service, Revenue, Date ranges)
+- [ ] Customer 360 Timeline Event Stream (Multi-Page touchpoints, chat history, revenue)
+- [ ] Automated Lead Deduplication & Multi-Opportunity merge rules
 
-### Phase 4 — Omnichannel Inbox & Connectors
-- [ ] Unified Omnichannel Conversation Store & Realtime Websocket Sync
-- [ ] Connector 1: Web Form Receiver
-- [ ] Connector 2: Embedded Web Chat SDK Receiver
-- [ ] Connector 3: Telegram Bot Official API Adapter
-- [ ] Connector 4: Zalo OA Official API Adapter
-- [ ] Connector 5: Meta Messenger / Fanpage Official API Adapter
-- [ ] Connector 6: Pancake Webhook & API Adapter
-- [ ] Connector 7: WhatsApp Business Platform Official API Adapter
-- [ ] Agent-to-Human Handoff & SLA Escalation Engine
+### Phase 4 — Omnichannel Inbox & Connectors (In Progress)
+- [x] Meta Webhook Receiver (LeadGen & CAPI)
+- [x] Telegram Bot Webhook & Incident Dispatcher
+- [x] Omnichannel Intent Analysis & Insights Dashboard (`/admin/omnichannel`)
+- [ ] Realtime Websocket Omnichannel Live Chat Inbox UI
+- [ ] Zalo OA Official API Connector
+- [ ] WhatsApp Business Cloud API Connector
 
-### Phase 5 — OpenClaw, OmniRoute & Business MCP Hub Integration
-- [ ] OmniRoute fallback circuit breaker, cost tracking & provider health monitoring
-- [ ] OpenClaw Agent Definition & Session Runner Adapter
-- [ ] MCP Tool execution server-side RBAC validation (`cms.*`, `customer.*`, `order.*`, etc.)
+### Phase 5 — OpenClaw, OmniRoute & Business MCP Hub Integration (In Progress)
+- [x] OmniRoute Gateway Client & Fallback profiles
+- [x] OpenClaw Sidecar Client & Session runner
+- [x] Business MCP Hub tool handlers (`customer.*`, `cms.*`)
 - [ ] System Prompt Template Library with Brand Voice Enforcement
-- [ ] Dry-run tool execution & AI output evaluation engine
 
-### Phase 6 — Workflows & Approval Center
-- [ ] Event-Driven Trigger-Action Engine (Form submission, Lead assignment, SLA alerts)
-- [ ] Approval Center UI & Workflow Interceptors (Budgets, Price overrides, Data export, Refunds)
-- [ ] Telegram & Inbox Approval Action Deep-links
-- [ ] Daily Executive Briefing Bot (CEO Agent)
+### Phase 6 — Workflows & Approval Center (In Progress)
+- [x] Approval Center Engine & Policies
+- [x] Sensitive action interceptors (Permissions, Roles, Logs)
+- [ ] Automated SLA Alert Workflow to Telegram when new lead > 15m unhandled
 
-### Phase 7 — Lười Analytics & Attribution
-- [ ] Full Funnel Conversion Dashboard (Visitor → Lead → Checkin → Order)
-- [ ] First-Touch, Last-Touch & Multi-Touch Revenue Attribution Reports
-- [ ] Sales Performance, SLA & CSAT/NPS Monitoring
-- [ ] AI Token Usage & Cost Attribution by Campaign/Channel
+### Phase 7 — Lười Analytics & Attribution per Page (In Progress)
+- [x] Meta Ads Daily Stat Tracker (`/admin/meta-ads`)
+- [x] Revenue & Conversion breakdown by Channel / Telesale / Branch
+- [ ] **P&L and Real ROAS per Fanpage**: Cost Ad Spend vs Actual Revenue per Page across 60 Fanpages
 
-### Phase 8 — Production Hardening & Productization
-- [ ] Docker Compose Production Deployment Bundle (App + Postgres + Sidecars)
-- [ ] Multi-workspace data isolation hardening & automated database migrations
-- [ ] Automated Backup & Recovery Procedures
-- [ ] E2E Test Suite Verification & Security Vulnerability Scan
-- [ ] Production Release Package & Operator Documentation
+### Phase 8 — Production Hardening & Deployment (In Progress)
+- [x] VPS Deployment Scripts & Docker Compose setup
+- [x] Build verification & automated TypeScript validation

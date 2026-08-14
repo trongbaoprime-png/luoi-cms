@@ -27,10 +27,12 @@ import {
   Plus as PlusIcon,
   Edit3 as EditIcon,
   Trash2 as TrashIcon,
-  Download as DownloadIcon,
   Zap as ZapIcon,
   ChevronDown,
   Calendar as CalendarIcon,
+  Phone as PhoneIcon,
+  Clock as ClockIcon,
+  BarChart2 as BarChart2Icon,
 } from "lucide-react";
 import { formatDisplayDate, isRealName } from "@/lib/tds-parser";
 
@@ -280,6 +282,15 @@ export function MiniCrmAdminPage() {
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState("");
   const [savingNameId, setSavingNameId] = useState<string | null>(null);
+
+  // Giai đoạn 2 States: SLA 5m, Daily P&L 8AM & VoIP 1-Click Call
+  const [checkingSla, setCheckingSla] = useState(false);
+  const [dispatchingDigest, setDispatchingDigest] = useState(false);
+  const [callModalLead, setCallModalLead] = useState<LeadItem | null>(null);
+  const [callStatus, setCallStatus] = useState<"ANSWERED" | "BUSY" | "NO_ANSWER">("ANSWERED");
+  const [callDuration, setCallDuration] = useState(45);
+  const [callNotes, setCallNotes] = useState("");
+  const [savingCallLog, setSavingCallLog] = useState(false);
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -565,6 +576,72 @@ function onEdit(e) {
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
+  const handleCheckSla = async () => {
+    setCheckingSla(true);
+    try {
+      const res = await fetch("/api/crm/sla-check", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSyncNotice(`🚨 ${data.message || "Đã quét và xử lý SLA 5 phút."}`);
+      } else {
+        setSyncNotice(`❌ Lỗi kiểm tra SLA: ${data.error || "Không thể hoàn thành"}`);
+      }
+    } catch {
+      setSyncNotice("❌ Lỗi kết nối khi quét SLA.");
+    } finally {
+      setCheckingSla(false);
+      setTimeout(() => setSyncNotice(null), 6000);
+    }
+  };
+
+  const handleSendDailyDigest = async () => {
+    setDispatchingDigest(true);
+    try {
+      const res = await fetch("/api/admin/analytics/daily-digest", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSyncNotice(`📊 Đã gửi Báo cáo P&L 8:00 AM vào Telegram Ban Giám Đốc!`);
+      } else {
+        setSyncNotice(`❌ Lỗi gửi Báo cáo P&L: ${data.error || "Chưa cấu hình Telegram"}`);
+      }
+    } catch {
+      setSyncNotice("❌ Lỗi kết nối khi gửi báo cáo P&L.");
+    } finally {
+      setDispatchingDigest(false);
+      setTimeout(() => setSyncNotice(null), 6000);
+    }
+  };
+
+  const handleSaveCallLog = async () => {
+    if (!callModalLead) return;
+    setSavingCallLog(true);
+    try {
+      const res = await fetch("/api/crm/call-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: callModalLead.id,
+          phone: callModalLead.phone,
+          telesale: callModalLead.telesale,
+          callStatus,
+          durationSeconds: callDuration,
+          notes: callNotes,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCallModalLead(null);
+        setCallNotes("");
+        setSyncNotice(`📞 Đã lưu nhật ký cuộc gọi cho ${callModalLead.fullName || callModalLead.phone}!`);
+        fetchLeads();
+      }
+    } catch {
+      alert("Lỗi khi lưu cuộc gọi");
+    } finally {
+      setSavingCallLog(false);
+    }
+  };
+
   const [currentUserRole, setCurrentUserRole] = useState<string>("ADMIN");
   const [currentUserPermissions, setCurrentUserPermissions] = useState<string[]>([]);
 
@@ -768,6 +845,37 @@ function onEdit(e) {
                   <FileSpreadsheetIcon className={`w-3.5 h-3.5 text-[#00c9b7] ${syncing ? "animate-spin" : ""}`} />
                   <span>Đồng Bộ T{p2}-T{currentM}</span>
                 </button>
+
+                {/* Giai đoạn 2: Nút Quét SLA 5 Phút */}
+                <button
+                  onClick={handleCheckSla}
+                  disabled={checkingSla}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
+                  title="Quét các Lead quá 5 phút chưa có Telesale xử lý và bắn cảnh báo Telegram"
+                >
+                  <ClockIcon className={`w-3.5 h-3.5 text-rose-400 ${checkingSla ? "animate-spin" : ""}`} />
+                  <span>{checkingSla ? "Đang quét SLA..." : "⏱️ Quét SLA (5m)"}</span>
+                </button>
+
+                {/* Giai đoạn 2: Nút Gửi Báo Cáo P&L 8:00 AM */}
+                <button
+                  onClick={handleSendDailyDigest}
+                  disabled={dispatchingDigest}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono disabled:opacity-50"
+                  title="Gửi báo cáo P&L tổng hợp 60 Fanpages 8:00 AM vào nhóm Telegram Ban Giám Đốc"
+                >
+                  <BarChart2Icon className={`w-3.5 h-3.5 text-emerald-400 ${dispatchingDigest ? "animate-spin" : ""}`} />
+                  <span>{dispatchingDigest ? "Đang gửi P&L..." : "📊 Báo Cáo P&L (8AM)"}</span>
+                </button>
+
+                <a
+                  href="/api/admin/analytics/daily-digest?format=csv"
+                  download
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-stone-200 border border-white/20 font-bold text-xs rounded-xl shadow transition-all cursor-pointer shrink-0 whitespace-nowrap font-mono"
+                  title="Tải bảng tính Excel/CSV Báo Cáo P&L"
+                >
+                  <span>📥 Xuất CSV P&L</span>
+                </a>
               </>
             );
           })()}
@@ -1431,11 +1539,30 @@ function onEdit(e) {
                     {item.email && <p className="text-[11px] text-stone-500">{item.email}</p>}
                   </td>
                   <td className="py-2.5 px-2.5 font-mono font-bold text-stone-800">
-                    {currentUserRole === "ADMIN" || currentUserPermissions.includes("privacy:phone:unmask")
-                      ? item.phone
-                      : item.phone
-                      ? item.phone.replace(/(\d{4})\d+(\d{3})/, "$1****$2")
-                      : "—"}
+                    <div className="flex items-center gap-1.5">
+                      <span>
+                        {currentUserRole === "ADMIN" || currentUserPermissions.includes("privacy:phone:unmask")
+                          ? item.phone
+                          : item.phone
+                          ? item.phone.replace(/(\d{4})\d+(\d{3})/, "$1****$2")
+                          : "—"}
+                      </span>
+                      {item.phone && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCallModalLead(item);
+                            setCallStatus("ANSWERED");
+                            setCallDuration(45);
+                            setCallNotes("");
+                          }}
+                          className="p-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-md transition-colors cursor-pointer border border-emerald-200"
+                          title="Gọi 1-Click & Ghi nhật ký cuộc gọi VoIP"
+                        >
+                          <PhoneIcon size={12} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="py-2.5 px-2.5 space-y-1 font-mono">
                     <div className="flex items-center gap-1.5">
@@ -1968,6 +2095,163 @@ function onEdit(e) {
               >
                 <EditIcon className="w-4 h-4" />
                 Chỉnh Sửa Khách Hàng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Giai đoạn 2: VoIP 1-Click Call Modal */}
+      {callModalLead && (
+        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-stone-100 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <PhoneIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-stone-900">VoIP 1-Click Call &amp; Ghi Nhật Ký</h3>
+                  <p className="text-[11px] text-stone-500 font-mono">Tích hợp tổng đài WebRTC &amp; Telesale</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCallModalLead(null)}
+                className="text-stone-400 hover:text-stone-700"
+              >
+                <XCircleIcon size={18} />
+              </button>
+            </div>
+
+            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Khách hàng:</span>
+                <strong className="text-stone-900">{callModalLead.fullName || "Khách hàng"}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Số điện thoại:</span>
+                <a
+                  href={`tel:${callModalLead.phone}`}
+                  className="font-mono font-bold text-emerald-700 text-sm hover:underline flex items-center gap-1"
+                >
+                  <PhoneIcon size={12} /> {callModalLead.phone}
+                </a>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Dịch vụ quan tâm:</span>
+                <span className="font-medium text-stone-700">{callModalLead.service || "Chưa rõ"}</span>
+              </div>
+            </div>
+
+            {/* Quick Action Dial Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={`tel:${callModalLead.phone}`}
+                className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+              >
+                <PhoneIcon size={14} />
+                <span>Gọi Qua Di Động / Softphone</span>
+              </a>
+              <a
+                href={`https://zalo.me/${callModalLead.phone.replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+              >
+                <span>💬 Chat Zalo Trực Tiếp</span>
+              </a>
+            </div>
+
+            {/* Call Result Form */}
+            <div className="space-y-3 pt-2 border-t text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">Kết quả cuộc gọi:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCallStatus("ANSWERED")}
+                    className={`py-2 px-2 rounded-xl font-bold text-center border transition-colors ${
+                      callStatus === "ANSWERED"
+                        ? "bg-emerald-50 border-emerald-500 text-emerald-800"
+                        : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    ✅ Đã nghe máy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCallStatus("BUSY")}
+                    className={`py-2 px-2 rounded-xl font-bold text-center border transition-colors ${
+                      callStatus === "BUSY"
+                        ? "bg-amber-50 border-amber-500 text-amber-800"
+                        : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    ⏳ Máy bận
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCallStatus("NO_ANSWER")}
+                    className={`py-2 px-2 rounded-xl font-bold text-center border transition-colors ${
+                      callStatus === "NO_ANSWER"
+                        ? "bg-rose-50 border-rose-500 text-rose-800"
+                        : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    ❌ Không nhấc máy
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">Thời lượng (giây):</label>
+                  <input
+                    type="number"
+                    value={callDuration}
+                    onChange={(e) => setCallDuration(Number(e.target.value))}
+                    className="w-full px-3 py-1.5 border rounded-xl font-mono text-xs focus:ring-1 focus:ring-[#0d4f4a]"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">Telesale:</label>
+                  <input
+                    type="text"
+                    defaultValue={callModalLead.telesale || "Telesale"}
+                    disabled
+                    className="w-full px-3 py-1.5 border rounded-xl bg-stone-50 font-mono text-xs text-stone-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">Ghi chú cuộc gọi / Khách phản hồi:</label>
+                <textarea
+                  value={callNotes}
+                  onChange={(e) => setCallNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Khách hẹn tuần sau tới khám, muốn làm Implant răng hàm..."
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:ring-1 focus:ring-[#0d4f4a]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setCallModalLead(null)}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={savingCallLog}
+                onClick={handleSaveCallLog}
+                className="px-5 py-2 bg-[#0d4f4a] hover:bg-[#083b37] text-white font-bold rounded-xl text-xs shadow-sm transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{savingCallLog ? "Đang lưu..." : "Lưu Nhật Ký Cuộc Gọi"}</span>
               </button>
             </div>
           </div>

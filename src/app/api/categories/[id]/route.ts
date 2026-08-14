@@ -5,13 +5,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   try {
     const body = await req.json();
+    const updateData: any = {};
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.seoTitle !== undefined) updateData.seoTitle = body.seoTitle;
+    if (body.seoDescription !== undefined) updateData.seoDescription = body.seoDescription;
+    if (body.ogImage !== undefined) updateData.ogImage = body.ogImage;
+    if (body.canonicalUrl !== undefined) updateData.canonicalUrl = body.canonicalUrl;
+    if (body.schemaJson !== undefined) updateData.schemaJson = body.schemaJson;
+
     const updated = await db.category.update({
       where: { id },
-      data: {
-        name: body.name,
-        slug: body.slug,
-        description: body.description,
-      },
+      data: updateData,
     });
     return NextResponse.json({ success: true, data: updated });
   } catch (err: unknown) {

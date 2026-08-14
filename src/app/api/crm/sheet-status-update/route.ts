@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { crmDb } from "@/lib/crm-db";
 import { sendMetaCapiLeadEvent } from "@/lib/meta-capi";
+import { sendGoogleAdsServerConversion } from "@/lib/google-ads";
 import { parseTdsPayload } from "@/lib/tds-parser";
 
 export async function POST(req: Request) {
@@ -72,15 +73,22 @@ export async function POST(req: Request) {
       },
     });
 
-    // 3. Map CRM Status to Meta CAPI Lead Event & Dispatch CAPI
-    let metaEventName: "Lead" | "Contact" | "Purchase" | null = null;
+    // 3. Map CRM Status to Meta CAPI & Google Ads Conversion Event
+    let metaEventName: "Lead" | "Contact" | "Schedule" | "Purchase" | null = null;
 
-    if (finalStatus === "QUALIFIED" || finalStatus === "SCHEDULED") metaEventName = "Lead";
+    if (finalStatus === "QUALIFIED") metaEventName = "Lead";
+    else if (finalStatus === "SCHEDULED") metaEventName = "Schedule";
     else if (finalStatus === "CHECKIN") metaEventName = "Contact";
     else if (finalStatus === "PURCHASE") metaEventName = "Purchase";
 
     let capiResult = null;
     if (metaEventName) {
+      const revenueValue = updatedLead.actualRevenue > 0 
+        ? updatedLead.actualRevenue 
+        : updatedLead.revenue > 0 
+        ? updatedLead.revenue 
+        : updatedLead.value || undefined;
+
       capiResult = await sendMetaCapiLeadEvent({
         eventName: metaEventName,
         leadId: updatedLead.leadId || undefined,
@@ -90,9 +98,19 @@ export async function POST(req: Request) {
         fbclid: updatedLead.fbclid || undefined,
         fbp: updatedLead.fbp || undefined,
         fbc: updatedLead.fbc || undefined,
-        value: updatedLead.value || undefined,
+        value: revenueValue,
         currency: updatedLead.currency || "VND",
       });
+
+      // Also trigger Google Ads Offline Conversion if Google click IDs or conversion is configured
+      sendGoogleAdsServerConversion({
+        eventName: metaEventName,
+        phone: updatedLead.phone,
+        email: updatedLead.email || undefined,
+        fullName: updatedLead.fullName,
+        value: revenueValue,
+        currency: updatedLead.currency || "VND",
+      }).catch(() => {});
 
       // Update CAPI sync flag
       if (capiResult.success) {

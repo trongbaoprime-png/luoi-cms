@@ -356,8 +356,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </aside>
 
-        {/* Fluid Full-Width Main Content Area (Warm Cream Canvas) */}
-        <main className="flex-1 p-3 md:p-4 lg:p-6 w-full overflow-x-hidden bg-[#f7f4ed] text-[#1a1612]">{children}</main>
+        {/* Fluid Full-Width Main Content Area */}
+        <main
+          className={`flex-1 w-full ${
+            pathname === "/admin/omnichannel"
+              ? "p-0 overflow-hidden bg-[#0f172a]"
+              : "p-3 md:p-4 lg:p-6 overflow-x-hidden bg-[#f7f4ed] text-[#1a1612]"
+          }`}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

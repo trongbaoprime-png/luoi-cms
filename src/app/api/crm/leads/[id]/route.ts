@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { crmDb } from "@/lib/crm-db";
 import { hashPhone, hashEmail, sendMetaCapiLeadEvent } from "@/lib/meta-capi";
+import { sendGoogleAdsServerConversion } from "@/lib/google-ads";
 import { normalizeSource, getSourceGroup, normalizeBranch, getBranchGroup, normalizeService, getServiceGroup, normalizeTelesale } from "@/lib/tds-parser";
 
 interface RouteParams {
@@ -97,7 +98,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
         },
       });
 
-      // Dispatch CAPI if status changed
+      // Dispatch CAPI & Google Ads Conversion if status changed
       let metaEventName: "Lead" | "Contact" | "Schedule" | "Purchase" | null = null;
       if (status === "QUALIFIED") metaEventName = "Lead";
       else if (status === "SCHEDULED") metaEventName = "Schedule";
@@ -105,13 +106,31 @@ export async function PUT(req: Request, { params }: RouteParams) {
       else if (status === "PURCHASE") metaEventName = "Purchase";
 
       if (metaEventName) {
+        const revenueValue = updatedLead.actualRevenue > 0
+          ? updatedLead.actualRevenue
+          : updatedLead.revenue > 0
+          ? updatedLead.revenue
+          : updatedLead.value || undefined;
+
         sendMetaCapiLeadEvent({
           eventName: metaEventName,
           leadId: updatedLead.leadId || undefined,
           phone: updatedLead.phone,
           email: updatedLead.email || undefined,
           fullName: updatedLead.fullName,
-          value: updatedLead.revenue || updatedLead.value || undefined,
+          fbclid: updatedLead.fbclid || undefined,
+          fbp: updatedLead.fbp || undefined,
+          fbc: updatedLead.fbc || undefined,
+          value: revenueValue,
+          currency: updatedLead.currency || "VND",
+        }).catch(() => {});
+
+        sendGoogleAdsServerConversion({
+          eventName: metaEventName,
+          phone: updatedLead.phone,
+          email: updatedLead.email || undefined,
+          fullName: updatedLead.fullName,
+          value: revenueValue,
           currency: updatedLead.currency || "VND",
         }).catch(() => {});
       }

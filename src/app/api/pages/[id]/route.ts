@@ -35,6 +35,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (body.blocks !== undefined) updateData.blocks = body.blocks;
     if (body.seoTitle !== undefined) updateData.seoTitle = body.seoTitle;
     if (body.seoDescription !== undefined) updateData.seoDescription = body.seoDescription;
+    if (body.ogImage !== undefined) updateData.ogImage = body.ogImage;
+    if (body.ogTitle !== undefined) updateData.ogTitle = body.ogTitle;
+    if (body.ogDescription !== undefined) updateData.ogDescription = body.ogDescription;
+    if (body.canonicalUrl !== undefined) updateData.canonicalUrl = body.canonicalUrl;
+    if (body.keywords !== undefined) updateData.keywords = body.keywords;
+    if (body.noIndex !== undefined) updateData.noIndex = body.noIndex;
+    if (body.schemaJson !== undefined) updateData.schemaJson = body.schemaJson;
     if (body.isPublished !== undefined) updateData.isPublished = body.isPublished;
     if (body.useDefaultHeader !== undefined) updateData.useDefaultHeader = body.useDefaultHeader;
     if (body.useDefaultFooter !== undefined) updateData.useDefaultFooter = body.useDefaultFooter;

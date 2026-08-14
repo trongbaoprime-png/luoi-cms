@@ -12,6 +12,14 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error("App Error:", error);
+    // Tự động tải lại trang nếu gặp lỗi ChunkLoadError do vừa cập nhật mã nguồn
+    if (
+      error.message?.includes("Failed to load chunk") ||
+      error.message?.includes("Loading chunk") ||
+      error.message?.includes("ChunkLoadError")
+    ) {
+      window.location.reload();
+    }
   }, [error]);
 
   return (

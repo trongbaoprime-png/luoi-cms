@@ -5,7 +5,12 @@ import { z } from "zod";
 const CategorySchema = z.object({
   name: z.string().min(2, "Tên danh mục quá ngắn"),
   slug: z.string().min(2, "Slug không hợp lệ"),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
+  seoTitle: z.string().optional().nullable(),
+  seoDescription: z.string().optional().nullable(),
+  ogImage: z.string().optional().nullable(),
+  canonicalUrl: z.string().optional().nullable(),
+  schemaJson: z.string().optional().nullable(),
 });
 
 export async function GET() {

@@ -34,6 +34,9 @@ import {
   CheckSquare,
   ListPlus,
   MoveRight,
+  Globe,
+  X,
+  ImageIcon,
 } from "lucide-react";
 
 export interface FormField {
@@ -88,11 +91,20 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
 
   // Studio UI State
-  const [activeTab, setActiveTab] = useState<"elements" | "forms" | "sections" | "templates">("forms");
+  const [activeTab, setActiveTab] = useState<"elements" | "forms" | "sections" | "templates" | "seo">("forms");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "mobile">("desktop");
   const [draggedType, setDraggedType] = useState<string | null>(null);
   const [draggedCanvasIndex, setDraggedCanvasIndex] = useState<number | null>(null);
   const [isOverCanvas, setIsOverCanvas] = useState(false);
+
+  // SEO State
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [ogImage, setOgImage] = useState("");
+  const [canonicalUrl, setCanonicalUrl] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [noIndex, setNoIndex] = useState(false);
+  const [showSeoModal, setShowSeoModal] = useState(false);
 
   useEffect(() => {
     fetch(`/api/pages/${id}`)
@@ -101,6 +113,12 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
         if (data.success && data.data) {
           setPageTitle(data.data.title);
           setSlug(data.data.slug);
+          setSeoTitle(data.data.seoTitle || "");
+          setSeoDescription(data.data.seoDescription || "");
+          setOgImage(data.data.ogImage || "");
+          setCanonicalUrl(data.data.canonicalUrl || "");
+          setKeywords(data.data.keywords || "");
+          setNoIndex(data.data.noIndex || false);
           try {
             if (data.data.blocks) {
               setBlocks(JSON.parse(data.data.blocks));
@@ -383,11 +401,17 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           blocks: JSON.stringify(blocks),
+          seoTitle: seoTitle || null,
+          seoDescription: seoDescription || null,
+          ogImage: ogImage || null,
+          canonicalUrl: canonicalUrl || null,
+          keywords: keywords || null,
+          noIndex,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setMsg("✓ Đã xuất bản trang thành công!");
+        setMsg("✓ Đã xuất bản trang & cấu hình SEO!");
       }
     } finally {
       setSaving(false);
@@ -452,6 +476,14 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
             </span>
           )}
 
+          <button
+            onClick={() => setShowSeoModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-teal-300 bg-teal-50 text-teal-800 font-semibold text-xs hover:bg-teal-100 transition-colors cursor-pointer"
+          >
+            <Globe size={14} />
+            <span>Tối Ưu SEO &amp; Meta</span>
+          </button>
+
           <Link
             href={`/${slug}`}
             target="_blank"
@@ -464,7 +496,7 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#0d9488] text-white font-bold text-xs hover:bg-[#0f766e] transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#0d9488] text-white font-bold text-xs hover:bg-[#0f766e] transition-colors shadow-sm cursor-pointer"
           >
             <Save size={14} />
             <span>{saving ? "Đang lưu..." : "Lưu & Xuất Bản"}</span>
@@ -521,6 +553,17 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
             >
               <Sparkles size={18} />
               <span>Kho Mẫu</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("seo")}
+              className={`w-full p-2.5 rounded-xl font-bold flex flex-col items-center gap-1 text-center transition-colors ${
+                activeTab === "seo"
+                  ? "bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/30"
+                  : "text-stone-600 hover:bg-stone-50"
+              }`}
+            >
+              <Globe size={18} className="text-emerald-600" />
+              <span>SEO Meta</span>
             </button>
           </div>
 
@@ -672,6 +715,109 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
                     <GripVertical size={16} className="text-stone-400" /> Sản Phẩm Affiliate
                   </span>
                   <MoveRight size={14} className="text-stone-400" />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "seo" && (
+              <div className="space-y-3.5 text-xs font-mono">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <span className="font-bold text-stone-800 text-[11px] uppercase flex items-center gap-1.5">
+                    <Globe size={15} className="text-emerald-700" /> Cấu Hình SEO &amp; Meta Tags
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSeoTitle(`${pageTitle} | Lười Dọn Nhà`);
+                      setSeoDescription(`Khám phá dịch vụ ${pageTitle} chuyên nghiệp tại Lười Dọn Nhà.`);
+                      setCanonicalUrl(`https://luoidonnha.com/${slug}`);
+                    }}
+                    className="px-2 py-0.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] cursor-pointer"
+                  >
+                    Tự động điền
+                  </button>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-stone-700 text-[11px]">SEO Meta Title</label>
+                    <span className="text-[10px] text-emerald-800 font-bold">{seoTitle.length}/65</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={seoTitle}
+                    onChange={(e) => setSeoTitle(e.target.value)}
+                    placeholder="Tiêu đề chuẩn SEO trên Google..."
+                    className="w-full px-2.5 py-1.5 border rounded-lg bg-white font-sans text-xs"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-stone-700 text-[11px]">SEO Description</label>
+                    <span className="text-[10px] text-emerald-800 font-bold">{seoDescription.length}/160</span>
+                  </div>
+                  <textarea
+                    value={seoDescription}
+                    onChange={(e) => setSeoDescription(e.target.value)}
+                    rows={2}
+                    placeholder="Mô tả cuốn hút xuất hiện trên Google..."
+                    className="w-full px-2.5 py-1.5 border rounded-lg bg-white font-sans text-xs leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-700 text-[11px] mb-1 flex items-center gap-1">
+                    <ImageIcon size={12} className="text-emerald-700" /> Ảnh Thumbnail OG (URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={ogImage}
+                    onChange={(e) => setOgImage(e.target.value)}
+                    placeholder="https://luoidonnha.com/og.jpg"
+                    className="w-full px-2.5 py-1.5 border rounded-lg bg-white font-mono text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-stone-700 text-[11px] mb-1">Từ khóa (Keywords)</label>
+                    <input
+                      type="text"
+                      value={keywords}
+                      onChange={(e) => setKeywords(e.target.value)}
+                      placeholder="nha khoa, giặt nệm"
+                      className="w-full px-2 py-1.5 border rounded-lg bg-white font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-stone-700 text-[11px] mb-1">Canonical URL</label>
+                    <input
+                      type="url"
+                      value={canonicalUrl}
+                      onChange={(e) => setCanonicalUrl(e.target.value)}
+                      placeholder="https://luoidonnha.com/slug"
+                      className="w-full px-2 py-1.5 border rounded-lg bg-white font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-1.5 cursor-pointer bg-stone-50 p-2 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={noIndex}
+                    onChange={(e) => setNoIndex(e.target.checked)}
+                    className="rounded text-emerald-700"
+                  />
+                  <span className="font-bold text-[10px] text-stone-700">Chặn Google Index (noindex)</span>
+                </label>
+
+                {/* Google SERP Preview */}
+                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                  <span className="text-[9px] uppercase font-bold text-stone-400 block font-mono">SERP Live Preview</span>
+                  <p className="text-xs font-semibold text-blue-700 truncate font-sans">{seoTitle || pageTitle || "Tiêu đề trang"}</p>
+                  <p className="text-[10px] text-emerald-800 truncate font-mono">https://luoidonnha.com/{slug || "slug"}</p>
+                  <p className="text-[11px] text-stone-600 line-clamp-2 font-sans">{seoDescription || "Đoạn trích mô tả xuất hiện trên Google..."}</p>
                 </div>
               </div>
             )}
@@ -960,6 +1106,143 @@ export default function LadiPageBuilderStudioPage({ params }: { params: Promise<
           </div>
         </div>
       </div>
+
+      {/* SEO & OpenGraph Optimization Modal */}
+      {showSeoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 w-full max-w-xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-teal-600" />
+                <h3 className="text-base font-bold text-stone-900">
+                  Tối Ưu SEO Google &amp; OpenGraph Landing Page
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSeoModal(false)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  SEO Title ({seoTitle.length}/65 ký tự)
+                </label>
+                <input
+                  type="text"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder="Tiêu đề chuẩn SEO trên Google..."
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  SEO Description ({seoDescription.length}/160 ký tự)
+                </label>
+                <textarea
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Mô tả hấp dẫn kích thích người dùng click vào liên kết..."
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1 flex items-center gap-1.5">
+                  <ImageIcon size={14} /> Ảnh đại diện chia sẻ MXH (OG Image URL)
+                </label>
+                <input
+                  type="url"
+                  value={ogImage}
+                  onChange={(e) => setOgImage(e.target.value)}
+                  placeholder="https://domain.com/og-banner.jpg"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Canonical URL
+                  </label>
+                  <input
+                    type="url"
+                    value={canonicalUrl}
+                    onChange={(e) => setCanonicalUrl(e.target.value)}
+                    placeholder="https://domain.com/canonical"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Từ khóa chính (Keywords)
+                  </label>
+                  <input
+                    type="text"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder="implant, bọc răng sứ, nha khoa"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1 bg-stone-50 p-2.5 rounded-lg border">
+                <input
+                  type="checkbox"
+                  checked={noIndex}
+                  onChange={(e) => setNoIndex(e.target.checked)}
+                  className="w-4 h-4 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div>
+                  <span className="font-semibold text-stone-800 block">Chặn Google Index (NoIndex / NoFollow)</span>
+                  <span className="text-[11px] text-stone-500">Bật tính năng này nếu đây là landing page chạy ads thử nghiệm nội bộ.</span>
+                </div>
+              </label>
+
+              {/* Google Snippet Live Preview */}
+              <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-1">
+                <p className="text-[10px] uppercase font-bold text-stone-400">Xem trước kết quả tìm kiếm Google (SERP Preview)</p>
+                <p className="text-sm font-semibold text-blue-800 hover:underline truncate">
+                  {seoTitle || pageTitle || "Tiêu đề trang trên Google Search"}
+                </p>
+                <p className="text-[11px] text-emerald-700 truncate font-mono">
+                  https://luoidonnha.com/{slug || "slug-trang"}
+                </p>
+                <p className="text-[11px] text-stone-600 line-clamp-2">
+                  {seoDescription || "Đoạn trích mô tả trang landing page trên kết quả tìm kiếm tự nhiên của Google giúp tối ưu CTR và thứ hạng từ khóa."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t">
+              <button
+                type="button"
+                onClick={() => setShowSeoModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSeoModal(false);
+                  handleSave();
+                }}
+                className="px-5 py-2 bg-[#0d9488] text-white text-xs font-bold rounded-xl hover:bg-[#0f766e] transition-colors shadow-sm"
+              >
+                Áp Dụng &amp; Lưu SEO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

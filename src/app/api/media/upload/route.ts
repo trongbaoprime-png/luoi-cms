@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import fs from "fs/promises";
 import path from "path";
-import sharp from "sharp";
 import { requirePermission } from "@/lib/auth-guard";
+import { optimizeImageBuffer } from "@/lib/image-optimizer";
 
 export async function POST(req: Request) {
   const perm = await requirePermission("media:upload", req);
@@ -39,19 +39,14 @@ export async function POST(req: Request) {
 
     let compressedBuffer: Buffer;
     let finalSize: number;
+    let savingsRatio = "0%";
 
     // High Performance Sharp Compression to WebP (< 150KB target, max-width 1200px)
     if (file.type.startsWith("image/") || /\.(jpg|jpeg|png|webp|avif|gif|bmp)$/i.test(file.name)) {
-      try {
-        compressedBuffer = await sharp(inputBuffer)
-          .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 80, effort: 4 })
-          .toBuffer();
-        finalSize = compressedBuffer.length;
-      } catch {
-        compressedBuffer = inputBuffer;
-        finalSize = file.size;
-      }
+      const optResult = await optimizeImageBuffer(inputBuffer, 1200);
+      compressedBuffer = optResult.webpBuffer;
+      finalSize = optResult.optimizedSize;
+      savingsRatio = optResult.compressionRatio;
     } else {
       compressedBuffer = inputBuffer;
       finalSize = file.size;
@@ -84,10 +79,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Tải & nén ảnh WebP thành công!",
+      message: `Tải & nén ảnh WebP thành công! (Tiết kiệm ${savingsRatio} dung lượng)`,
       data: {
         ...media,
         altText: customAlt || originalNameClean.replace(/_/g, " "),
+        savings: savingsRatio,
       },
     });
   } catch (err: unknown) {

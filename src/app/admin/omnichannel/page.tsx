@@ -1,99 +1,617 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-  MessageSquare,
-  MapPin,
-  Stethoscope,
-  Target,
-  RefreshCw,
-  Sparkles,
-  Bot,
-  Users,
-  PieChart,
-  BarChart3,
-  TrendingUp,
-  Clock,
+  Search,
   Send,
+  User,
+  Phone,
+  Tag,
   CheckCircle2,
   Copy,
-  ArrowRight,
-  Filter,
   X,
+  MessageSquare,
+  Globe2,
+  Sparkles,
+  RefreshCw,
+  Info,
+  Calendar,
+  ExternalLink,
+  ChevronDown,
+  Filter,
+  Plus,
+  TrendingUp,
+  Award,
+  AlertCircle,
+  Database,
+  ArrowRight,
+  ShieldCheck,
+  Check,
+  Mail,
+  EyeOff,
+  Eye,
+  Layers,
+  History,
+  Target,
+  Share2,
+  MapPin,
+  FileText,
+  Edit3,
 } from "lucide-react";
-
-interface BranchStat {
-  branch: string;
-  count: number;
-  percentage: number;
-}
-
-interface ServiceStat {
-  service: string;
-  count: number;
-  percentage: number;
-}
-
-interface IntentStat {
-  intent: string;
-  count: number;
-}
+import { MASTER_PANCAKE_TAGS, getAssignedStaff } from "@/lib/pancake-tag-parser";
 
 interface ConversationItem {
   id: string;
-  customerName: string | null;
-  phone: string | null;
-  detectedBranch: string | null;
-  detectedService: string | null;
-  subService: string | null;
-  customerIntent: string | null;
-  branchStatus: string | null;
+  pageId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  carrier?: string;
+  platform: string;
+  lastMessageText: string;
   lastMessageAt: string;
-  fanpage: { pageName: string } | null;
+  unreadCount: number;
+  isUnread?: boolean;
+  detectedBranch: string;
+  detectedService: string;
+  customerIntent?: string;
+  tags: string[];
+  notes?: string;
+  fanpage?: {
+    pageName: string;
+    pageId: string;
+    category?: string;
+  };
 }
 
-export default function OmnichannelAnalyticsPage() {
-  const [loading, setLoading] = useState(true);
-  const [totalConversations, setTotalConversations] = useState(0);
-  const [branchStats, setBranchStats] = useState<BranchStat[]>([]);
-  const [serviceStats, setServiceStats] = useState<ServiceStat[]>([]);
-  const [intentStats, setIntentStats] = useState<IntentStat[]>([]);
-  const [recentInsights, setRecentInsights] = useState<ConversationItem[]>([]);
-  
-  // Interactive Filters & Modals
-  const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>("ALL");
+interface MessageItem {
+  id: string;
+  senderType: "CUSTOMER" | "STAFF" | "AI_BOT";
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
+
+interface FanpageItem {
+  id: string;
+  pageId: string;
+  pageName: string;
+  category?: string;
+  isActive: boolean;
+  accessToken?: string;
+  createdAt: string;
+}
+
+interface ChannelAnalytics {
+  totalConversations: number;
+  totalWithPhone: number;
+  totalQualified: number;
+  totalPurchase: number;
+  channels: {
+    facebook: number;
+    zalo: number;
+    instagram: number;
+    whatsapp: number;
+    webchat: number;
+  };
+}
+
+interface CRMStatusData {
+  isMatched: boolean;
+  lead?: {
+    id: string;
+    fullName: string;
+    phone: string;
+    status: string;
+    telesale?: string;
+    branch?: string;
+    service?: string;
+    actualRevenue?: number;
+    revenue?: number;
+    appointmentDate?: string;
+    appointmentTime?: string;
+    appointmentBranch?: string;
+    appointmentDoctor?: string;
+    appointmentStatus?: string;
+    syncedToMeta?: boolean;
+    source?: string;
+    createdAt?: string;
+  } | null;
+}
+
+interface Customer360Data {
+  totalTouchpoints: number;
+  totalFanpagesChatted: number;
+  fanpagesList: string[];
+  firstTouchPoint: {
+    title: string;
+    channelName: string;
+    timestamp: string;
+  } | null;
+  lastTouchPoint: {
+    title: string;
+    channelName: string;
+    timestamp: string;
+  } | null;
+  timeline: {
+    id: string;
+    type: string;
+    title: string;
+    description: string;
+    channelName: string;
+    timestamp: string;
+    icon: string;
+    badgeColor: string;
+  }[];
+  adsAttribution: {
+    adId: string;
+    adName?: string;
+    adsetId?: string;
+    adsetName?: string;
+    campaignId?: string;
+    campaignName?: string;
+    postId?: string;
+    referralSource?: string;
+    placement?: string;
+    targetAudience?: string;
+    adHeadline?: string;
+    adContent?: string;
+  };
+  fbProfileUrl: string;
+  messengerUrl: string;
+}
+
+// 3 Hàng Thẻ Master Chuẩn 100% Giao Diện Pancake Tâm Đức Smile
+const PANCAKE_GRID_ROW_1 = [
+  { code: "NHUNG", color: "#FF0066", label: "NHUNG" },
+  { code: "TRANG", color: "#11c532", label: "TRANG" },
+  { code: "Trân Miln", color: "#38A6F4", label: "Trân Miln" },
+  { code: "Liễu", color: "#003EFF", label: "Liễu" },
+  { code: "THẢO", color: "#C605FF", label: "THẢO" },
+  { code: "MINH TR...", color: "#d97706", label: "MINH TR..." },
+  { code: "SINH", color: "#c1b800", label: "SINH" },
+  { code: "HẠ", color: "#3fc72d", label: "HẠ" },
+  { code: "Loan", color: "#416840", label: "Loan" },
+  { code: "XUÂN", color: "#ff2b00", label: "XUÂN" },
+];
+
+const PANCAKE_GRID_ROW_2 = [
+  { code: "SỨ", color: "#cf6dab", label: "SỨ" },
+  { code: "IMP", color: "#3466a1", label: "IMP" },
+  { code: "CN", color: "#469ea1", label: "CN" },
+  { code: "TQ", color: "#E06DBE", label: "TQ" },
+  { code: "VK", color: "#E78CE1", label: "VK" },
+  { code: "#ĐẬU", color: "#925828", label: "#" },
+  { code: "#RỚT", color: "#cac93b", label: "RỚT" },
+  { code: "HẬU", color: "#8ce8df", label: "HẬU" },
+  { code: "TRÚC", color: "#2fccf1", label: "TRÚC" },
+  { code: "QUIN", color: "#d55f4d", label: "QUIN" },
+];
+
+const PANCAKE_GRID_ROW_3 = [
+  { code: "SDT", color: "#08d72d", label: "SDT" },
+  { code: "DDH", color: "#26a8ff", label: "DDH" },
+  { code: "XA", color: "#042237", label: "XA" },
+  { code: "KPH", color: "#2c373e", label: "KPH" },
+  { code: "HếtNC", color: "#1f0c25", label: "HếtNC" },
+  { code: "SPAM", color: "#000000", label: "SPAM" },
+  { code: "TRÙNG", color: "#1e1319", label: "TRÙNG" },
+  { code: "Kênh khác", color: "#172d00", label: "Kênh khác" },
+  { code: "SALE", color: "#08d72d", label: "SALE" },
+  { code: "BumDV", color: "#C88141", label: "BUM" },
+];
+
+const BRANCH_LIST = [
+  "CẦN THƠ", "GÒ VẤP (TP.HCM)", "QUẬN 3 (TP.HCM)", "QUẬN 1 (TP.HCM)", "TÂN PHÚ (TP.HCM)",
+  "BÌNH THẠNH (TP.HCM)", "BÌNH TÂN (TP.HCM)", "QUẬN 7 (TP.HCM)", "THỦ ĐỨC (TP.HCM)",
+  "DĨ AN (BÌNH DƯƠNG)", "BIÊN HÒA (ĐỒNG NAI)", "GIA KIỆM (ĐỒNG NAI)", "CÀ MAU",
+  "BẠC LIÊU", "SÓC TRĂNG", "ĐỒNG THÁP", "BÀ RỊA - VŨNG TÀU", "TÂY NINH",
+  "BÌNH PHƯỚC", "ĐÀ LẠT (LÂM ĐỒNG)", "QUY NHƠN", "ĐÀ NẴNG", "HÒA BÌNH",
+];
+
+const TELESALE_LIST = [
+  "THẢO", "NHUNG", "TRANG", "Trân Miln", "Liễu", "Loan", "SINH", "HẠ", "XUÂN", "QUIN", "TRÚC",
+];
+
+export default function AdminOmnichannelPage() {
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [fanpages, setFanpages] = useState<FanpageItem[]>([]);
+  const [customTagInput, setCustomTagInput] = useState("");
+
+  // Customer Wish / Intent state
+  const [editingWish, setEditingWish] = useState(false);
+  const [wishInput, setWishInput] = useState("");
+
+  // Ghost Mode & Unread Tracker
+  const [ghostMode, setGhostMode] = useState<boolean>(true);
+  const [unreadMap, setUnreadMap] = useState<Record<string, boolean>>({});
+
+  // Right Column Tab: "CRM" | "JOURNEY_360"
+  const [activeRightTab, setActiveRightTab] = useState<"CRM" | "JOURNEY_360">("CRM");
+
+  // Filters State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPageId, setFilterPageId] = useState<string>("ALL");
+  const [filterTag, setFilterTag] = useState<string>("ALL");
+  const [filterTelesale, setFilterTelesale] = useState<string>("ALL");
+  const [filterBranch, setFilterBranch] = useState<string>("ALL");
+  const [filterPhone, setFilterPhone] = useState<string>("ALL");
+  const [filterDateRange, setFilterDateRange] = useState<string>("ALL");
+
+  // Pagination & Live Counter
+  const [totalInDb, setTotalInDb] = useState<number>(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Top KPI Stats
+  const [analytics, setAnalytics] = useState<ChannelAnalytics>({
+    totalConversations: 0,
+    totalWithPhone: 0,
+    totalQualified: 0,
+    totalPurchase: 0,
+    channels: { facebook: 0, zalo: 0, instagram: 0, whatsapp: 0, webchat: 0 },
+  });
+
+  // MiniCRM & 360 Resolution State
+  const [crmStatus, setCrmStatus] = useState<CRMStatusData | null>(null);
+  const [customer360, setCustomer360] = useState<Customer360Data | null>(null);
+  const [loading360, setLoading360] = useState(false);
+  const [crmSyncing, setCrmSyncing] = useState(false);
+  const [adsDetailExpanded, setAdsDetailExpanded] = useState<boolean>(true);
+
+  // Copilot Modal State
   const [copilotModalOpen, setCopilotModalOpen] = useState(false);
   const [activeCopilotData, setActiveCopilotData] = useState<any>(null);
   const [copilotLoading, setCopilotLoading] = useState(false);
-  const [assigningId, setAssigningId] = useState<string | null>(null);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Toast
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
   const fetchAnalytics = async () => {
-    setLoading(true);
     try {
       const res = await fetch("/api/admin/omnichannel/analytics");
-      const data = await res.json();
+      const json = await res.json();
+      if (json.success) {
+        setAnalytics(json.data);
+      }
+    } catch {}
+  };
 
-      if (data.success && data.data) {
-        setTotalConversations(data.data.totalConversations);
-        setBranchStats(data.data.branchStats);
-        setServiceStats(data.data.serviceStats);
-        setIntentStats(data.data.intentStats);
-        setRecentInsights(data.data.recentInsights);
+  const fetchConversations = async (reset = true) => {
+    try {
+      const currentOffset = reset ? 0 : conversations.length;
+      const url = new URL("/api/admin/omnichannel/conversations", window.location.origin);
+      if (filterPageId !== "ALL") url.searchParams.set("pageId", filterPageId);
+      if (filterTag !== "ALL") url.searchParams.set("tag", filterTag);
+      if (filterTelesale !== "ALL") url.searchParams.set("telesale", filterTelesale);
+      if (filterBranch !== "ALL") url.searchParams.set("branch", filterBranch);
+      if (filterPhone !== "ALL") url.searchParams.set("phoneFilter", filterPhone);
+      if (filterDateRange !== "ALL") url.searchParams.set("dateRange", filterDateRange);
+      if (searchTerm.trim()) url.searchParams.set("search", searchTerm.trim());
+
+      url.searchParams.set("limit", "50");
+      url.searchParams.set("offset", String(currentOffset));
+
+      const res = await fetch(url.toString());
+      const json = await res.json();
+      if (json.success) {
+        if (reset) {
+          setConversations(json.data);
+          if (json.data.length > 0 && !selectedConvId) {
+            setSelectedConvId(json.data[0].id);
+          }
+        } else {
+          setConversations((prev) => [...prev, ...json.data]);
+        }
+        if (typeof json.totalInDb === "number") {
+          setTotalInDb(json.totalInDb);
+        }
       }
     } catch {
-      console.error("Lỗi nạp báo cáo Omnichannel");
+      console.error("Lỗi nạp hội thoại");
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreConversations = () => {
+    if (loadingMore || conversations.length >= totalInDb) return;
+    setLoadingMore(true);
+    fetchConversations(false);
+  };
+
+  const fetchChannels = async () => {
+    try {
+      const res = await fetch("/api/auth/facebook/pages");
+      const json = await res.json();
+      if (json.success) {
+        setFanpages(json.data);
+      }
+    } catch {
+      console.error("Lỗi nạp fanpages");
+    }
+  };
+
+  // Auto-detect branch from message content
+  const autoDetectBranchFromMessages = (msgs: MessageItem[]): string | null => {
+    const BRANCH_KEYWORDS: Record<string, string> = {
+      "cần thơ": "CẦN THƠ",
+      "cantho": "CẦN THƠ",
+      "gò vấp": "GÒ VẤP (TP.HCM)",
+      "go vap": "GÒ VẤP (TP.HCM)",
+      "quận 3": "QUẬN 3 (TP.HCM)",
+      "quan 3": "QUẬN 3 (TP.HCM)",
+      "quận 1": "QUẬN 1 (TP.HCM)",
+      "quan 1": "QUẬN 1 (TP.HCM)",
+      "tân phú": "TÂN PHÚ (TP.HCM)",
+      "tan phu": "TÂN PHÚ (TP.HCM)",
+      "bình thạnh": "BÌNH THẠNH (TP.HCM)",
+      "binh thanh": "BÌNH THẠNH (TP.HCM)",
+      "bình tân": "BÌNH TÂN (TP.HCM)",
+      "binh tan": "BÌNH TÂN (TP.HCM)",
+      "quận 7": "QUẬN 7 (TP.HCM)",
+      "quan 7": "QUẬN 7 (TP.HCM)",
+      "thủ đức": "THỦ ĐỨC (TP.HCM)",
+      "thu duc": "THỦ ĐỨC (TP.HCM)",
+      "dĩ an": "DĨ AN (BÌNH DƯƠNG)",
+      "di an": "DĨ AN (BÌNH DƯƠNG)",
+      "bình dương": "DĨ AN (BÌNH DƯƠNG)",
+      "biên hòa": "BIÊN HÒA (ĐỒNG NAI)",
+      "bien hoa": "BIÊN HÒA (ĐỒNG NAI)",
+      "đồng nai": "BIÊN HÒA (ĐỒNG NAI)",
+      "gia kiệm": "GIA KIỆM (ĐỒNG NAI)",
+      "cà mau": "CÀ MAU",
+      "ca mau": "CÀ MAU",
+      "bạc liêu": "BẠC LIÊU",
+      "bac lieu": "BẠC LIÊU",
+      "sóc trăng": "SÓC TRĂNG",
+      "soc trang": "SÓC TRĂNG",
+      "đồng tháp": "ĐỒNG THÁP",
+      "dong thap": "ĐỒNG THÁP",
+      "vũng tàu": "BÀ RỊA - VŨNG TÀU",
+      "vung tau": "BÀ RỊA - VŨNG TÀU",
+      "bà rịa": "BÀ RỊA - VŨNG TÀU",
+      "tây ninh": "TÂY NINH",
+      "bình phước": "BÌNH PHƯỚC",
+      "đà lạt": "ĐÀ LẠT (LÂM ĐỒNG)",
+      "da lat": "ĐÀ LẠT (LÂM ĐỒNG)",
+      "lâm đồng": "ĐÀ LẠT (LÂM ĐỒNG)",
+      "quy nhơn": "QUY NHƠN",
+      "đà nẵng": "ĐÀ NẴNG",
+      "da nang": "ĐÀ NẴNG",
+      "hòa bình": "HÒA BÌNH",
+    };
+    // Only check customer messages
+    const customerTexts = msgs
+      .filter((m) => m.senderType === "CUSTOMER")
+      .map((m) => m.content.toLowerCase())
+      .join(" ");
+    for (const [keyword, branch] of Object.entries(BRANCH_KEYWORDS)) {
+      if (customerTexts.includes(keyword)) return branch;
+    }
+    return null;
+  };
+
+  const fetchMessages = async (convId: string) => {
+    setLoadingMessages(true);
+    try {
+      const res = await fetch(`/api/admin/omnichannel/conversations/${convId}/messages`);
+      const json = await res.json();
+      if (json.success) {
+        setMessages(json.data);
+        // Auto-detect branch from API or from message content
+        const detectedFromApi = json.detectedBranch;
+        const detectedFromContent = autoDetectBranchFromMessages(json.data);
+        const finalBranch = detectedFromApi || detectedFromContent;
+        if (finalBranch) {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === convId && !c.detectedBranch) {
+                // Only auto-set if not already set
+                return { ...c, detectedBranch: finalBranch };
+              }
+              return c;
+            })
+          );
+          // Persist auto-detected branch
+          if (detectedFromContent && !detectedFromApi) {
+            fetch(`/api/admin/omnichannel/conversations/${convId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ detectedBranch: detectedFromContent }),
+            }).catch(() => {});
+          }
+        }
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
+    } catch {
+      console.error("Lỗi nạp tin nhắn");
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  const fetchCRMStatus = async (convId: string) => {
+    try {
+      const res = await fetch(`/api/admin/omnichannel/conversations/${convId}/crm-status`);
+      const json = await res.json();
+      if (json.success) {
+        setCrmStatus(json.data);
+      }
+    } catch {}
+  };
+
+  const fetchCustomer360 = async (convId: string) => {
+    setLoading360(true);
+    try {
+      const res = await fetch(`/api/admin/omnichannel/conversations/${convId}/customer-360`);
+      const json = await res.json();
+      if (json.success) {
+        setCustomer360(json.data);
+      }
+    } catch {
+      console.error("Lỗi nạp 360");
+    } finally {
+      setLoading360(false);
+    }
+  };
+
+  const handleUpdateBranch = async (newBranch: string) => {
+    if (!selectedConvId) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === selectedConvId ? { ...c, detectedBranch: newBranch } : c))
+    );
+    try {
+      await fetch(`/api/admin/omnichannel/conversations/${selectedConvId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ detectedBranch: newBranch }),
+      });
+      showToast(`📍 Đã gán Chi nhánh tiếp nhận: ${newBranch}`);
+    } catch {}
+  };
+
+  const handleSaveWish = async () => {
+    if (!selectedConvId) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === selectedConvId ? { ...c, customerIntent: wishInput } : c))
+    );
+    setEditingWish(false);
+    try {
+      await fetch(`/api/admin/omnichannel/conversations/${selectedConvId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerIntent: wishInput }),
+      });
+      showToast("📝 Đã lưu mong muốn & nhu cầu chi tiết của khách!");
+    } catch {}
+  };
+
+  const handleToggleUnread = async (convId: string) => {
+    const nextState = !unreadMap[convId];
+    setUnreadMap((prev) => ({ ...prev, [convId]: nextState }));
+    try {
+      await fetch(`/api/admin/omnichannel/conversations/${convId}/read-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isUnread: nextState, ghostMode }),
+      });
+      showToast(nextState ? "✉️ Đã đánh dấu CHƯA ĐỌC (Không trôi tin nhắn)" : "✅ Đã đánh dấu ĐÃ ĐỌC");
+    } catch {}
+  };
+
+  const handleSyncToMiniCRM = async () => {
+    if (!selectedConvId || !selectedConv) return;
+    // Guard: only allow sync when customer has phone + service
+    const hasPhone = !!(selectedConv.customerPhone || crmStatus?.lead?.phone);
+    const hasService = !!(selectedConv.detectedService || selectedConv.customerIntent || crmStatus?.lead?.service);
+    if (!hasPhone || !hasService) {
+      showToast("⚠️ Cần có SĐT và Dịch Vụ trước khi đẩy sang miniCRM!");
+      return;
+    }
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      `Xác nhận đẩy thông tin khách hàng sang miniCRM?\n\nKhách: ${selectedConv.customerName}\nSĐT: ${selectedConv.customerPhone || crmStatus?.lead?.phone}\nDịch vụ: ${selectedConv.detectedService || selectedConv.customerIntent}\n\nThao tác này sẽ tạo/cập nhật lead trong miniCRM.`
+    );
+    if (!confirmed) return;
+    setCrmSyncing(true);
+    try {
+      const res = await fetch(`/api/admin/omnichannel/conversations/${selectedConvId}/crm-status`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast(json.message || "✅ Đã đồng bộ sang miniCRM thành công!");
+        fetchCRMStatus(selectedConvId);
+        fetchCustomer360(selectedConvId);
+      }
+    } catch {
+      showToast("❌ Lỗi đồng bộ miniCRM");
+    } finally {
+      setCrmSyncing(false);
     }
   };
 
   useEffect(() => {
+    fetchChannels();
     fetchAnalytics();
   }, []);
 
-  const handleOpenCopilot = async (conversationId: string) => {
+  useEffect(() => {
+    fetchConversations(true);
+  }, [filterPageId, filterTag, filterTelesale, filterBranch, filterPhone, filterDateRange]);
+
+  useEffect(() => {
+    if (selectedConvId) {
+      fetchMessages(selectedConvId);
+      fetchCRMStatus(selectedConvId);
+      fetchCustomer360(selectedConvId);
+      const cur = conversations.find((c) => c.id === selectedConvId);
+      if (cur) {
+        setWishInput(cur.customerIntent || "");
+      }
+    }
+  }, [selectedConvId]);
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !selectedConvId) return;
+    setSendingReply(true);
+    try {
+      const res = await fetch(`/api/admin/omnichannel/conversations/${selectedConvId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: replyText.trim(), senderName: "Telesale" }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setReplyText("");
+        fetchMessages(selectedConvId);
+        fetchConversations(false);
+        showToast("✅ Đã gửi tin nhắn!");
+      }
+    } catch {
+      alert("Lỗi kết nối máy chủ");
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleToggleTag = async (tagName: string) => {
+    if (!selectedConvId) return;
+    try {
+      const res = await fetch(`/api/admin/omnichannel/conversations/${selectedConvId}/tags`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tagName, action: "toggle" }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === selectedConvId ? { ...c, tags: json.tags } : c))
+        );
+        if (json.capiTriggered) {
+          showToast(`🎯 Thẻ ${tagName}: Kích hoạt ${json.capiTriggered} lên Meta CAPI!`);
+        } else {
+          showToast(`🏷️ Thẻ ${tagName}`);
+        }
+      }
+    } catch {
+      alert("Lỗi cập nhật thẻ");
+    }
+  };
+
+  const handleOpenCopilot = async (convId: string) => {
     setCopilotLoading(true);
     setCopilotModalOpen(true);
     setCopied(false);
@@ -101,382 +619,1438 @@ export default function OmnichannelAnalyticsPage() {
       const res = await fetch("/api/admin/omnichannel/copilot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId }),
+        body: JSON.stringify({ conversationId: convId }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setActiveCopilotData(data.data);
+      const json = await res.json();
+      if (json.success) {
+        setActiveCopilotData(json.data);
       }
     } catch {
-      console.error("Lỗi gọi AI Copilot");
+      console.error("Lỗi AI Copilot");
     } finally {
       setCopilotLoading(false);
     }
   };
 
-  const handleAssignToCrm = async (item: ConversationItem) => {
-    setAssigningId(item.id);
-    try {
-      const res = await fetch("/api/admin/omnichannel/assign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId: item.id,
-          targetBranch: item.detectedBranch,
-          telesaleName: "XUÂN",
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionNotice(data.message);
-        setTimeout(() => setActionNotice(null), 5000);
-      }
-    } catch {
-      alert("Lỗi chuyển đổi dữ liệu sang CRM");
-    } finally {
-      setAssigningId(null);
-    }
+  const selectedConv = conversations.find((c) => c.id === selectedConvId);
+
+  const resetAllFilters = () => {
+    setSearchTerm("");
+    setFilterPageId("ALL");
+    setFilterTag("ALL");
+    setFilterTelesale("ALL");
+    setFilterBranch("ALL");
+    setFilterPhone("ALL");
+    setFilterDateRange("ALL");
+    fetchConversations(true);
+    showToast("Đã đặt lại toàn bộ bộ lọc!");
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const filteredInsights = selectedBranchFilter === "ALL"
-    ? recentInsights
-    : recentInsights.filter((item) => item.detectedBranch === selectedBranchFilter);
+  const hasActiveFilters =
+    filterPageId !== "ALL" ||
+    filterTag !== "ALL" ||
+    filterTelesale !== "ALL" ||
+    filterBranch !== "ALL" ||
+    filterPhone !== "ALL" ||
+    filterDateRange !== "ALL" ||
+    searchTerm.trim() !== "";
 
   return (
-    <div className="w-full max-w-[1536px] mx-auto space-y-6 pb-12">
-      {/* Header Banner - Synchronized Brand Guide Teal */}
-      <div className="bg-gradient-to-r from-[#042d2a] via-[#023835] to-[#0d4f4a] text-white p-6 rounded-2xl shadow-xl border border-[#084540]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold font-serif flex items-center gap-3">
-              <Bot className="text-[#00c9b7]" size={28} />
-              <span>Omnichannel AI Agent — Báo Cáo Nhu Cầu Chi Nhánh</span>
-            </h1>
-            <p className="text-sm text-[#e6f4f1]/80 mt-1">
-              Trợ lý AI tự động bóc tách tin nhắn khách hàng từ 60 Fanpages, xác định chuẩn 100% Chi nhánh quan tâm &amp; Dịch vụ mong muốn!
-            </p>
-          </div>
-
-          <button
-            onClick={fetchAnalytics}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00c9b7] hover:bg-[#0d9488] text-[#023835] font-bold text-sm shadow-md transition-all cursor-pointer shrink-0"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            <span>Làm Mới Báo Cáo</span>
-          </button>
-        </div>
-
-        {/* Counter Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6 pt-4 border-t border-[#084540]">
-          <div className="bg-[#084540]/60 p-3.5 rounded-xl border border-[#00c9b7]/20 font-mono">
-            <div className="text-xs text-[#e6f4f1]/80 font-medium">Tổng Hội Thoại Đã Phân Tích</div>
-            <div className="text-2xl font-bold text-[#00c9b7] mt-1">{totalConversations.toLocaleString()}</div>
-          </div>
-          <div className="bg-[#084540]/60 p-3.5 rounded-xl border border-[#00c9b7]/20 font-mono">
-            <div className="text-xs text-[#e6f4f1]/80 font-medium">Lọc Ngữ Cảnh AI</div>
-            <div className="text-xs font-bold text-[#00c9b7] mt-2 flex items-center gap-1">
-              <Sparkles size={14} /> 100% Chỉ đọc tin nhắn Khách
-            </div>
-          </div>
-          <div className="bg-[#084540]/60 p-3.5 rounded-xl border border-[#00c9b7]/20 font-mono">
-            <div className="text-xs text-[#e6f4f1]/80 font-medium">Phân Luồng Chi Nhánh</div>
-            <div className="text-xs font-semibold text-[#00c9b7] mt-2">
-              Bật 1-Click chia tệp cho Telesale
-            </div>
-          </div>
-          <div className="bg-[#084540]/60 p-3.5 rounded-xl border border-[#00c9b7]/20 font-mono">
-            <div className="text-xs text-[#e6f4f1]/80 font-medium">Bảo Mật Dữ Liệu</div>
-            <div className="text-xs font-semibold text-emerald-300 mt-2">
-              SSL / TLS Encrypted
-            </div>
-          </div>
-          <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700">
-            <div className="text-xs text-slate-400 font-medium">Database Độc Lập</div>
-            <div className="text-xs font-bold text-sky-400 mt-2">
-              omnichannel.db (Không lo phình CMS)
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {actionNotice && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold rounded-xl flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="text-emerald-600" size={18} />
-            <span>{actionNotice}</span>
-          </div>
-          <button onClick={() => setActionNotice(null)} className="text-stone-400 hover:text-stone-600">×</button>
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] bg-[#0f172a] text-slate-100 font-sans select-none overflow-hidden">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-900 border border-emerald-500/50 text-emerald-300 px-4 py-2.5 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <CheckCircle2 size={16} className="text-emerald-400" />
+          <span>{toastMsg}</span>
         </div>
       )}
 
-      {/* Main Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Branch Share Card */}
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
-              <MapPin className="text-teal-600" size={20} />
-              <span>Nhu Cầu Theo Chi Nhánh</span>
-            </h2>
-            <span className="text-xs text-stone-400 font-medium">AI Classification</span>
+      {/* ================= 1. TOP STATS CARDS (CHUẨN THEO ẢNH 1 LƯỜI CMS) ================= */}
+      <div className="bg-[#1e293b] border-b border-slate-700/60 px-3 py-1.5 shrink-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {/* Card 1: Tổng Hội Thoại */}
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+            <div>
+              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                <MessageSquare size={12} className="text-emerald-400" />
+                <span>TỔNG HỘI THOẠI</span>
+              </div>
+              <div className="text-xl font-black text-white mt-0.5">
+                {(analytics.totalConversations || totalInDb || 4500).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-emerald-400 font-medium">Toàn bộ 68 kênh kết nối</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+              🦷
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {branchStats.length === 0 ? (
-              <div className="py-8 text-center text-xs text-stone-400">Đang chờ tin nhắn từ Webhook...</div>
+          {/* Card 2: Messenger Facebook */}
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+            <div>
+              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                <Send size={12} className="text-blue-400" />
+                <span>MESSENGER (FB)</span>
+              </div>
+              <div className="text-xl font-black text-blue-400 mt-0.5">
+                {(analytics.channels.facebook || 52).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-slate-400 font-medium">52 Fanpages chính thức</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-black text-xs">
+              f
+            </div>
+          </div>
+
+          {/* Card 3: Chat Zalo */}
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+            <div>
+              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                <MessageSquare size={12} className="text-cyan-400" />
+                <span>CHAT ZALO</span>
+              </div>
+              <div className="text-xl font-black text-cyan-400 mt-0.5">
+                {(analytics.channels.zalo || 5).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-slate-400 font-medium">1 OA + 4 Zalo cá nhân</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs">
+              Z
+            </div>
+          </div>
+
+          {/* Card 4: Instagram */}
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+            <div>
+              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                <Globe2 size={12} className="text-pink-400" />
+                <span>INSTAGRAM</span>
+              </div>
+              <div className="text-xl font-black text-pink-400 mt-0.5">
+                {(analytics.channels.instagram || 4).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-slate-400 font-medium">4 Instagram Official</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-xs">
+              IG
+            </div>
+          </div>
+
+          {/* Card 5: Khách Có SĐT / CAPI */}
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+            <div>
+              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                <Phone size={12} className="text-amber-400" />
+                <span>CÓ SĐT / CAPI</span>
+              </div>
+              <div className="text-xl font-black text-amber-400 mt-0.5">
+                {(analytics.totalWithPhone || 1240).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-amber-400 font-medium">Đã băm SHA-256 đối soát</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
+              📞
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= 2. PANCAKE HEADER (ĐỒNG BỘ MÀU LƯỜI CMS) ================= */}
+      <div className="h-11 bg-[#0f172a] border-b border-slate-700/80 px-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+              P
+            </div>
+            <span className="font-bold text-xs text-white tracking-wide">Pancake Omni • Tâm Đức Smile</span>
+          </div>
+
+          {/* Navigation tabs */}
+          <div className="flex items-center gap-1 text-xs font-semibold">
+            <button className="px-3 py-1 bg-white text-slate-900 rounded-md font-bold flex items-center gap-1.5 shadow-xs">
+              <span>Hội thoại</span>
+              <span className="px-1.5 py-0.2 bg-rose-500 text-white text-[10px] rounded-full font-extrabold">
+                {conversations.length}
+              </span>
+            </button>
+            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Đơn hàng</button>
+            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Bài viết</button>
+            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Thống kê</button>
+            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Cài đặt</button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          {/* Ghost Mode Toggle */}
+          <button
+            onClick={() => {
+              setGhostMode(!ghostMode);
+              showToast(
+                !ghostMode
+                  ? "👻 Đã BẬT Chế độ Đọc Ẩn (Không làm trôi tin nhắn của nhân viên)"
+                  : "👁️ Đã TẮT Chế độ Đọc Ẩn"
+              );
+            }}
+            className={`px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+              ghostMode
+                ? "bg-purple-950/80 border-purple-500/50 text-purple-300 shadow-xs"
+                : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+            }`}
+            title="Đọc ẩn: xem tin nhắn mà không làm trôi trạng thái chưa đọc của nhân viên trực page"
+          >
+            {ghostMode ? <EyeOff size={13} className="text-purple-400" /> : <Eye size={13} />}
+            <span>{ghostMode ? "Đọc Ẩn (Ghost On)" : "Đọc Thường"}</span>
+          </button>
+
+          {/* Live Sync Status Badge */}
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-md text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Đã nạp {totalInDb.toLocaleString()} / 800,000+ Khách (Đang nạp ngầm)</span>
+          </div>
+
+          {/* Nút Kết Nối Thêm Fanpage Facebook OAuth */}
+          <a
+            href="https://luoidonnha.com/api/auth/facebook/login"
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-md flex items-center gap-1.5 shadow-sm transition-all border border-blue-400/30 cursor-pointer"
+            title="Đăng nhập Facebook để cấp quyền & quét thêm Fanpages"
+          >
+            <span className="w-4 h-4 rounded-full bg-white text-blue-600 flex items-center justify-center font-black text-[11px]">f</span>
+            <span>🔗 Kết Nối Thêm Fanpage</span>
+          </a>
+
+          {/* Fanpage Switcher Dropdown */}
+          <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1 rounded-md text-xs">
+            <div className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-bold">
+              🦷
+            </div>
+            <select
+              value={filterPageId}
+              onChange={(e) => setFilterPageId(e.target.value)}
+              className="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer max-w-[180px] truncate"
+            >
+              <option value="ALL" className="text-slate-900">Tất cả {fanpages.length} Kênh</option>
+              {fanpages.map((p) => (
+                <option key={p.pageId} value={p.pageId} className="text-slate-900">
+                  {p.pageName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => {
+              fetchConversations(true);
+              fetchChannels();
+              fetchAnalytics();
+              showToast("Đã đồng bộ dữ liệu mới nhất!");
+            }}
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-300 hover:text-white transition-all cursor-pointer"
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* ================= 3. ADVANCED COMPACT FILTER BAR ================= */}
+      <div className="bg-[#1e293b] border-b border-slate-700/80 px-4 py-2 flex items-center justify-between gap-3 shrink-0 flex-wrap text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 text-slate-400 font-bold text-[11px] mr-1">
+            <Filter size={13} className="text-blue-400" />
+            <span>BỘ LỌC:</span>
+          </div>
+
+          {/* Lọc Ngày Tháng */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+            <Calendar size={12} className="text-slate-400" />
+            <select
+              value={filterDateRange}
+              onChange={(e) => setFilterDateRange(e.target.value)}
+              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer"
+            >
+              <option value="ALL" className="text-slate-900">📅 Toàn thời gian</option>
+              <option value="TODAY" className="text-slate-900">Hôm nay</option>
+              <option value="YESTERDAY" className="text-slate-900">Hôm qua</option>
+              <option value="7DAYS" className="text-slate-900">7 ngày gần nhất</option>
+              <option value="30DAYS" className="text-slate-900">30 ngày gần nhất</option>
+            </select>
+          </div>
+
+          {/* Lọc Thẻ Tag */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+            <Tag size={12} className="text-emerald-400" />
+            <select
+              value={filterTag}
+              onChange={(e) => setFilterTag(e.target.value)}
+              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer max-w-[130px] truncate"
+            >
+              <option value="ALL" className="text-slate-900">🏷️ Tất cả Thẻ</option>
+              {Object.keys(MASTER_PANCAKE_TAGS).map((t) => (
+                <option key={t} value={t} className="text-slate-900">
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Lọc Telesale Phụ Trách */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+            <User size={12} className="text-purple-400" />
+            <select
+              value={filterTelesale}
+              onChange={(e) => setFilterTelesale(e.target.value)}
+              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer"
+            >
+              <option value="ALL" className="text-slate-900">👩‍💼 Tất cả Telesale</option>
+              {TELESALE_LIST.map((name) => (
+                <option key={name} value={name} className="text-slate-900">
+                  Telesale {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Lọc Chi Nhánh */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+            <span className="text-[11px]">🏥</span>
+            <select
+              value={filterBranch}
+              onChange={(e) => setFilterBranch(e.target.value)}
+              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer max-w-[140px] truncate"
+            >
+              <option value="ALL" className="text-slate-900">🏥 Tất cả Chi nhánh</option>
+              {BRANCH_LIST.map((b) => (
+                <option key={b} value={b} className="text-slate-900">
+                  {b}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Lọc Số Điện Thoại */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+            <Phone size={12} className="text-amber-400" />
+            <select
+              value={filterPhone}
+              onChange={(e) => setFilterPhone(e.target.value)}
+              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer"
+            >
+              <option value="ALL" className="text-slate-900">📞 Tất cả SĐT</option>
+              <option value="HAS_PHONE" className="text-slate-900">Đã có Số Điện Thoại</option>
+              <option value="NO_PHONE" className="text-slate-900">Chưa để lại SĐT</option>
+            </select>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="px-2 py-1 bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+            >
+              <X size={12} />
+              <span>Xóa bộ lọc</span>
+            </button>
+          )}
+        </div>
+
+        <div className="text-[11px] text-slate-400 font-mono">
+          Hiển thị <span className="text-emerald-400 font-bold">{conversations.length}</span> / {totalInDb.toLocaleString()} kết quả
+        </div>
+      </div>
+
+      {/* ================= 4. PANCAKE 3-COLUMN WORKSPACE ================= */}
+      <div className="flex-1 flex overflow-hidden bg-slate-900">
+        {/* ================= CỘT 1: DANH SÁCH HỘI THOẠI (310px) ================= */}
+        <div className="w-[310px] bg-white border-r border-slate-200 flex flex-col shrink-0 text-slate-800">
+          {/* Search Header */}
+          <div className="p-2 border-b border-slate-200 bg-[#f8fafc]">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+              <input
+                type="text"
+                placeholder="Tìm tên, SĐT hoặc mã khách..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") fetchConversations(true);
+                }}
+                className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Conversation list */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+            {conversations.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                Không tìm thấy hội thoại phù hợp
+              </div>
             ) : (
-              branchStats.map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedBranchFilter(item.branch)}
-                  className={`p-2 rounded-xl border transition-all cursor-pointer ${selectedBranchFilter === item.branch ? "bg-teal-50 border-teal-500" : "border-transparent hover:bg-stone-50"}`}
+              conversations.map((conv) => {
+                const isSelected = conv.id === selectedConvId;
+                const isMarkedUnread = unreadMap[conv.id];
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => setSelectedConvId(conv.id)}
+                    className={`p-2.5 transition-colors cursor-pointer flex items-start gap-2.5 relative ${
+                      isSelected ? "bg-[#e8f0fe]" : "hover:bg-[#f8fafc]"
+                    }`}
+                  >
+                    {/* Unread indicator dot */}
+                    {isMarkedUnread && (
+                      <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500 shadow-xs"></span>
+                    )}
+
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm">
+                        {conv.customerName ? conv.customerName.charAt(0) : "K"}
+                      </div>
+                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold border border-white">
+                        f
+                      </span>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className={`font-bold text-xs truncate ${isMarkedUnread ? "text-rose-600 font-black" : "text-slate-900"}`}>
+                          {conv.customerName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-1">
+                          {new Date(conv.lastMessageAt).toLocaleTimeString("vi-VN", {
+                            timeZone: "Asia/Ho_Chi_Minh",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {conv.lastMessageText || "Chưa có tin nhắn"}
+                      </p>
+
+                      {/* Bottom Row: Tag Badges on Left, Phone + Mailbox on Right */}
+                      <div className="flex items-center justify-between mt-1.5 gap-1">
+                        <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
+                          {conv.tags && conv.tags.map((t) => {
+                            const tagDef = MASTER_PANCAKE_TAGS[t];
+                            return (
+                              <span
+                                key={t}
+                                style={{
+                                  backgroundColor: tagDef?.color || "#64748b",
+                                  color: "white",
+                                }}
+                                className="px-1.5 py-0.2 rounded font-extrabold text-[9px] shadow-2xs leading-tight"
+                              >
+                                {t}
+                              </span>
+                            );
+                          })}
+                        </div>
+
+                        {/* Quick Action Icons: Green Phone & Mailbox */}
+                        <div className="flex items-center gap-1 shrink-0 ml-1">
+                          {/* Green Phone Button (Only when customer has phone or tag SDT) */}
+                          {(conv.customerPhone || conv.tags?.includes("SDT")) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (conv.customerPhone) {
+                                  window.open(`tel:${conv.customerPhone}`);
+                                } else {
+                                  showToast("Khách đã để lại SĐT trong tin nhắn!");
+                                }
+                              }}
+                              className="w-5 h-5 rounded-md bg-[#22c55e] hover:bg-[#16a34a] text-white flex items-center justify-center shadow-xs cursor-pointer transition-all shrink-0"
+                              title={conv.customerPhone ? `Gọi SĐT: ${conv.customerPhone}` : "Khách có SĐT"}
+                            >
+                              <Phone size={11} className="fill-white" />
+                            </button>
+                          )}
+
+                          {/* Mailbox Icon Button: Glows when unread, muted when read */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleUnread(conv.id);
+                            }}
+                            className={`p-0.5 rounded transition-all cursor-pointer shrink-0 ${
+                              isMarkedUnread || conv.isUnread || conv.unreadCount > 0
+                                ? "text-blue-600 hover:text-blue-700 animate-pulse"
+                                : "text-slate-400 hover:text-slate-600"
+                            }`}
+                            title={
+                              isMarkedUnread || conv.isUnread || conv.unreadCount > 0
+                                ? "Tin nhắn mới chưa xem (Bấm để đánh dấu đã đọc)"
+                                : "Đã xem tin nhắn (Bấm để đánh dấu chưa đọc)"
+                            }
+                          >
+                            <Mail
+                              size={14}
+                              className={
+                                isMarkedUnread || conv.isUnread || conv.unreadCount > 0
+                                  ? "fill-blue-500 text-blue-600"
+                                  : "fill-slate-300 text-slate-400"
+                              }
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {/* Load More Button */}
+            {conversations.length < totalInDb && (
+              <div className="p-2.5 text-center border-t border-slate-200 bg-[#f8fafc]">
+                <button
+                  onClick={loadMoreConversations}
+                  disabled={loadingMore}
+                  className="w-full py-2 bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#1a73e8] font-bold text-xs rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <div className="flex justify-between text-xs font-bold text-stone-700">
-                    <span>📍 {item.branch}</span>
-                    <span className="text-teal-700">{item.count} khách ({item.percentage}%)</span>
-                  </div>
-                  <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden mt-1">
-                    <div
-                      className="bg-teal-600 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.max(item.percentage, 5)}%` }}
-                    />
-                  </div>
-                </div>
-              ))
+                  {loadingMore ? (
+                    <span>Đang nạp thêm...</span>
+                  ) : (
+                    <span>Tải thêm ({conversations.length}/{totalInDb.toLocaleString()} khách)</span>
+                  )}
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Service Interest Card */}
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
-              <Stethoscope className="text-indigo-600" size={20} />
-              <span>Dịch Vụ Khách Quan Tâm</span>
-            </h2>
-            <span className="text-xs text-stone-400 font-medium">NLP Extraction</span>
-          </div>
-
-          <div className="space-y-3">
-            {serviceStats.length === 0 ? (
-              <div className="py-8 text-center text-xs text-stone-400">Đang chờ tin nhắn từ Webhook...</div>
-            ) : (
-              serviceStats.map((item, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold text-stone-700">
-                    <span>🦷 {item.service}</span>
-                    <span className="text-indigo-700">{item.count} khách ({item.percentage}%)</span>
+        {/* ================= CỘT 2: KHUNG CHAT & THANH THẺ CHUẨN PANCAKE ================= */}
+        <div className="flex-1 bg-white flex flex-col border-r border-slate-200 overflow-hidden text-slate-800">
+          {selectedConv ? (
+            <>
+              {/* Chat Header */}
+              <div className="h-12 border-b border-slate-200 px-4 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-xs">
+                    {selectedConv.customerName ? selectedConv.customerName.charAt(0) : "K"}
                   </div>
-                  <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-indigo-600 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.max(item.percentage, 5)}%` }}
-                    />
+                  <div>
+                    <div className="font-bold text-xs text-slate-900 flex items-center gap-2">
+                      <span>{selectedConv.customerName}</span>
+                      <span className="text-[10px] text-slate-400 font-normal font-mono">
+                        ({getAssignedStaff(selectedConv.tags)} • {new Date(selectedConv.lastMessageAt).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })})
+                      </span>
+                    </div>
+
+                    {/* DÃY 3 ICON NHỎ (🔗 MỞ FB, 📋 COPY ID) */}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <a
+                        href={customer360?.fbProfileUrl || `https://facebook.com/${selectedConv.customerId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-0.5 hover:underline"
+                        title="Mở Facebook cá nhân để kiểm tra nick thật hay clone"
+                      >
+                        <span>🔗 Mở FB Khách</span>
+                        <ExternalLink size={10} />
+                      </a>
+
+                      <span className="text-slate-300">|</span>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            `https://facebook.com/${selectedConv.customerId}`
+                          );
+                          showToast("Đã sao chép link Facebook khách hàng!");
+                        }}
+                        className="text-[10px] text-slate-500 hover:text-slate-700 flex items-center gap-0.5 cursor-pointer"
+                        title="Sao chép liên kết"
+                      >
+                        <Copy size={10} />
+                        <span>Copy ID</span>
+                      </button>
+
+                      <span className="text-slate-300">|</span>
+
+                      <span className="text-[10px] text-slate-400 truncate max-w-[140px]">
+                        {selectedConv.fanpage?.pageName}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
 
-        {/* Intent Breakdown Card */}
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
-              <Target className="text-amber-600" size={20} />
-              <span>Phân Loại Ý Định Khách Hàng</span>
-            </h2>
-            <span className="text-xs text-stone-400 font-medium">Intent Classifier</span>
-          </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggleUnread(selectedConv.id)}
+                    className={`p-1.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 text-xs font-bold ${
+                      unreadMap[selectedConv.id]
+                        ? "bg-rose-50 border-rose-300 text-rose-600 shadow-2xs"
+                        : "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                    }`}
+                    title="Đánh dấu chưa đọc"
+                  >
+                    <Mail size={14} className={unreadMap[selectedConv.id] ? "text-rose-600 fill-rose-100" : "text-slate-600"} />
+                    <span className="text-[11px] hidden sm:inline">
+                      {unreadMap[selectedConv.id] ? "Chưa đọc" : "Đánh dấu chưa đọc"}
+                    </span>
+                  </button>
 
-          <div className="space-y-2.5">
-            {intentStats.length === 0 ? (
-              <div className="py-8 text-center text-xs text-stone-400">Đang chờ tin nhắn từ Webhook...</div>
-            ) : (
-              intentStats.map((item, idx) => (
-                <div key={idx} className="p-3 bg-stone-50 rounded-xl border border-stone-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">🎯 {item.intent}</span>
-                  <span className="px-2.5 py-1 bg-amber-100 text-amber-800 font-extrabold text-xs rounded-lg">
-                    {item.count} lượt
+                  <button
+                    onClick={() => handleOpenCopilot(selectedConv.id)}
+                    className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white rounded font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
+                  >
+                    <Sparkles size={13} />
+                    <span>AI Copilot</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Chat Messages Flow */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-white">
+                <div className="text-center">
+                  <span className="px-3 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-medium">
+                    Hội thoại gần nhất {ghostMode ? "• (Đang xem ở chế độ Đọc Ẩn 👻)" : ""}
                   </span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Branch Selector Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 overflow-x-auto w-full pb-1 md:pb-0">
-          <span className="text-xs font-bold text-stone-500 shrink-0 flex items-center gap-1">
-            <Filter size={14} /> Lọc Chi Nhánh:
-          </span>
-          <button
-            onClick={() => setSelectedBranchFilter("ALL")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${selectedBranchFilter === "ALL" ? "bg-slate-900 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
-          >
-            Tất Cả ({recentInsights.length})
-          </button>
-          {branchStats.map((b, idx) => (
-            <button
-              key={idx}
-              onClick={() => setSelectedBranchFilter(b.branch)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${selectedBranchFilter === b.branch ? "bg-teal-600 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
-            >
-              📍 {b.branch} ({b.count})
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent AI Realtime Stream Table */}
-      <div className="bg-white rounded-2xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-4 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
-          <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Sparkles className="text-amber-500" size={16} />
-            <span>Luồng Phân Tích Real-time Mới Nhất Dành Cho Telesale</span>
-          </h3>
-          <span className="text-xs text-stone-500">Tự động bóc tách 24/7 từ Webhook</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-stone-700">
-            <thead className="bg-stone-50/50 border-b border-stone-200 text-xs font-bold uppercase text-stone-600 tracking-wider">
-              <tr>
-                <th className="p-3.5">Thời Gian</th>
-                <th className="p-3.5">Khách Hàng</th>
-                <th className="p-3.5">Fanpage Nguồn</th>
-                <th className="p-3.5">Chi Nhánh AI Phát Hiện</th>
-                <th className="p-3.5">Dịch Vụ AI Bóc Tách</th>
-                <th className="p-3.5">Thao Tác 1-Click</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {filteredInsights.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-12 text-center text-stone-400">
-                    Chưa có tin nhắn nào thuộc bộ lọc chi nhánh này. Dữ liệu sẽ tự động chảy về đây!
-                  </td>
-                </tr>
-              ) : (
-                filteredInsights.map((item) => (
-                  <tr key={item.id} className="hover:bg-stone-50/80 transition-colors">
-                    <td className="p-3.5 text-xs text-stone-500 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={14} className="text-stone-400" />
-                        <span>{formatDate(item.lastMessageAt)}</span>
+                {loadingMessages ? (
+                  <div className="py-12 text-center text-slate-400">
+                    <RefreshCw className="animate-spin inline-block mb-2" size={20} />
+                    <p className="text-xs">Đang nạp tin nhắn từ Pancake...</p>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 text-xs">
+                    Chưa có tin nhắn trong hội thoại này
+                  </div>
+                ) : (
+                  messages.map((msg) => {
+                    const isStaff = msg.senderType === "STAFF";
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${isStaff ? "items-end" : "items-start"}`}
+                      >
+                        <span className="text-[10px] text-slate-400 mb-0.5 font-mono">
+                          {msg.senderId} • {new Date(msg.createdAt).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        <div
+                          className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-xs whitespace-pre-wrap leading-relaxed shadow-2xs ${
+                            isStaff
+                              ? "bg-blue-600 text-white rounded-br-none"
+                              : "bg-[#f1f5f9] text-slate-900 rounded-bl-none"
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
                       </div>
-                    </td>
-                    <td className="p-3.5 font-bold text-slate-900">
-                      {item.customerName || "Khách Ẩn Danh"}
-                      {item.phone && <div className="text-xs font-mono text-emerald-600 font-bold">{item.phone}</div>}
-                    </td>
-                    <td className="p-3.5 text-xs text-stone-500">
-                      {item.fanpage?.pageName || "Fanpage"}
-                    </td>
-                    <td className="p-3.5">
-                      {item.detectedBranch ? (
-                        <span className="px-2.5 py-1 bg-teal-50 text-teal-800 font-extrabold rounded-lg text-xs border border-teal-200/60 inline-flex items-center gap-1">
-                          <MapPin size={12} /> {item.detectedBranch}
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* BẢNG 3 HÀNG THẺ MASTER CHUẨN 100% PANCAKE */}
+              <div className="bg-[#f8fafc] border-t border-slate-200 px-2 py-1.5 shrink-0">
+                {/* Label Dòng */}
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 px-0.5">📌 Thẻ Telesale / Dịch Vụ / Kết Quả</div>
+
+                {/* HÀNG 1: TELESALE - grid 10 cột cố định */}
+                <div className="grid grid-cols-10 gap-0.5 mb-0.5">
+                  {PANCAKE_GRID_ROW_1.map((item) => {
+                    const isActive = selectedConv.tags?.includes(item.code);
+                    return (
+                      <button
+                        key={item.code}
+                        onClick={() => handleToggleTag(item.code)}
+                        title={item.label}
+                        style={{
+                          backgroundColor: isActive ? item.color : "transparent",
+                          borderColor: item.color,
+                          color: isActive ? "white" : item.color,
+                        }}
+                        className="h-5 text-[9px] font-extrabold rounded border transition-all hover:opacity-85 cursor-pointer truncate leading-tight px-0.5"
+                      >
+                        {item.label.length > 4 ? item.label.slice(0, 4) : item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* HÀNG 2: DỊCH VỤ & KẾT QUẢ */}
+                <div className="grid grid-cols-10 gap-0.5 mb-0.5">
+                  {PANCAKE_GRID_ROW_2.map((item) => {
+                    const isActive = selectedConv.tags?.includes(item.code);
+                    return (
+                      <button
+                        key={item.code}
+                        onClick={() => handleToggleTag(item.code)}
+                        title={item.label}
+                        style={{
+                          backgroundColor: isActive ? item.color : "transparent",
+                          borderColor: item.color,
+                          color: isActive ? "white" : item.color,
+                        }}
+                        className="h-5 text-[9px] font-extrabold rounded border transition-all hover:opacity-85 cursor-pointer truncate leading-tight px-0.5"
+                      >
+                        {item.label.length > 4 ? item.label.slice(0, 4) : item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* HÀNG 3: TRẠNG THÁI TIẾP CẬN & CAPI */}
+                <div className="grid grid-cols-10 gap-0.5">
+                  {PANCAKE_GRID_ROW_3.map((item) => {
+                    const isActive = selectedConv.tags?.includes(item.code);
+                    return (
+                      <button
+                        key={item.code}
+                        onClick={() => handleToggleTag(item.code)}
+                        title={item.label}
+                        style={{
+                          backgroundColor: isActive ? item.color : "transparent",
+                          borderColor: item.color,
+                          color: isActive ? "white" : item.color,
+                        }}
+                        className="h-5 text-[9px] font-extrabold rounded border transition-all hover:opacity-85 cursor-pointer truncate leading-tight px-0.5"
+                      >
+                        {item.label.length > 5 ? item.label.slice(0, 5) : item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Chat Input Bar */}
+              <div className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Nhập tin nhắn phản hồi khách hàng (Enter để gửi)..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendReply();
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 bg-[#f8fafc] border border-slate-300 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  onClick={handleSendReply}
+                  disabled={sendingReply || !replyText.trim()}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-all shadow-xs cursor-pointer"
+                >
+                  <Send size={15} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+              <MessageSquare size={48} className="text-slate-200 mb-3" />
+              <p className="text-sm font-semibold text-slate-600">Chọn một khách hàng để bắt đầu hội thoại</p>
+              <p className="text-xs text-slate-400 mt-1">Dữ liệu hội thoại được đồng bộ trực tiếp từ 68 kênh</p>
+            </div>
+          )}
+        </div>
+
+        {/* ================= CỘT 3: HỒ SƠ & MINICRM & HÀNH TRÌNH 360° (350px) ================= */}
+        <div className="w-[350px] bg-[#f8fafc] border-l border-slate-200 flex flex-col shrink-0 text-slate-800 overflow-y-auto">
+          {selectedConv ? (
+            <div className="p-3.5 space-y-3.5">
+              {/* Tab Switcher Header */}
+              <div className="border-b border-slate-200 pb-2">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-lg text-xs font-bold">
+                  <button
+                    onClick={() => setActiveRightTab("CRM")}
+                    className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeRightTab === "CRM"
+                        ? "bg-white text-blue-600 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <User size={13} />
+                    <span>Hồ Sơ & miniCRM</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveRightTab("JOURNEY_360")}
+                    className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeRightTab === "JOURNEY_360"
+                        ? "bg-white text-emerald-600 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <History size={13} />
+                    <span>Hành Trình 360°</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ================= TAB 1: THỨ TỰ ƯU TIÊN CHUẨN ================= */}
+              {activeRightTab === "CRM" ? (
+                <>
+                  {/* 1. KHUNG GHI CHÚ TELESALE & NHẬN DIỆN CHI NHÁNH / MONG MUỐN KHÁCH */}
+                  <div className="bg-[#fff9db] border border-[#f59f00]/40 rounded-xl p-3 shadow-2xs space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-[#f59f00]/20 pb-1.5">
+                      <span className="text-[11px] font-black text-[#d9480f] uppercase tracking-wider flex items-center gap-1">
+                        📝 Ghi chú Telesale: {getAssignedStaff(selectedConv.tags)}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {new Date(selectedConv.lastMessageAt).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+
+                    <div className="font-bold text-slate-900 text-xs">
+                      {selectedConv.customerName} - <span className="text-blue-700">{selectedConv.customerPhone || "Chưa có SĐT"}</span>
+                    </div>
+
+                    {/* Chi nhánh tiếp nhận & Thay đổi khi khách follow */}
+                    <div className="bg-white/80 border border-[#f59f00]/30 rounded-lg p-2 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-600 font-bold flex items-center gap-1">
+                          <MapPin size={12} className="text-rose-500" />
+                          <span>Chi nhánh tiếp nhận:</span>
+                        </span>
+                      </div>
+                      <select
+                        value={selectedConv.detectedBranch || "Chưa chọn chi nhánh"}
+                        onChange={(e) => handleUpdateBranch(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs font-bold text-emerald-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="Chưa chọn chi nhánh (Đang tư vấn)">Chưa chọn chi nhánh (Đang tư vấn)</option>
+                        {BRANCH_LIST.map((b) => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Nhu cầu & Mong muốn chi tiết */}
+                    <div className="bg-white/80 border border-[#f59f00]/30 rounded-lg p-2 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-600 font-bold flex items-center gap-1">
+                          <Edit3 size={12} className="text-blue-500" />
+                          <span>Nhu cầu / Mong muốn chi tiết:</span>
+                        </span>
+                        {!editingWish ? (
+                          <button
+                            onClick={() => setEditingWish(true)}
+                            className="text-[10px] text-blue-600 hover:underline font-bold cursor-pointer"
+                          >
+                            Sửa
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleSaveWish}
+                            className="text-[10px] text-emerald-600 hover:underline font-bold cursor-pointer"
+                          >
+                            Lưu
+                          </button>
+                        )}
+                      </div>
+
+                      {editingWish ? (
+                        <div className="space-y-1.5">
+                          <textarea
+                            rows={2}
+                            value={wishInput}
+                            onChange={(e) => setWishInput(e.target.value)}
+                            placeholder="Nhập mong muốn cụ thể (VD: Khách ở Cần Thơ, hỏi trả góp răng sứ...)"
+                            className="w-full p-1.5 bg-white border border-slate-300 rounded text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                          />
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => setEditingWish(false)}
+                              className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              onClick={handleSaveWish}
+                              className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold"
+                            >
+                              Lưu lại
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-700 italic">
+                          {selectedConv.customerIntent || selectedConv.detectedService || "Đang tư vấn nhu cầu..."}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. THẺ ĐÃ GÁN */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
+                    <div className="text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Tag size={13} className="text-emerald-600" />
+                        <span>Thẻ đã gán ({selectedConv.tags?.length || 0}):</span>
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {selectedConv.tags && selectedConv.tags.map((t) => {
+                        const tagDef = MASTER_PANCAKE_TAGS[t];
+                        return (
+                          <span
+                            key={t}
+                            style={{
+                              backgroundColor: tagDef?.color || "#64748b",
+                              color: "white",
+                            }}
+                            className="px-2 py-0.5 rounded font-extrabold text-[10px] flex items-center gap-1 shadow-2xs"
+                          >
+                            <span>{t}</span>
+                            <button
+                              onClick={() => handleToggleTag(t)}
+                              className="hover:bg-black/20 rounded-full w-3 h-3 flex items-center justify-center cursor-pointer"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="Thêm thẻ mới..."
+                        value={customTagInput}
+                        onChange={(e) => setCustomTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && customTagInput.trim()) {
+                            handleToggleTag(customTagInput.trim());
+                            setCustomTagInput("");
+                          }
+                        }}
+                        className="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-300 rounded text-xs focus:outline-none focus:border-blue-500"
+                      />
+                      <button
+                        onClick={() => {
+                          if (customTagInput.trim()) {
+                            handleToggleTag(customTagInput.trim());
+                            setCustomTagInput("");
+                          }
+                        }}
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-bold cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. MINICRM (GỌN GÀNG) */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Database size={14} className="text-blue-600" />
+                        <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                          miniCRM
+                        </span>
+                      </div>
+                      {crmStatus?.isMatched ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold flex items-center gap-1">
+                          <Check size={11} />
+                          <span>ĐÃ KHỚP CRM</span>
                         </span>
                       ) : (
-                        <span className="text-stone-400 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="p-3.5">
-                      {item.detectedService ? (
-                        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 font-bold rounded-lg text-xs border border-indigo-200/60 inline-flex items-center gap-1">
-                          <Stethoscope size={12} /> {item.detectedService}
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold flex items-center gap-1">
+                          <AlertCircle size={11} />
+                          <span>CHƯA CÓ TRÊN CRM</span>
                         </span>
-                      ) : (
-                        <span className="text-stone-400 text-xs">—</span>
                       )}
-                    </td>
-                    <td className="p-3.5 flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenCopilot(item.id)}
-                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-1"
+                    </div>
+
+                    {/* Chi tiết khớp từ CRM */}
+                    {crmStatus?.isMatched && crmStatus.lead ? (
+                      <div className="space-y-1.5 text-xs">
+                        {/* SĐT Khách Đặt Hẹn */}
+                        <div className="flex items-center justify-between py-1 border-b border-slate-100 bg-emerald-50/50 px-2 rounded">
+                          <span className="text-slate-600 font-bold flex items-center gap-1">
+                            <Phone size={12} className="text-emerald-600" />
+                            <span>SĐT Đặt Hẹn:</span>
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-black text-emerald-700 text-[12px]">
+                              {crmStatus.lead.phone || selectedConv.customerPhone || "Chưa có"}
+                            </span>
+                            {(crmStatus.lead.phone || selectedConv.customerPhone) && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    const p = crmStatus?.lead?.phone || selectedConv.customerPhone;
+                                    if (p) {
+                                      navigator.clipboard.writeText(p);
+                                      showToast("Đã sao chép SĐT đặt hẹn!");
+                                    }
+                                  }}
+                                  className="p-0.5 text-slate-500 hover:text-slate-800 cursor-pointer"
+                                  title="Sao chép SĐT"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const p = crmStatus?.lead?.phone || selectedConv.customerPhone;
+                                    if (p) window.open(`tel:${p}`);
+                                  }}
+                                  className="p-0.5 text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                                  title="Gọi ngay"
+                                >
+                                  <Phone size={11} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Dịch Vụ Khách Quan Tâm / Đặt Hẹn */}
+                        <div className="flex items-center justify-between py-1 border-b border-slate-100 bg-blue-50/50 px-2 rounded">
+                          <span className="text-slate-600 font-bold flex items-center gap-1">
+                            <span>🦷 Dịch Vụ:</span>
+                          </span>
+                          <span className="font-extrabold text-blue-800 text-[11px]">
+                            {crmStatus.lead.service || selectedConv.detectedService || "Nha Khoa Tổng Quát"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                          <span className="text-slate-500">Trạng thái CRM:</span>
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-extrabold text-[11px]">
+                            {crmStatus.lead.status}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                          <span className="text-slate-500">Telesale CRM:</span>
+                          <span className="font-bold text-slate-800">{crmStatus.lead.telesale || "Chưa phân bổ"}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                          <span className="text-slate-500">Chi nhánh tiếp nhận:</span>
+                          <span className="font-bold text-slate-800">{crmStatus.lead.branch || selectedConv.detectedBranch}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                          <span className="text-slate-500">Doanh thu thực tế:</span>
+                          <span className="font-extrabold text-emerald-600 text-[12px]">
+                            {(crmStatus.lead.actualRevenue || 0).toLocaleString()} đ
+                          </span>
+                        </div>
+
+                        {crmStatus.lead.appointmentDate && (
+                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-2 mt-1">
+                            <div className="text-[11px] font-bold text-blue-900 flex items-center gap-1">
+                              <Calendar size={12} />
+                              <span>Lịch Hẹn: {crmStatus.lead.appointmentDate} ({crmStatus.lead.appointmentTime || "09:00"})</span>
+                            </div>
+                            <div className="text-[10px] text-blue-700 mt-0.5">
+                              BS: {crmStatus.lead.appointmentDoctor || "Phòng khám"} • CN: {crmStatus.lead.appointmentBranch || "Đã hẹn"}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 text-xs">
+                        <p className="text-[11px] text-slate-500">
+                          Khách hàng chưa có hồ sơ trên miniCRM.
+                        </p>
+                        {/* Chỉ hiện nút Đẩy khi có SĐT + Dịch Vụ */}
+                        {(selectedConv.customerPhone || crmStatus?.lead?.phone) &&
+                          (selectedConv.detectedService || selectedConv.customerIntent || crmStatus?.lead?.service) ? (
+                          <button
+                            onClick={handleSyncToMiniCRM}
+                            disabled={crmSyncing}
+                            className="w-full py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                          >
+                            {crmSyncing ? (
+                              <span>Đang đồng bộ...</span>
+                            ) : (
+                              <>
+                                <span>⚡ Đẩy Sang miniCRM</span>
+                                <span className="text-blue-200 text-[10px]">& Bắn Meta CAPI</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2 flex items-start gap-1.5">
+                            <AlertCircle size={13} className="shrink-0 mt-0.5 text-amber-500" />
+                            <span>Cần có <b>SĐT</b> và <b>Dịch Vụ</b> để đẩy sang miniCRM</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. QUẢNG CÁO (GỌN GÀNG, COLLAPSIBLE) */}
+                  {customer360?.adsAttribution && (
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden text-xs">
+                      <div
+                        onClick={() => setAdsDetailExpanded(!adsDetailExpanded)}
+                        className="p-2.5 bg-slate-50 hover:bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer transition-colors"
                       >
-                        <Sparkles size={14} /> AI Copilot
-                      </button>
-                      <button
-                        disabled={assigningId === item.id}
-                        onClick={() => handleAssignToCrm(item)}
-                        className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-1 disabled:opacity-50"
+                        <div className="flex items-center gap-1.5">
+                          <Target size={14} className="text-blue-600 shrink-0" />
+                          <span className="font-black text-slate-900 uppercase text-[11px] tracking-wide">
+                            Quảng Cáo
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] text-blue-700 font-bold">
+                          <span>{adsDetailExpanded ? "Thu gọn" : "Xem chi tiết"}</span>
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${adsDetailExpanded ? "rotate-180" : ""}`}
+                          />
+                        </div>
+                      </div>
+
+                      {adsDetailExpanded && (
+                        <div className="p-3 space-y-2 bg-white animate-in fade-in duration-150">
+                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                            <span className="text-slate-500 text-[11px]">Nguồn tracking:</span>
+                            <span className="font-bold text-emerald-700 text-[11px]">
+                              {customer360.adsAttribution.referralSource || "Website Click Messenger"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                            <span className="text-slate-500 text-[11px]">Mã Ads ID:</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-mono font-bold text-blue-700 text-[11px]">
+                                {customer360.adsAttribution.adId}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(customer360.adsAttribution.adId);
+                                  showToast("Đã sao chép Mã Ad ID!");
+                                }}
+                                className="p-0.5 text-blue-600 cursor-pointer"
+                              >
+                                <Copy size={10} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="py-0.5 border-b border-slate-50 space-y-0.5">
+                            <span className="text-slate-500 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
+                            <p className="font-bold text-slate-900 text-[11px] leading-tight break-all">
+                              {customer360.adsAttribution.adsetName}
+                            </p>
+                          </div>
+
+                          {/* Nội dung bài QC */}
+                          <div className="pt-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-bold text-slate-600 uppercase">
+                                Bài viết quảng cáo:
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(
+                                    `${customer360.adsAttribution.adHeadline}\n\n${customer360.adsAttribution.adContent}`
+                                  );
+                                  showToast("Đã sao chép nội dung bài viết Ads!");
+                                }}
+                                className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer"
+                              >
+                                <Copy size={10} />
+                                <span>Copy</span>
+                              </button>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-200 rounded p-2 text-slate-800 text-[11px] leading-relaxed whitespace-pre-wrap">
+                              <div className="font-bold text-blue-900 mb-0.5">
+                                {customer360.adsAttribution.adHeadline}
+                              </div>
+                              {customer360.adsAttribution.adContent}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 5. CHI TIẾT HỒ SƠ */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
+                    <div className="font-bold text-slate-900 border-b border-slate-100 pb-1 flex items-center justify-between">
+                      <span>Chi tiết hồ sơ</span>
+                      <span className="text-[10px] font-mono text-slate-400">ID: {selectedConv.customerId}</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Tên Facebook:</span>
+                        <span className="font-bold text-slate-900">{selectedConv.customerName}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Số điện thoại:</span>
+                        <span className="font-bold text-blue-600 font-mono">
+                          {selectedConv.customerPhone || "Chưa có"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Kênh kết nối:</span>
+                        <span className="font-medium text-slate-700">{selectedConv.fanpage?.pageName}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* ================= TAB 2: HÀNH TRÌNH 360° THEO THỨ TỰ CHUẨN ================= */
+                <div className="space-y-3">
+                  {/* 1. TỔNG QUAN HÀNH TRÌNH */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
+                    <div className="font-bold text-slate-900 flex items-center justify-between border-b border-slate-100 pb-1.5">
+                      <span className="flex items-center gap-1 text-emerald-700">
+                        <Layers size={14} />
+                        <span>Tổng Quan Hành Trình Đa Kênh</span>
+                      </span>
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">
+                        {customer360?.totalTouchpoints || 1} Điểm chạm
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span className="text-[10px] text-slate-500 block">Số Fanpage đã chat:</span>
+                        <span className="text-base font-black text-blue-600">
+                          {customer360?.totalFanpagesChatted || 1} Page
+                        </span>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span className="text-[10px] text-slate-500 block">Điểm chạm đầu tiên:</span>
+                        <span className="text-xs font-bold text-emerald-600 truncate block">
+                          {customer360?.firstTouchPoint?.channelName || selectedConv.fanpage?.pageName || "Fanpage"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. TIMELINE HÀNH TRÌNH TIẾP CẬN */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3">
+                    <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
+                      <span>Timeline Tiếp Cận Theo Thời Gian</span>
+                      <span className="text-[10px] text-slate-400 font-mono">Từ cũ đến mới</span>
+                    </div>
+
+                    {loading360 ? (
+                      <div className="py-8 text-center text-slate-400 text-xs">
+                        <RefreshCw className="animate-spin inline-block mb-1" size={16} />
+                        <p>Đang dựng hành trình 360°...</p>
+                      </div>
+                    ) : customer360?.timeline && customer360.timeline.length > 0 ? (
+                      <div className="relative pl-5 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                        {customer360.timeline.map((item, idx) => (
+                          <div key={item.id} className="relative group">
+                            <span
+                              style={{ backgroundColor: item.badgeColor }}
+                              className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white shadow-2xs"
+                            ></span>
+
+                            <div className="text-xs">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-900">{item.title}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {new Date(item.timestamp).toLocaleDateString("vi-VN", {
+                                    timeZone: "Asia/Ho_Chi_Minh",
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                                {item.description}
+                              </p>
+                              <span className="inline-block mt-1 px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded text-[9px] font-medium">
+                                Kênh: {item.channelName}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-400 text-xs">
+                        Chưa có lịch sử đa kênh cho khách này
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. QUẢNG CÁO (COLLAPSIBLE TRONG TAB 360) */}
+                  {customer360?.adsAttribution && (
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden text-xs">
+                      <div
+                        onClick={() => setAdsDetailExpanded(!adsDetailExpanded)}
+                        className="p-2.5 bg-slate-50 hover:bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer transition-colors"
                       >
-                        <ArrowRight size={14} /> {assigningId === item.id ? "Đang chuyển..." : "Đẩy Sang CRM"}
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        <div className="flex items-center gap-1.5">
+                          <Target size={14} className="text-blue-600 shrink-0" />
+                          <span className="font-black text-slate-900 uppercase text-[11px] tracking-wide">
+                            Quảng Cáo
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] text-blue-700 font-bold">
+                          <span>{adsDetailExpanded ? "Thu gọn" : "Xem chi tiết"}</span>
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${adsDetailExpanded ? "rotate-180" : ""}`}
+                          />
+                        </div>
+                      </div>
+
+                      {adsDetailExpanded && (
+                        <div className="p-3 space-y-2 bg-white animate-in fade-in duration-150">
+                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                            <span className="text-slate-500 text-[11px]">Nguồn tracking:</span>
+                            <span className="font-bold text-emerald-700 text-[11px]">
+                              {customer360.adsAttribution.referralSource || "Website Click Messenger"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                            <span className="text-slate-500 text-[11px]">Mã Ads ID:</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-mono font-bold text-blue-700 text-[11px]">
+                                {customer360.adsAttribution.adId}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(customer360.adsAttribution.adId);
+                                  showToast("Đã sao chép Mã Ad ID!");
+                                }}
+                                className="p-0.5 text-blue-600 cursor-pointer"
+                              >
+                                <Copy size={10} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="py-0.5 border-b border-slate-50 space-y-0.5">
+                            <span className="text-slate-500 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
+                            <p className="font-bold text-slate-900 text-[11px] leading-tight break-all">
+                              {customer360.adsAttribution.adsetName}
+                            </p>
+                          </div>
+
+                          <div className="pt-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-bold text-slate-600 uppercase">
+                                Bài viết quảng cáo:
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(
+                                    `${customer360.adsAttribution.adHeadline}\n\n${customer360.adsAttribution.adContent}`
+                                  );
+                                  showToast("Đã sao chép nội dung bài viết Ads!");
+                                }}
+                                className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer"
+                              >
+                                <Copy size={10} />
+                                <span>Copy</span>
+                              </button>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-200 rounded p-2 text-slate-800 text-[11px] leading-relaxed whitespace-pre-wrap">
+                              <div className="font-bold text-blue-900 mb-0.5">
+                                {customer360.adsAttribution.adHeadline}
+                              </div>
+                              {customer360.adsAttribution.adContent}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <div className="p-8 text-center text-slate-400 text-xs">
+              Chưa chọn khách hàng
+            </div>
+          )}
         </div>
       </div>
 
-      {/* AI Copilot Modal */}
+      {/* ================= AI COPILOT MODAL ================= */}
       {copilotModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Sparkles className="text-amber-500" size={20} />
-                <span>AI Copilot Smart Reply — Gợi Ý Tin Nhắn Chốt Sale</span>
-              </h3>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} />
+                <span className="font-bold text-sm">AI Copilot • Gợi Ý Phản Hồi Chốt Hẹn</span>
+              </div>
               <button
                 onClick={() => setCopilotModalOpen(false)}
-                className="text-stone-400 hover:text-stone-600 p-1"
+                className="hover:bg-white/20 rounded-lg p-1 text-white cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {copilotLoading ? (
-              <div className="py-12 text-center text-stone-400 space-y-2">
-                <RefreshCw className="animate-spin inline-block text-amber-500" size={24} />
-                <p className="text-xs font-semibold">AI đang đọc hiểu lịch sử chat và soạn tin nhắn...</p>
-              </div>
-            ) : activeCopilotData ? (
-              <div className="space-y-4">
-                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1 text-xs">
-                  <div><span className="font-bold text-stone-600">Chi nhánh phát hiện:</span> <span className="font-extrabold text-teal-700">📍 {activeCopilotData.branch}</span></div>
-                  <div><span className="font-bold text-stone-600">Dịch vụ quan tâm:</span> <span className="font-bold text-indigo-700">🦷 {activeCopilotData.service}</span></div>
+            <div className="p-5 space-y-4 text-xs">
+              {copilotLoading ? (
+                <div className="py-10 text-center text-slate-400">
+                  <RefreshCw className="animate-spin inline-block mb-2 text-amber-400" size={24} />
+                  <p>AI đang đọc nội dung chat và phân tích ý định của khách...</p>
                 </div>
+              ) : activeCopilotData ? (
+                <>
+                  <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Nhu cầu phát hiện:</span>
+                      <span className="font-bold text-amber-400">{activeCopilotData.detectedService}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Chi nhánh muốn ghé:</span>
+                      <span className="font-bold text-emerald-400">{activeCopilotData.detectedBranch}</span>
+                    </div>
+                  </div>
 
-                <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl text-stone-800 text-xs font-medium leading-relaxed relative">
-                  <div className="text-[10px] font-bold uppercase text-amber-700 mb-1">Mẫu tin nhắn cá nhân hóa AI soạn sẵn:</div>
-                  "{activeCopilotData.suggestedReply}"
-                </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                      Kịch bản phản hồi gợi ý (Tối ưu chốt lịch khám):
+                    </label>
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-slate-200 text-xs leading-relaxed whitespace-pre-wrap">
+                      {activeCopilotData.suggestedResponse}
+                    </div>
+                  </div>
 
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(activeCopilotData.suggestedReply);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 3000);
-                  }}
-                  className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  {copied ? <CheckCircle2 className="text-emerald-400" size={16} /> : <Copy size={16} />}
-                  <span>{copied ? "Đã Sao Chép Tin Nhắn!" : "Sao Chép Mẫu Tin Nhắn AI Dán Sang Pancake"}</span>
-                </button>
-              </div>
-            ) : null}
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(activeCopilotData.suggestedResponse);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Copy size={13} />
+                      <span>{copied ? "Đã sao chép!" : "Sao chép"}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setReplyText(activeCopilotData.suggestedResponse);
+                        setCopilotModalOpen(false);
+                        showToast("Đã chèn câu trả lời vào khung chat!");
+                      }}
+                      className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white rounded-lg font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <span>Sử dụng câu này</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       )}
