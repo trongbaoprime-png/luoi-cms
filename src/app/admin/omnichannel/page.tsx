@@ -243,6 +243,7 @@ export default function AdminOmnichannelPage() {
   const [filterPhone, setFilterPhone] = useState<string>("ALL");
   const [filterDateRange, setFilterDateRange] = useState<string>("ALL");
   const [filterChannel, setFilterChannel] = useState<string>("ALL"); // ALL | FACEBOOK | ZALO | INSTAGRAM | WEBSITE
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   // Date picker modal state (matching miniCRM style)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [tempFrom, setTempFrom] = useState("");
@@ -308,7 +309,8 @@ export default function AdminOmnichannelPage() {
       if (filterPhone !== "ALL") url.searchParams.set("phoneFilter", filterPhone);
       if (filterDateRange !== "ALL") url.searchParams.set("dateRange", filterDateRange);
       if (filterChannel !== "ALL") url.searchParams.set("platform", filterChannel.toLowerCase());
-      if (searchTerm.trim()) url.searchParams.set("search", searchTerm.trim());
+      if (debouncedSearch) url.searchParams.set("search", debouncedSearch);
+
 
       url.searchParams.set("limit", "50");
       url.searchParams.set("offset", String(currentOffset));
@@ -591,9 +593,17 @@ export default function AdminOmnichannelPage() {
     fetchAnalytics();
   }, []);
 
+  // Debounce searchTerm → debouncedSearch (500ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 500);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Re-fetch when any filter OR debounced search changes
   useEffect(() => {
     fetchConversations(true);
-  }, [filterPageId, filterTag, filterTelesale, filterBranch, filterPhone, filterDateRange]);
+  }, [filterPageId, filterTag, filterTelesale, filterBranch, filterPhone, filterDateRange, filterChannel, debouncedSearch]);
+
 
   useEffect(() => {
     if (selectedConvId) {
