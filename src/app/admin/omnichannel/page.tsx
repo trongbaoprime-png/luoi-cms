@@ -242,6 +242,15 @@ export default function AdminOmnichannelPage() {
   const [filterBranch, setFilterBranch] = useState<string>("ALL");
   const [filterPhone, setFilterPhone] = useState<string>("ALL");
   const [filterDateRange, setFilterDateRange] = useState<string>("ALL");
+  const [filterChannel, setFilterChannel] = useState<string>("ALL"); // ALL | FACEBOOK | ZALO | INSTAGRAM | WEBSITE
+  // Date picker modal state (matching miniCRM style)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [tempFrom, setTempFrom] = useState("");
+  const [tempTo, setTempTo] = useState("");
+  const [tempPreset, setTempPreset] = useState("ALL");
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
+  const [activeDateLabel, setActiveDateLabel] = useState("Toàn thời gian");
 
   // Pagination & Live Counter
   const [totalInDb, setTotalInDb] = useState<number>(0);
@@ -298,6 +307,7 @@ export default function AdminOmnichannelPage() {
       if (filterBranch !== "ALL") url.searchParams.set("branch", filterBranch);
       if (filterPhone !== "ALL") url.searchParams.set("phoneFilter", filterPhone);
       if (filterDateRange !== "ALL") url.searchParams.set("dateRange", filterDateRange);
+      if (filterChannel !== "ALL") url.searchParams.set("platform", filterChannel.toLowerCase());
       if (searchTerm.trim()) url.searchParams.set("search", searchTerm.trim());
 
       url.searchParams.set("limit", "50");
@@ -391,14 +401,47 @@ export default function AdminOmnichannelPage() {
       "đà nẵng": "ĐÀ NẴNG",
       "da nang": "ĐÀ NẴNG",
       "hòa bình": "HÒA BÌNH",
+      // Mekong Delta expansions
+      "an giang": "CẦN THƠ",  // nearest branch
+      "kiên giang": "CẦN THƠ",
+      "rạch giá": "CẦN THƠ",
+      "hà tiên": "CẦN THƠ",
+      "tiền giang": "CẦN THƠ",
+      "mỹ tho": "CẦN THƠ",
+      "bến tre": "CẦN THƠ",
+      "trà vinh": "CẦN THƠ",
+      "vĩnh long": "CẦN THƠ",
+      "hậu giang": "CẦN THƠ",
+      "long an": "CẦN THƠ",
+      // Central expansions
+      "nha trang": "QUY NHƠN",
+      "khánh hòa": "QUY NHƠN",
+      "phú yên": "QUY NHƠN",
+      "bình định": "QUY NHƠN",
+      "quảng ngãi": "ĐÀ NẴNG",
+      "quảng nam": "ĐÀ NẴNG",
+      "thừa thiên": "ĐÀ NẴNG",
+      "huế": "ĐÀ NẴNG",
+      // Province name → detect from fanpage
+      "ninh kiều": "CẦN THƠ",
+      "ô môn": "CẦN THƠ",
+      "bình thủy": "CẦN THƠ",
     };
-    // Only check customer messages
+    // Check customer messages first
     const customerTexts = msgs
       .filter((m) => m.senderType === "CUSTOMER")
       .map((m) => m.content.toLowerCase())
       .join(" ");
     for (const [keyword, branch] of Object.entries(BRANCH_KEYWORDS)) {
       if (customerTexts.includes(keyword)) return branch;
+    }
+    // Also check staff messages (staff may mention branch name)
+    const staffTexts = msgs
+      .filter((m) => m.senderType === "STAFF" || m.senderType === "AI_BOT")
+      .map((m) => m.content.toLowerCase())
+      .join(" ");
+    for (const [keyword, branch] of Object.entries(BRANCH_KEYWORDS)) {
+      if (staffTexts.includes(keyword)) return branch;
     }
     return null;
   };
@@ -642,6 +685,10 @@ export default function AdminOmnichannelPage() {
     setFilterBranch("ALL");
     setFilterPhone("ALL");
     setFilterDateRange("ALL");
+    setFilterChannel("ALL");
+    setActiveDateLabel("Toàn thời gian");
+    setCustomDateFrom("");
+    setCustomDateTo("");
     fetchConversations(true);
     showToast("Đã đặt lại toàn bộ bộ lọc!");
   };
@@ -675,10 +722,10 @@ export default function AdminOmnichannelPage() {
                 <MessageSquare size={12} className="text-emerald-400" />
                 <span>TỔNG HỘI THOẠI</span>
               </div>
-              <div className="text-xl font-black text-white mt-0.5">
-                {(analytics.totalConversations || totalInDb || 4500).toLocaleString()}
+              <div className="text-xl font-black text-emerald-600 mt-0.5">
+                {(totalInDb || analytics.totalConversations || 0).toLocaleString()}
               </div>
-              <div className="text-[10px] text-emerald-400 font-medium">Toàn bộ 68 kênh kết nối</div>
+              <div className="text-[10px] text-emerald-600 font-medium">Tổng tin nhắn tất cả kênh</div>
             </div>
             <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
               🦷
@@ -762,21 +809,37 @@ export default function AdminOmnichannelPage() {
             <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
               P
             </div>
-            <span className="font-bold text-xs text-stone-700 tracking-wide">Pancake Omni • Tâm Đức Smile</span>
+            <span className="font-bold text-xs text-stone-600 tracking-wide">Omnichannel</span>
           </div>
 
-          {/* Navigation tabs */}
-          <div className="flex items-center gap-1 text-xs font-semibold">
-            <button className="px-3 py-1 bg-white text-stone-900 rounded-md font-bold flex items-center gap-1.5 shadow-xs">
-              <span>Hội thoại</span>
-              <span className="px-1.5 py-0.2 bg-rose-500 text-white text-[10px] rounded-full font-extrabold">
-                {conversations.length}
-              </span>
-            </button>
-            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Đơn hàng</button>
-            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Bài viết</button>
-            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Thống kê</button>
-            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Cài đặt</button>
+          {/* Channel Filter Tabs */}
+          <div className="flex items-center gap-0.5 text-xs font-semibold">
+            {([
+              { key: "ALL", label: "Tất cả", count: totalInDb, color: "bg-stone-800 text-white" },
+              { key: "FACEBOOK", label: "Facebook", count: analytics.channels.facebook, color: "bg-blue-600 text-white" },
+              { key: "ZALO", label: "Zalo", count: analytics.channels.zalo, color: "bg-cyan-600 text-white" },
+              { key: "INSTAGRAM", label: "Instagram", count: analytics.channels.instagram, color: "bg-pink-500 text-white" },
+              { key: "WEBSITE", label: "Website", count: analytics.channels.webchat, color: "bg-emerald-600 text-white" },
+            ] as const).map((ch) => (
+              <button
+                key={ch.key}
+                onClick={() => setFilterChannel(ch.key)}
+                className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+                  filterChannel === ch.key
+                    ? ch.color + " shadow-xs font-bold"
+                    : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                }`}
+              >
+                <span>{ch.label}</span>
+                {ch.count > 0 && (
+                  <span className={`px-1 py-0 rounded text-[10px] font-extrabold ${
+                    filterChannel === ch.key ? "bg-white/25" : "bg-stone-100 text-stone-600"
+                  }`}>
+                    {ch.count.toLocaleString()}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -860,20 +923,87 @@ export default function AdminOmnichannelPage() {
             <span>BỘ LỌC:</span>
           </div>
 
-          {/* Lọc Ngày Tháng */}
-          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
-            <Calendar size={12} className="text-stone-500" />
-            <select
-              value={filterDateRange}
-              onChange={(e) => setFilterDateRange(e.target.value)}
-              className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer"
+          {/* Lọc Ngày Tháng — Mini Date Picker */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              className="flex items-center gap-1.5 bg-white border border-stone-200 rounded-md px-2 py-1 text-xs text-stone-700 hover:border-stone-300 transition-all cursor-pointer"
             >
-              <option value="ALL" className="text-stone-900">📅 Toàn thời gian</option>
-              <option value="TODAY" className="text-stone-900">Hôm nay</option>
-              <option value="YESTERDAY" className="text-stone-900">Hôm qua</option>
-              <option value="7DAYS" className="text-stone-900">7 ngày gần nhất</option>
-              <option value="30DAYS" className="text-stone-900">30 ngày gần nhất</option>
-            </select>
+              <Calendar size={12} className="text-stone-500 shrink-0" />
+              <span className="font-medium truncate max-w-[100px]">{activeDateLabel}</span>
+              <ChevronDown size={11} className="text-stone-400" />
+            </button>
+            {isDatePickerOpen && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-stone-200 rounded-xl shadow-xl p-3 w-[340px]">
+                <div className="text-[11px] font-bold text-stone-500 uppercase mb-2">Lọc nhanh thời gian</div>
+                <div className="grid grid-cols-2 gap-1 mb-3">
+                  {[
+                    { key: "ALL", label: "Toàn thời gian" },
+                    { key: "TODAY", label: "Hôm nay" },
+                    { key: "YESTERDAY", label: "Hôm qua" },
+                    { key: "TODAY_YESTERDAY", label: "Hôm nay & hôm qua" },
+                    { key: "7DAYS", label: "7 ngày qua" },
+                    { key: "14DAYS", label: "14 ngày qua" },
+                    { key: "30DAYS", label: "30 ngày qua" },
+                    { key: "THIS_MONTH", label: "Tháng này" },
+                    { key: "LAST_MONTH", label: "Tháng trước" },
+                    { key: "THIS_WEEK", label: "Tuần này" },
+                  ].map((p) => (
+                    <label key={p.key} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="omni-date-preset"
+                        checked={tempPreset === p.key}
+                        onChange={() => setTempPreset(p.key)}
+                        className="accent-[#0d4f4a]"
+                      />
+                      <span className="text-xs text-stone-700">{p.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="border-t border-stone-100 pt-2 mb-3">
+                  <div className="text-[11px] font-bold text-stone-500 uppercase mb-2">Khoảng thời gian tùy chỉnh</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-stone-500">Từ Ngày</label>
+                      <input type="date" value={tempFrom} onChange={(e) => { setTempFrom(e.target.value); setTempPreset("CUSTOM"); }}
+                        className="w-full px-2 py-1 border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a] mt-0.5" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-stone-500">Đến Ngày</label>
+                      <input type="date" value={tempTo} onChange={(e) => { setTempTo(e.target.value); setTempPreset("CUSTOM"); }}
+                        className="w-full px-2 py-1 border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#0d4f4a] mt-0.5" />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={() => { setTempPreset("ALL"); setTempFrom(""); setTempTo(""); }}
+                    className="text-[11px] text-[#0d4f4a] underline font-bold cursor-pointer">Bỏ lọc (Tất cả)</button>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setIsDatePickerOpen(false)}
+                      className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl cursor-pointer">Hủy</button>
+                    <button type="button" onClick={() => {
+                      const label = tempPreset === "CUSTOM"
+                        ? (tempFrom && tempTo ? `${tempFrom} → ${tempTo}` : "Tùy chỉnh")
+                        : [
+                            { key: "ALL", label: "Toàn thời gian" }, { key: "TODAY", label: "Hôm nay" },
+                            { key: "YESTERDAY", label: "Hôm qua" }, { key: "TODAY_YESTERDAY", label: "Hôm nay & hôm qua" },
+                            { key: "7DAYS", label: "7 ngày qua" }, { key: "14DAYS", label: "14 ngày qua" },
+                            { key: "30DAYS", label: "30 ngày qua" }, { key: "THIS_MONTH", label: "Tháng này" },
+                            { key: "LAST_MONTH", label: "Tháng trước" }, { key: "THIS_WEEK", label: "Tuần này" },
+                          ].find(p => p.key === tempPreset)?.label || tempPreset;
+                      setActiveDateLabel(label);
+                      setFilterDateRange(tempPreset === "CUSTOM" ? `CUSTOM:${tempFrom}:${tempTo}` : tempPreset);
+                      setCustomDateFrom(tempFrom);
+                      setCustomDateTo(tempTo);
+                      setIsDatePickerOpen(false);
+                    }}
+                      className="px-3 py-1 bg-[#0d4f4a] hover:bg-[#083b37] text-white text-xs font-bold rounded-xl cursor-pointer">Áp Dụng</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Lọc Thẻ Tag */}
@@ -884,7 +1014,7 @@ export default function AdminOmnichannelPage() {
               onChange={(e) => setFilterTag(e.target.value)}
               className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer max-w-[130px] truncate"
             >
-              <option value="ALL" className="text-stone-900">🏷️ Tất cả Thẻ</option>
+              <option value="ALL" className="text-stone-900">Tất cả Thẻ</option>
               {Object.keys(MASTER_PANCAKE_TAGS).map((t) => (
                 <option key={t} value={t} className="text-stone-900">
                   {t}
@@ -901,7 +1031,7 @@ export default function AdminOmnichannelPage() {
               onChange={(e) => setFilterTelesale(e.target.value)}
               className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer"
             >
-              <option value="ALL" className="text-stone-900">👩‍💼 Tất cả Telesale</option>
+              <option value="ALL" className="text-stone-900">Tất cả Telesale</option>
               {TELESALE_LIST.map((name) => (
                 <option key={name} value={name} className="text-stone-900">
                   Telesale {name}
@@ -912,13 +1042,13 @@ export default function AdminOmnichannelPage() {
 
           {/* Lọc Chi Nhánh */}
           <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
-            <span className="text-[11px]">🏥</span>
+            <MapPin size={12} className="text-rose-400 shrink-0" />
             <select
               value={filterBranch}
               onChange={(e) => setFilterBranch(e.target.value)}
               className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer max-w-[140px] truncate"
             >
-              <option value="ALL" className="text-stone-900">🏥 Tất cả Chi nhánh</option>
+              <option value="ALL" className="text-stone-900">Tất cả Chi nhánh</option>
               {BRANCH_LIST.map((b) => (
                 <option key={b} value={b} className="text-stone-900">
                   {b}
@@ -935,7 +1065,7 @@ export default function AdminOmnichannelPage() {
               onChange={(e) => setFilterPhone(e.target.value)}
               className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer"
             >
-              <option value="ALL" className="text-stone-900">📞 Tất cả SĐT</option>
+              <option value="ALL" className="text-stone-900">Tất cả SĐT</option>
               <option value="HAS_PHONE" className="text-stone-900">Đã có Số Điện Thoại</option>
               <option value="NO_PHONE" className="text-stone-900">Chưa để lại SĐT</option>
             </select>
@@ -944,7 +1074,7 @@ export default function AdminOmnichannelPage() {
           {hasActiveFilters && (
             <button
               onClick={resetAllFilters}
-              className="px-2 py-1 bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+              className="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
             >
               <X size={12} />
               <span>Xóa bộ lọc</span>
