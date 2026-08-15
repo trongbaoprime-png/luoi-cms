@@ -11,9 +11,10 @@ export interface SymptomMetric {
   metric: string;
   value: number | string;
   benchmark?: number | string;
-  direction: "UP" | "DOWN" | "NORMAL" | "WARNING" | "CRITICAL";
+  direction?: "UP" | "DOWN" | "NORMAL" | "WARNING" | "CRITICAL";
   note: string;
 }
+
 
 export interface DiagnosisIssue {
   code: "A1" | "A2" | "A3" | "A4" | "B1" | "B2" | "B3" | "B4" | "C1" | "C2" | "C3" | "C4";
@@ -218,9 +219,10 @@ export function diagnoseCampaign(stats: CampaignStatsInput): CampaignDiagnosisRe
         stage: "CONVERSION",
         severity: "MEDIUM",
         symptoms: [
-          { metric: "Tên chiến dịch", value: stats.campaignName, note: "Chạy cho chi nhánh tỉnh" },
+          { metric: "Tên chiến dịch", value: stats.campaignName, direction: "WARNING", note: "Chạy cho chi nhánh tỉnh" },
           { metric: "Chi nhánh nhận lead", value: stats.branch || "HCM", direction: "WARNING", note: "Nguy cơ lead bị đẩy nhầm sang khu vực khác" },
         ],
+
         rootCause: "Cài đặt vị trí địa lý bán kính (Radius) quá rộng hoặc chưa loại trừ các tỉnh lân cận, dẫn đến khách ở xa không thể đến phòng khám.",
         recommendation: "Thu hẹp bán kính định vị xuống 5-10km quanh địa chỉ phòng khám, loại trừ người chỉ đi ngang qua ('Người sống tại vị trí này').",
         suggestedAction: "Chỉnh vị trí: 'Chỉ người sống tại khu vực này' (5-10km)",
