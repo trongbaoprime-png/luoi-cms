@@ -156,6 +156,10 @@ interface Customer360Data {
     targetAudience?: string;
     adHeadline?: string;
     adContent?: string;
+    thumbnailUrl?: string;
+    videoSource?: string;
+    ctaTitle?: string;
+    facebookPostUrl?: string;
   };
   fbProfileUrl: string;
   messengerUrl: string;
