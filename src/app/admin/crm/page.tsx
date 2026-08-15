@@ -904,6 +904,17 @@ function onEdit(e) {
             <span>miniCRM</span>
           </Link>
           <Link
+            href="/admin/omnichannel"
+            className={`font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              menuStyle === "underline"
+                ? "border-b-2 border-transparent text-stone-500 hover:text-stone-900 pb-2 text-xs"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100 px-3.5 py-1.5 rounded-xl"
+            }`}
+          >
+            <Bot size={15} />
+            <span>Omni</span>
+          </Link>
+          <Link
             href="/admin/raw-leads"
             className={`font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
               menuStyle === "underline"
@@ -913,17 +924,6 @@ function onEdit(e) {
           >
             <FileText size={15} />
             <span>Khách đăng ký</span>
-          </Link>
-          <Link
-            href="/admin/omnichannel"
-            className={`font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-              menuStyle === "underline"
-                ? "border-b-2 border-transparent text-stone-500 hover:text-stone-900 pb-2 text-xs"
-                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100 px-3.5 py-1.5 rounded-xl"
-            }`}
-          >
-            <Bot size={15} />
-            <span>Omnichannel AI</span>
           </Link>
         </div>
 

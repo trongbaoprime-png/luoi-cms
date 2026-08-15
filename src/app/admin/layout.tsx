@@ -165,10 +165,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { title: "Vertical Slice MVP", href: "/admin/vertical-slice", icon: Activity },
         { title: "miniCRM", href: "/admin/crm", icon: Users },
-        { title: "Meta Ads Realtime", href: "/admin/meta-ads", icon: BarChart3 },
-        { title: "Khách đăng ký", href: "/admin/raw-leads", icon: FileText },
         { title: "Omnichannel & AI Agent", href: "/admin/omnichannel", icon: Bot },
-        { title: "Email Subscribers", href: "/admin/subscribers", icon: Users },
+        { title: "Khách đăng ký", href: "/admin/raw-leads", icon: FileText },
+        { title: "Email Subscribers", href: "/admin/subscribers", icon: Mail },
+        { title: "Meta Ads Realtime", href: "/admin/meta-ads", icon: BarChart3 },
       ],
     },
     {
@@ -360,7 +360,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main
           className={`flex-1 w-full ${
             pathname === "/admin/omnichannel"
-              ? "p-0 overflow-hidden bg-[#0f172a]"
+              ? "p-0 overflow-hidden bg-[#f5f3ef]"
               : "p-3 md:p-4 lg:p-6 overflow-x-hidden bg-[#f7f4ed] text-[#1a1612]"
           }`}
         >

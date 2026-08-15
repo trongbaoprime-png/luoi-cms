@@ -656,22 +656,22 @@ export default function AdminOmnichannelPage() {
     searchTerm.trim() !== "";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] bg-[#0f172a] text-slate-100 font-sans select-none overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] bg-[#f5f3ef] text-stone-800 font-sans select-none overflow-hidden">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-900 border border-emerald-500/50 text-emerald-300 px-4 py-2.5 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <CheckCircle2 size={16} className="text-emerald-400" />
+        <div className="fixed top-4 right-4 z-50 bg-white border border-emerald-400 text-emerald-700 px-4 py-2.5 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <CheckCircle2 size={16} className="text-emerald-500" />
           <span>{toastMsg}</span>
         </div>
       )}
 
       {/* ================= 1. TOP STATS CARDS (CHUẨN THEO ẢNH 1 LƯỜI CMS) ================= */}
-      <div className="bg-[#1e293b] border-b border-slate-700/60 px-3 py-1.5 shrink-0">
+      <div className="bg-white border-b border-stone-200 px-3 py-2 shrink-0 shadow-sm">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           {/* Card 1: Tổng Hội Thoại */}
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+          <div className="bg-white/90 border border-stone-200 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
             <div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+              <div className="text-[10px] font-bold tracking-wider text-stone-500 uppercase flex items-center gap-1">
                 <MessageSquare size={12} className="text-emerald-400" />
                 <span>TỔNG HỘI THOẠI</span>
               </div>
@@ -686,16 +686,16 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Card 2: Messenger Facebook */}
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+          <div className="bg-white/90 border border-stone-200 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
             <div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+              <div className="text-[10px] font-bold tracking-wider text-stone-500 uppercase flex items-center gap-1">
                 <Send size={12} className="text-blue-400" />
                 <span>MESSENGER (FB)</span>
               </div>
               <div className="text-xl font-black text-blue-400 mt-0.5">
                 {(analytics.channels.facebook || 52).toLocaleString()}
               </div>
-              <div className="text-[10px] text-slate-400 font-medium">52 Fanpages chính thức</div>
+              <div className="text-[10px] text-stone-500 font-medium">52 Fanpages chính thức</div>
             </div>
             <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-black text-xs">
               f
@@ -703,16 +703,16 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Card 3: Chat Zalo */}
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+          <div className="bg-white/90 border border-stone-200 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
             <div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+              <div className="text-[10px] font-bold tracking-wider text-stone-500 uppercase flex items-center gap-1">
                 <MessageSquare size={12} className="text-cyan-400" />
                 <span>CHAT ZALO</span>
               </div>
               <div className="text-xl font-black text-cyan-400 mt-0.5">
                 {(analytics.channels.zalo || 5).toLocaleString()}
               </div>
-              <div className="text-[10px] text-slate-400 font-medium">1 OA + 4 Zalo cá nhân</div>
+              <div className="text-[10px] text-stone-500 font-medium">1 OA + 4 Zalo cá nhân</div>
             </div>
             <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs">
               Z
@@ -720,16 +720,16 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Card 4: Instagram */}
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+          <div className="bg-white/90 border border-stone-200 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
             <div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+              <div className="text-[10px] font-bold tracking-wider text-stone-500 uppercase flex items-center gap-1">
                 <Globe2 size={12} className="text-pink-400" />
                 <span>INSTAGRAM</span>
               </div>
               <div className="text-xl font-black text-pink-400 mt-0.5">
                 {(analytics.channels.instagram || 4).toLocaleString()}
               </div>
-              <div className="text-[10px] text-slate-400 font-medium">4 Instagram Official</div>
+              <div className="text-[10px] text-stone-500 font-medium">4 Instagram Official</div>
             </div>
             <div className="w-9 h-9 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-xs">
               IG
@@ -737,9 +737,9 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Card 5: Khách Có SĐT / CAPI */}
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
+          <div className="bg-white/90 border border-stone-200 rounded-xl p-2.5 flex items-center justify-between shadow-xs">
             <div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+              <div className="text-[10px] font-bold tracking-wider text-stone-500 uppercase flex items-center gap-1">
                 <Phone size={12} className="text-amber-400" />
                 <span>CÓ SĐT / CAPI</span>
               </div>
@@ -756,27 +756,27 @@ export default function AdminOmnichannelPage() {
       </div>
 
       {/* ================= 2. PANCAKE HEADER (ĐỒNG BỘ MÀU LƯỜI CMS) ================= */}
-      <div className="h-11 bg-[#0f172a] border-b border-slate-700/80 px-4 flex items-center justify-between shrink-0">
+      <div className="h-11 bg-[#f5f3ef] border-b border-stone-200 px-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
               P
             </div>
-            <span className="font-bold text-xs text-white tracking-wide">Pancake Omni • Tâm Đức Smile</span>
+            <span className="font-bold text-xs text-stone-700 tracking-wide">Pancake Omni • Tâm Đức Smile</span>
           </div>
 
           {/* Navigation tabs */}
           <div className="flex items-center gap-1 text-xs font-semibold">
-            <button className="px-3 py-1 bg-white text-slate-900 rounded-md font-bold flex items-center gap-1.5 shadow-xs">
+            <button className="px-3 py-1 bg-white text-stone-900 rounded-md font-bold flex items-center gap-1.5 shadow-xs">
               <span>Hội thoại</span>
               <span className="px-1.5 py-0.2 bg-rose-500 text-white text-[10px] rounded-full font-extrabold">
                 {conversations.length}
               </span>
             </button>
-            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Đơn hàng</button>
-            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Bài viết</button>
-            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Thống kê</button>
-            <button className="px-3 py-1 text-slate-400 hover:text-white rounded-md transition-colors">Cài đặt</button>
+            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Đơn hàng</button>
+            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Bài viết</button>
+            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Thống kê</button>
+            <button className="px-3 py-1 text-stone-500 hover:text-stone-900 rounded-md transition-colors">Cài đặt</button>
           </div>
         </div>
 
@@ -793,8 +793,8 @@ export default function AdminOmnichannelPage() {
             }}
             className={`px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
               ghostMode
-                ? "bg-purple-950/80 border-purple-500/50 text-purple-300 shadow-xs"
-                : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                ? "bg-purple-100 border-purple-300 text-purple-700 shadow-xs"
+                : "bg-stone-100 border-stone-200 text-stone-500 hover:text-stone-900"
             }`}
             title="Đọc ẩn: xem tin nhắn mà không làm trôi trạng thái chưa đọc của nhân viên trực page"
           >
@@ -803,8 +803,8 @@ export default function AdminOmnichannelPage() {
           </button>
 
           {/* Live Sync Status Badge */}
-          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-md text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-md text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Đã nạp {totalInDb.toLocaleString()} / 800,000+ Khách (Đang nạp ngầm)</span>
           </div>
 
@@ -819,18 +819,18 @@ export default function AdminOmnichannelPage() {
           </a>
 
           {/* Fanpage Switcher Dropdown */}
-          <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1 rounded-md text-xs">
+          <div className="flex items-center gap-2 bg-stone-100 border border-stone-200 px-3 py-1 rounded-md text-xs">
             <div className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-bold">
               🦷
             </div>
             <select
               value={filterPageId}
               onChange={(e) => setFilterPageId(e.target.value)}
-              className="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer max-w-[180px] truncate"
+              className="bg-transparent text-stone-800 font-medium text-xs focus:outline-none cursor-pointer max-w-[180px] truncate"
             >
-              <option value="ALL" className="text-slate-900">Tất cả {fanpages.length} Kênh</option>
+              <option value="ALL" className="text-stone-900">Tất cả {fanpages.length} Kênh</option>
               {fanpages.map((p) => (
-                <option key={p.pageId} value={p.pageId} className="text-slate-900">
+                <option key={p.pageId} value={p.pageId} className="text-stone-900">
                   {p.pageName}
                 </option>
               ))}
@@ -844,7 +844,7 @@ export default function AdminOmnichannelPage() {
               fetchAnalytics();
               showToast("Đã đồng bộ dữ liệu mới nhất!");
             }}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-300 hover:text-white transition-all cursor-pointer"
+            className="p-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-md text-stone-600 hover:text-stone-900 transition-all cursor-pointer"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={14} />
@@ -853,40 +853,40 @@ export default function AdminOmnichannelPage() {
       </div>
 
       {/* ================= 3. ADVANCED COMPACT FILTER BAR ================= */}
-      <div className="bg-[#1e293b] border-b border-slate-700/80 px-4 py-2 flex items-center justify-between gap-3 shrink-0 flex-wrap text-xs">
+      <div className="bg-[#eceae4] border-b border-stone-200 px-4 py-2 flex items-center justify-between gap-3 shrink-0 flex-wrap text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 text-slate-400 font-bold text-[11px] mr-1">
+          <div className="flex items-center gap-1 text-stone-500 font-bold text-[11px] mr-1">
             <Filter size={13} className="text-blue-400" />
             <span>BỘ LỌC:</span>
           </div>
 
           {/* Lọc Ngày Tháng */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
-            <Calendar size={12} className="text-slate-400" />
+          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
+            <Calendar size={12} className="text-stone-500" />
             <select
               value={filterDateRange}
               onChange={(e) => setFilterDateRange(e.target.value)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer"
             >
-              <option value="ALL" className="text-slate-900">📅 Toàn thời gian</option>
-              <option value="TODAY" className="text-slate-900">Hôm nay</option>
-              <option value="YESTERDAY" className="text-slate-900">Hôm qua</option>
-              <option value="7DAYS" className="text-slate-900">7 ngày gần nhất</option>
-              <option value="30DAYS" className="text-slate-900">30 ngày gần nhất</option>
+              <option value="ALL" className="text-stone-900">📅 Toàn thời gian</option>
+              <option value="TODAY" className="text-stone-900">Hôm nay</option>
+              <option value="YESTERDAY" className="text-stone-900">Hôm qua</option>
+              <option value="7DAYS" className="text-stone-900">7 ngày gần nhất</option>
+              <option value="30DAYS" className="text-stone-900">30 ngày gần nhất</option>
             </select>
           </div>
 
           {/* Lọc Thẻ Tag */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
             <Tag size={12} className="text-emerald-400" />
             <select
               value={filterTag}
               onChange={(e) => setFilterTag(e.target.value)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer max-w-[130px] truncate"
+              className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer max-w-[130px] truncate"
             >
-              <option value="ALL" className="text-slate-900">🏷️ Tất cả Thẻ</option>
+              <option value="ALL" className="text-stone-900">🏷️ Tất cả Thẻ</option>
               {Object.keys(MASTER_PANCAKE_TAGS).map((t) => (
-                <option key={t} value={t} className="text-slate-900">
+                <option key={t} value={t} className="text-stone-900">
                   {t}
                 </option>
               ))}
@@ -894,16 +894,16 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Lọc Telesale Phụ Trách */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
             <User size={12} className="text-purple-400" />
             <select
               value={filterTelesale}
               onChange={(e) => setFilterTelesale(e.target.value)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer"
             >
-              <option value="ALL" className="text-slate-900">👩‍💼 Tất cả Telesale</option>
+              <option value="ALL" className="text-stone-900">👩‍💼 Tất cả Telesale</option>
               {TELESALE_LIST.map((name) => (
-                <option key={name} value={name} className="text-slate-900">
+                <option key={name} value={name} className="text-stone-900">
                   Telesale {name}
                 </option>
               ))}
@@ -911,16 +911,16 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Lọc Chi Nhánh */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
             <span className="text-[11px]">🏥</span>
             <select
               value={filterBranch}
               onChange={(e) => setFilterBranch(e.target.value)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer max-w-[140px] truncate"
+              className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer max-w-[140px] truncate"
             >
-              <option value="ALL" className="text-slate-900">🏥 Tất cả Chi nhánh</option>
+              <option value="ALL" className="text-stone-900">🏥 Tất cả Chi nhánh</option>
               {BRANCH_LIST.map((b) => (
-                <option key={b} value={b} className="text-slate-900">
+                <option key={b} value={b} className="text-stone-900">
                   {b}
                 </option>
               ))}
@@ -928,16 +928,16 @@ export default function AdminOmnichannelPage() {
           </div>
 
           {/* Lọc Số Điện Thoại */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md px-2 py-1">
             <Phone size={12} className="text-amber-400" />
             <select
               value={filterPhone}
               onChange={(e) => setFilterPhone(e.target.value)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-stone-700 text-xs focus:outline-none cursor-pointer"
             >
-              <option value="ALL" className="text-slate-900">📞 Tất cả SĐT</option>
-              <option value="HAS_PHONE" className="text-slate-900">Đã có Số Điện Thoại</option>
-              <option value="NO_PHONE" className="text-slate-900">Chưa để lại SĐT</option>
+              <option value="ALL" className="text-stone-900">📞 Tất cả SĐT</option>
+              <option value="HAS_PHONE" className="text-stone-900">Đã có Số Điện Thoại</option>
+              <option value="NO_PHONE" className="text-stone-900">Chưa để lại SĐT</option>
             </select>
           </div>
 
@@ -952,19 +952,19 @@ export default function AdminOmnichannelPage() {
           )}
         </div>
 
-        <div className="text-[11px] text-slate-400 font-mono">
+        <div className="text-[11px] text-stone-500 font-mono">
           Hiển thị <span className="text-emerald-400 font-bold">{conversations.length}</span> / {totalInDb.toLocaleString()} kết quả
         </div>
       </div>
 
       {/* ================= 4. PANCAKE 3-COLUMN WORKSPACE ================= */}
-      <div className="flex-1 flex overflow-hidden bg-slate-900">
+      <div className="flex-1 flex overflow-hidden bg-white">
         {/* ================= CỘT 1: DANH SÁCH HỘI THOẠI (310px) ================= */}
-        <div className="w-[310px] bg-white border-r border-slate-200 flex flex-col shrink-0 text-slate-800">
+        <div className="w-[310px] bg-[#faf9f7] border-r border-stone-200 flex flex-col shrink-0 text-stone-800">
           {/* Search Header */}
-          <div className="p-2 border-b border-slate-200 bg-[#f8fafc]">
+          <div className="p-2 border-b border-stone-100 bg-[#faf9f7]">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+              <Search className="absolute left-2.5 top-2 text-stone-500" size={14} />
               <input
                 type="text"
                 placeholder="Tìm tên, SĐT hoặc mã khách..."
@@ -973,15 +973,15 @@ export default function AdminOmnichannelPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") fetchConversations(true);
                 }}
-                className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-md text-xs text-stone-900 placeholder:text-stone-500 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
           {/* Conversation list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
             {conversations.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-stone-500 text-xs">
                 Không tìm thấy hội thoại phù hợp
               </div>
             ) : (
@@ -993,7 +993,7 @@ export default function AdminOmnichannelPage() {
                     key={conv.id}
                     onClick={() => setSelectedConvId(conv.id)}
                     className={`p-2.5 transition-colors cursor-pointer flex items-start gap-2.5 relative ${
-                      isSelected ? "bg-[#e8f0fe]" : "hover:bg-[#f8fafc]"
+                      isSelected ? "bg-[#e8f0fe]" : "hover:bg-[#faf9f7]"
                     }`}
                   >
                     {/* Unread indicator dot */}
@@ -1003,7 +1003,7 @@ export default function AdminOmnichannelPage() {
 
                     {/* Avatar */}
                     <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-stone-200 text-stone-600 flex items-center justify-center font-bold text-sm">
                         {conv.customerName ? conv.customerName.charAt(0) : "K"}
                       </div>
                       <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold border border-white">
@@ -1014,10 +1014,10 @@ export default function AdminOmnichannelPage() {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className={`font-bold text-xs truncate ${isMarkedUnread ? "text-rose-600 font-black" : "text-slate-900"}`}>
+                        <span className={`font-bold text-xs truncate ${isMarkedUnread ? "text-rose-600 font-black" : "text-stone-900"}`}>
                           {conv.customerName}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-1">
+                        <span className="text-[10px] text-stone-500 font-mono shrink-0 ml-1">
                           {new Date(conv.lastMessageAt).toLocaleTimeString("vi-VN", {
                             timeZone: "Asia/Ho_Chi_Minh",
                             hour: "2-digit",
@@ -1026,7 +1026,7 @@ export default function AdminOmnichannelPage() {
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                      <p className="text-[11px] text-stone-400 truncate mt-0.5">
                         {conv.lastMessageText || "Chưa có tin nhắn"}
                       </p>
 
@@ -1079,7 +1079,7 @@ export default function AdminOmnichannelPage() {
                             className={`p-0.5 rounded transition-all cursor-pointer shrink-0 ${
                               isMarkedUnread || conv.isUnread || conv.unreadCount > 0
                                 ? "text-blue-600 hover:text-blue-700 animate-pulse"
-                                : "text-slate-400 hover:text-slate-600"
+                                : "text-stone-500 hover:text-stone-500"
                             }`}
                             title={
                               isMarkedUnread || conv.isUnread || conv.unreadCount > 0
@@ -1092,7 +1092,7 @@ export default function AdminOmnichannelPage() {
                               className={
                                 isMarkedUnread || conv.isUnread || conv.unreadCount > 0
                                   ? "fill-blue-500 text-blue-600"
-                                  : "fill-slate-300 text-slate-400"
+                                  : "fill-stone-300 text-stone-500"
                               }
                             />
                           </button>
@@ -1106,7 +1106,7 @@ export default function AdminOmnichannelPage() {
 
             {/* Load More Button */}
             {conversations.length < totalInDb && (
-              <div className="p-2.5 text-center border-t border-slate-200 bg-[#f8fafc]">
+              <div className="p-2.5 text-center border-t border-stone-100 bg-[#faf9f7]">
                 <button
                   onClick={loadMoreConversations}
                   disabled={loadingMore}
@@ -1124,19 +1124,19 @@ export default function AdminOmnichannelPage() {
         </div>
 
         {/* ================= CỘT 2: KHUNG CHAT & THANH THẺ CHUẨN PANCAKE ================= */}
-        <div className="flex-1 bg-white flex flex-col border-r border-slate-200 overflow-hidden text-slate-800">
+        <div className="flex-1 bg-white flex flex-col border-r border-stone-100 overflow-hidden text-stone-800">
           {selectedConv ? (
             <>
               {/* Chat Header */}
-              <div className="h-12 border-b border-slate-200 px-4 flex items-center justify-between bg-white shrink-0">
+              <div className="h-12 border-b border-stone-100 px-4 flex items-center justify-between bg-white shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-xs">
+                  <div className="w-8 h-8 rounded-full bg-stone-200 text-stone-600 flex items-center justify-center font-bold text-xs">
                     {selectedConv.customerName ? selectedConv.customerName.charAt(0) : "K"}
                   </div>
                   <div>
-                    <div className="font-bold text-xs text-slate-900 flex items-center gap-2">
+                    <div className="font-bold text-xs text-stone-900 flex items-center gap-2">
                       <span>{selectedConv.customerName}</span>
-                      <span className="text-[10px] text-slate-400 font-normal font-mono">
+                      <span className="text-[10px] text-stone-500 font-normal font-mono">
                         ({getAssignedStaff(selectedConv.tags)} • {new Date(selectedConv.lastMessageAt).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })})
                       </span>
                     </div>
@@ -1154,7 +1154,7 @@ export default function AdminOmnichannelPage() {
                         <ExternalLink size={10} />
                       </a>
 
-                      <span className="text-slate-300">|</span>
+                      <span className="text-stone-600">|</span>
 
                       <button
                         onClick={() => {
@@ -1163,16 +1163,16 @@ export default function AdminOmnichannelPage() {
                           );
                           showToast("Đã sao chép link Facebook khách hàng!");
                         }}
-                        className="text-[10px] text-slate-500 hover:text-slate-700 flex items-center gap-0.5 cursor-pointer"
+                        className="text-[10px] text-stone-400 hover:text-stone-600 flex items-center gap-0.5 cursor-pointer"
                         title="Sao chép liên kết"
                       >
                         <Copy size={10} />
                         <span>Copy ID</span>
                       </button>
 
-                      <span className="text-slate-300">|</span>
+                      <span className="text-stone-600">|</span>
 
-                      <span className="text-[10px] text-slate-400 truncate max-w-[140px]">
+                      <span className="text-[10px] text-stone-500 truncate max-w-[140px]">
                         {selectedConv.fanpage?.pageName}
                       </span>
                     </div>
@@ -1185,11 +1185,11 @@ export default function AdminOmnichannelPage() {
                     className={`p-1.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 text-xs font-bold ${
                       unreadMap[selectedConv.id]
                         ? "bg-rose-50 border-rose-300 text-rose-600 shadow-2xs"
-                        : "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-600"
                     }`}
                     title="Đánh dấu chưa đọc"
                   >
-                    <Mail size={14} className={unreadMap[selectedConv.id] ? "text-rose-600 fill-rose-100" : "text-slate-600"} />
+                    <Mail size={14} className={unreadMap[selectedConv.id] ? "text-rose-600 fill-rose-100" : "text-stone-500"} />
                     <span className="text-[11px] hidden sm:inline">
                       {unreadMap[selectedConv.id] ? "Chưa đọc" : "Đánh dấu chưa đọc"}
                     </span>
@@ -1197,7 +1197,7 @@ export default function AdminOmnichannelPage() {
 
                   <button
                     onClick={() => handleOpenCopilot(selectedConv.id)}
-                    className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white rounded font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
+                    className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-stone-800 rounded font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     <Sparkles size={13} />
                     <span>AI Copilot</span>
@@ -1208,18 +1208,18 @@ export default function AdminOmnichannelPage() {
               {/* Chat Messages Flow */}
               <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-white">
                 <div className="text-center">
-                  <span className="px-3 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-medium">
+                  <span className="px-3 py-0.5 rounded-full bg-stone-50 text-stone-400 text-[10px] font-medium">
                     Hội thoại gần nhất {ghostMode ? "• (Đang xem ở chế độ Đọc Ẩn 👻)" : ""}
                   </span>
                 </div>
 
                 {loadingMessages ? (
-                  <div className="py-12 text-center text-slate-400">
+                  <div className="py-12 text-center text-stone-500">
                     <RefreshCw className="animate-spin inline-block mb-2" size={20} />
                     <p className="text-xs">Đang nạp tin nhắn từ Pancake...</p>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-xs">
+                  <div className="py-12 text-center text-stone-500 text-xs">
                     Chưa có tin nhắn trong hội thoại này
                   </div>
                 ) : (
@@ -1230,14 +1230,14 @@ export default function AdminOmnichannelPage() {
                         key={msg.id}
                         className={`flex flex-col ${isStaff ? "items-end" : "items-start"}`}
                       >
-                        <span className="text-[10px] text-slate-400 mb-0.5 font-mono">
+                        <span className="text-[10px] text-stone-500 mb-0.5 font-mono">
                           {msg.senderId} • {new Date(msg.createdAt).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <div
                           className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-xs whitespace-pre-wrap leading-relaxed shadow-2xs ${
                             isStaff
                               ? "bg-blue-600 text-white rounded-br-none"
-                              : "bg-[#f1f5f9] text-slate-900 rounded-bl-none"
+                              : "bg-[#f5f3ef] text-stone-900 rounded-bl-none"
                           }`}
                         >
                           {msg.content}
@@ -1250,9 +1250,9 @@ export default function AdminOmnichannelPage() {
               </div>
 
               {/* BẢNG 3 HÀNG THẺ MASTER CHUẨN 100% PANCAKE */}
-              <div className="bg-[#f8fafc] border-t border-slate-200 px-2 py-1.5 shrink-0">
+              <div className="bg-[#faf9f7] border-t border-stone-100 px-2 py-1.5 shrink-0">
                 {/* Label Dòng */}
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 px-0.5">📌 Thẻ Telesale / Dịch Vụ / Kết Quả</div>
+                <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest mb-1 px-0.5">📌 Thẻ Telesale / Dịch Vụ / Kết Quả</div>
 
                 {/* HÀNG 1: TELESALE - grid 10 cột cố định */}
                 <div className="grid grid-cols-10 gap-0.5 mb-0.5">
@@ -1322,7 +1322,7 @@ export default function AdminOmnichannelPage() {
               </div>
 
               {/* Chat Input Bar */}
-              <div className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
+              <div className="p-2.5 bg-white border-t border-stone-100 flex items-center gap-2 shrink-0">
                 <input
                   type="text"
                   placeholder="Nhập tin nhắn phản hồi khách hàng (Enter để gửi)..."
@@ -1334,39 +1334,39 @@ export default function AdminOmnichannelPage() {
                       handleSendReply();
                     }
                   }}
-                  className="flex-1 px-3 py-2 bg-[#f8fafc] border border-slate-300 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
+                  className="flex-1 px-3 py-2 bg-[#faf9f7] border border-stone-200 rounded-lg text-xs text-stone-900 placeholder:text-stone-500 focus:outline-none focus:border-blue-500"
                 />
                 <button
                   onClick={handleSendReply}
                   disabled={sendingReply || !replyText.trim()}
-                  className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-all shadow-xs cursor-pointer"
+                  className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-stone-800 rounded-lg transition-all shadow-xs cursor-pointer"
                 >
                   <Send size={15} />
                 </button>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
-              <MessageSquare size={48} className="text-slate-200 mb-3" />
-              <p className="text-sm font-semibold text-slate-600">Chọn một khách hàng để bắt đầu hội thoại</p>
-              <p className="text-xs text-slate-400 mt-1">Dữ liệu hội thoại được đồng bộ trực tiếp từ 68 kênh</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-stone-500 p-8">
+              <MessageSquare size={48} className="text-stone-700 mb-3" />
+              <p className="text-sm font-semibold text-stone-500">Chọn một khách hàng để bắt đầu hội thoại</p>
+              <p className="text-xs text-stone-500 mt-1">Dữ liệu hội thoại được đồng bộ trực tiếp từ 68 kênh</p>
             </div>
           )}
         </div>
 
         {/* ================= CỘT 3: HỒ SƠ & MINICRM & HÀNH TRÌNH 360° (350px) ================= */}
-        <div className="w-[350px] bg-[#f8fafc] border-l border-slate-200 flex flex-col shrink-0 text-slate-800 overflow-y-auto">
+        <div className="w-[350px] bg-[#faf9f7] border-l border-stone-200 flex flex-col shrink-0 text-stone-800 overflow-y-auto overflow-y-auto">
           {selectedConv ? (
             <div className="p-3.5 space-y-3.5">
               {/* Tab Switcher Header */}
-              <div className="border-b border-slate-200 pb-2">
-                <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-lg text-xs font-bold">
+              <div className="border-b border-stone-100 pb-2">
+                <div className="flex items-center gap-1.5 p-1 bg-stone-100/80 rounded-lg text-xs font-bold">
                   <button
                     onClick={() => setActiveRightTab("CRM")}
                     className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       activeRightTab === "CRM"
                         ? "bg-white text-blue-600 shadow-2xs"
-                        : "text-slate-600 hover:text-slate-900"
+                        : "text-stone-500 hover:text-stone-900"
                     }`}
                   >
                     <User size={13} />
@@ -1378,7 +1378,7 @@ export default function AdminOmnichannelPage() {
                     className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       activeRightTab === "JOURNEY_360"
                         ? "bg-white text-emerald-600 shadow-2xs"
-                        : "text-slate-600 hover:text-slate-900"
+                        : "text-stone-500 hover:text-stone-900"
                     }`}
                   >
                     <History size={13} />
@@ -1396,19 +1396,19 @@ export default function AdminOmnichannelPage() {
                       <span className="text-[11px] font-black text-[#d9480f] uppercase tracking-wider flex items-center gap-1">
                         📝 Ghi chú Telesale: {getAssignedStaff(selectedConv.tags)}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono">
+                      <span className="text-[10px] text-stone-400 font-mono">
                         {new Date(selectedConv.lastMessageAt).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
 
-                    <div className="font-bold text-slate-900 text-xs">
+                    <div className="font-bold text-stone-900 text-xs">
                       {selectedConv.customerName} - <span className="text-blue-700">{selectedConv.customerPhone || "Chưa có SĐT"}</span>
                     </div>
 
                     {/* Chi nhánh tiếp nhận & Thay đổi khi khách follow */}
                     <div className="bg-white/80 border border-[#f59f00]/30 rounded-lg p-2 space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-600 font-bold flex items-center gap-1">
+                        <span className="text-stone-500 font-bold flex items-center gap-1">
                           <MapPin size={12} className="text-rose-500" />
                           <span>Chi nhánh tiếp nhận:</span>
                         </span>
@@ -1416,7 +1416,7 @@ export default function AdminOmnichannelPage() {
                       <select
                         value={selectedConv.detectedBranch || "Chưa chọn chi nhánh"}
                         onChange={(e) => handleUpdateBranch(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs font-bold text-emerald-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                        className="w-full bg-white border border-stone-200 rounded px-2 py-1 text-xs font-bold text-emerald-800 focus:outline-none focus:border-blue-500 cursor-pointer"
                       >
                         <option value="Chưa chọn chi nhánh (Đang tư vấn)">Chưa chọn chi nhánh (Đang tư vấn)</option>
                         {BRANCH_LIST.map((b) => (
@@ -1430,7 +1430,7 @@ export default function AdminOmnichannelPage() {
                     {/* Nhu cầu & Mong muốn chi tiết */}
                     <div className="bg-white/80 border border-[#f59f00]/30 rounded-lg p-2 space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-600 font-bold flex items-center gap-1">
+                        <span className="text-stone-500 font-bold flex items-center gap-1">
                           <Edit3 size={12} className="text-blue-500" />
                           <span>Nhu cầu / Mong muốn chi tiết:</span>
                         </span>
@@ -1458,12 +1458,12 @@ export default function AdminOmnichannelPage() {
                             value={wishInput}
                             onChange={(e) => setWishInput(e.target.value)}
                             placeholder="Nhập mong muốn cụ thể (VD: Khách ở Cần Thơ, hỏi trả góp răng sứ...)"
-                            className="w-full p-1.5 bg-white border border-slate-300 rounded text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                            className="w-full p-1.5 bg-white border border-stone-200 rounded text-xs focus:outline-none focus:border-blue-500 text-stone-800"
                           />
                           <div className="flex justify-end gap-1">
                             <button
                               onClick={() => setEditingWish(false)}
-                              className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold"
+                              className="px-2 py-0.5 bg-stone-100 text-stone-600 rounded text-[10px] font-bold"
                             >
                               Hủy
                             </button>
@@ -1476,7 +1476,7 @@ export default function AdminOmnichannelPage() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-[11px] text-slate-700 italic">
+                        <p className="text-[11px] text-stone-600 italic">
                           {selectedConv.customerIntent || selectedConv.detectedService || "Đang tư vấn nhu cầu..."}
                         </p>
                       )}
@@ -1484,8 +1484,8 @@ export default function AdminOmnichannelPage() {
                   </div>
 
                   {/* 2. THẺ ĐÃ GÁN */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
-                    <div className="text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <div className="bg-white border border-stone-100 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
+                    <div className="text-[11px] font-bold text-stone-600 mb-1 flex items-center justify-between">
                       <span className="flex items-center gap-1">
                         <Tag size={13} className="text-emerald-600" />
                         <span>Thẻ đã gán ({selectedConv.tags?.length || 0}):</span>
@@ -1527,7 +1527,7 @@ export default function AdminOmnichannelPage() {
                             setCustomTagInput("");
                           }
                         }}
-                        className="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-300 rounded text-xs focus:outline-none focus:border-blue-500"
+                        className="flex-1 px-2.5 py-1 bg-stone-50 border border-stone-200 rounded text-xs focus:outline-none focus:border-blue-500"
                       />
                       <button
                         onClick={() => {
@@ -1536,7 +1536,7 @@ export default function AdminOmnichannelPage() {
                             setCustomTagInput("");
                           }
                         }}
-                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-bold cursor-pointer"
+                        className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded text-xs font-bold cursor-pointer"
                       >
                         +
                       </button>
@@ -1544,11 +1544,11 @@ export default function AdminOmnichannelPage() {
                   </div>
 
                   {/* 3. MINICRM (GỌN GÀNG) */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <div className="bg-white border border-stone-100 rounded-xl p-3 shadow-2xs space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-stone-100 pb-1.5">
                       <div className="flex items-center gap-1.5">
                         <Database size={14} className="text-blue-600" />
-                        <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                        <span className="text-xs font-black text-stone-900 uppercase tracking-wide">
                           miniCRM
                         </span>
                       </div>
@@ -1569,8 +1569,8 @@ export default function AdminOmnichannelPage() {
                     {crmStatus?.isMatched && crmStatus.lead ? (
                       <div className="space-y-1.5 text-xs">
                         {/* SĐT Khách Đặt Hẹn */}
-                        <div className="flex items-center justify-between py-1 border-b border-slate-100 bg-emerald-50/50 px-2 rounded">
-                          <span className="text-slate-600 font-bold flex items-center gap-1">
+                        <div className="flex items-center justify-between py-1 border-b border-stone-100 bg-emerald-50/50 px-2 rounded">
+                          <span className="text-stone-500 font-bold flex items-center gap-1">
                             <Phone size={12} className="text-emerald-600" />
                             <span>SĐT Đặt Hẹn:</span>
                           </span>
@@ -1588,7 +1588,7 @@ export default function AdminOmnichannelPage() {
                                       showToast("Đã sao chép SĐT đặt hẹn!");
                                     }
                                   }}
-                                  className="p-0.5 text-slate-500 hover:text-slate-800 cursor-pointer"
+                                  className="p-0.5 text-stone-400 hover:text-stone-800 cursor-pointer"
                                   title="Sao chép SĐT"
                                 >
                                   <Copy size={11} />
@@ -1609,8 +1609,8 @@ export default function AdminOmnichannelPage() {
                         </div>
 
                         {/* Dịch Vụ Khách Quan Tâm / Đặt Hẹn */}
-                        <div className="flex items-center justify-between py-1 border-b border-slate-100 bg-blue-50/50 px-2 rounded">
-                          <span className="text-slate-600 font-bold flex items-center gap-1">
+                        <div className="flex items-center justify-between py-1 border-b border-stone-100 bg-blue-50/50 px-2 rounded">
+                          <span className="text-stone-500 font-bold flex items-center gap-1">
                             <span>🦷 Dịch Vụ:</span>
                           </span>
                           <span className="font-extrabold text-blue-800 text-[11px]">
@@ -1618,25 +1618,25 @@ export default function AdminOmnichannelPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                          <span className="text-slate-500">Trạng thái CRM:</span>
+                        <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                          <span className="text-stone-400">Trạng thái CRM:</span>
                           <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-extrabold text-[11px]">
                             {crmStatus.lead.status}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                          <span className="text-slate-500">Telesale CRM:</span>
-                          <span className="font-bold text-slate-800">{crmStatus.lead.telesale || "Chưa phân bổ"}</span>
+                        <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                          <span className="text-stone-400">Telesale CRM:</span>
+                          <span className="font-bold text-stone-800">{crmStatus.lead.telesale || "Chưa phân bổ"}</span>
                         </div>
 
-                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                          <span className="text-slate-500">Chi nhánh tiếp nhận:</span>
-                          <span className="font-bold text-slate-800">{crmStatus.lead.branch || selectedConv.detectedBranch}</span>
+                        <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                          <span className="text-stone-400">Chi nhánh tiếp nhận:</span>
+                          <span className="font-bold text-stone-800">{crmStatus.lead.branch || selectedConv.detectedBranch}</span>
                         </div>
 
-                        <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                          <span className="text-slate-500">Doanh thu thực tế:</span>
+                        <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                          <span className="text-stone-400">Doanh thu thực tế:</span>
                           <span className="font-extrabold text-emerald-600 text-[12px]">
                             {(crmStatus.lead.actualRevenue || 0).toLocaleString()} đ
                           </span>
@@ -1656,7 +1656,7 @@ export default function AdminOmnichannelPage() {
                       </div>
                     ) : (
                       <div className="space-y-2 text-xs">
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-[11px] text-stone-400">
                           Khách hàng chưa có hồ sơ trên miniCRM.
                         </p>
                         {/* Chỉ hiện nút Đẩy khi có SĐT + Dịch Vụ */}
@@ -1665,7 +1665,7 @@ export default function AdminOmnichannelPage() {
                           <button
                             onClick={handleSyncToMiniCRM}
                             disabled={crmSyncing}
-                            className="w-full py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                            className="w-full py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-stone-800 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-all"
                           >
                             {crmSyncing ? (
                               <span>Đang đồng bộ...</span>
@@ -1688,14 +1688,14 @@ export default function AdminOmnichannelPage() {
 
                   {/* 4. QUẢNG CÁO (GỌN GÀNG, COLLAPSIBLE) */}
                   {customer360?.adsAttribution && (
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden text-xs">
+                    <div className="bg-white border border-stone-100 rounded-xl shadow-2xs overflow-hidden text-xs">
                       <div
                         onClick={() => setAdsDetailExpanded(!adsDetailExpanded)}
-                        className="p-2.5 bg-slate-50 hover:bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer transition-colors"
+                        className="p-2.5 bg-stone-50 hover:bg-stone-50 border-b border-stone-100 flex items-center justify-between cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-1.5">
                           <Target size={14} className="text-blue-600 shrink-0" />
-                          <span className="font-black text-slate-900 uppercase text-[11px] tracking-wide">
+                          <span className="font-black text-stone-900 uppercase text-[11px] tracking-wide">
                             Quảng Cáo
                           </span>
                         </div>
@@ -1710,15 +1710,15 @@ export default function AdminOmnichannelPage() {
 
                       {adsDetailExpanded && (
                         <div className="p-3 space-y-2 bg-white animate-in fade-in duration-150">
-                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                            <span className="text-slate-500 text-[11px]">Nguồn tracking:</span>
+                          <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                            <span className="text-stone-400 text-[11px]">Nguồn tracking:</span>
                             <span className="font-bold text-emerald-700 text-[11px]">
                               {customer360.adsAttribution.referralSource || "Website Click Messenger"}
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                            <span className="text-slate-500 text-[11px]">Mã Ads ID:</span>
+                          <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                            <span className="text-stone-400 text-[11px]">Mã Ads ID:</span>
                             <div className="flex items-center gap-1">
                               <span className="font-mono font-bold text-blue-700 text-[11px]">
                                 {customer360.adsAttribution.adId}
@@ -1736,9 +1736,9 @@ export default function AdminOmnichannelPage() {
                             </div>
                           </div>
 
-                          <div className="py-0.5 border-b border-slate-50 space-y-0.5">
-                            <span className="text-slate-500 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
-                            <p className="font-bold text-slate-900 text-[11px] leading-tight break-all">
+                          <div className="py-0.5 border-b border-stone-50 space-y-0.5">
+                            <span className="text-stone-400 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
+                            <p className="font-bold text-stone-900 text-[11px] leading-tight break-all">
                               {customer360.adsAttribution.adsetName}
                             </p>
                           </div>
@@ -1746,7 +1746,7 @@ export default function AdminOmnichannelPage() {
                           {/* Nội dung bài QC */}
                           <div className="pt-1">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-bold text-slate-600 uppercase">
+                              <span className="text-[10px] font-bold text-stone-500 uppercase">
                                 Bài viết quảng cáo:
                               </span>
                               <button
@@ -1763,7 +1763,7 @@ export default function AdminOmnichannelPage() {
                                 <span>Copy</span>
                               </button>
                             </div>
-                            <div className="bg-slate-50 border border-slate-200 rounded p-2 text-slate-800 text-[11px] leading-relaxed whitespace-pre-wrap">
+                            <div className="bg-stone-50 border border-stone-100 rounded p-2 text-stone-800 text-[11px] leading-relaxed whitespace-pre-wrap">
                               <div className="font-bold text-blue-900 mb-0.5">
                                 {customer360.adsAttribution.adHeadline}
                               </div>
@@ -1776,26 +1776,26 @@ export default function AdminOmnichannelPage() {
                   )}
 
                   {/* 5. CHI TIẾT HỒ SƠ */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
-                    <div className="font-bold text-slate-900 border-b border-slate-100 pb-1 flex items-center justify-between">
+                  <div className="bg-white border border-stone-100 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
+                    <div className="font-bold text-stone-900 border-b border-stone-100 pb-1 flex items-center justify-between">
                       <span>Chi tiết hồ sơ</span>
-                      <span className="text-[10px] font-mono text-slate-400">ID: {selectedConv.customerId}</span>
+                      <span className="text-[10px] font-mono text-stone-500">ID: {selectedConv.customerId}</span>
                     </div>
 
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Tên Facebook:</span>
-                        <span className="font-bold text-slate-900">{selectedConv.customerName}</span>
+                        <span className="text-stone-400">Tên Facebook:</span>
+                        <span className="font-bold text-stone-900">{selectedConv.customerName}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Số điện thoại:</span>
+                        <span className="text-stone-400">Số điện thoại:</span>
                         <span className="font-bold text-blue-600 font-mono">
                           {selectedConv.customerPhone || "Chưa có"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Kênh kết nối:</span>
-                        <span className="font-medium text-slate-700">{selectedConv.fanpage?.pageName}</span>
+                        <span className="text-stone-400">Kênh kết nối:</span>
+                        <span className="font-medium text-stone-600">{selectedConv.fanpage?.pageName}</span>
                       </div>
                     </div>
                   </div>
@@ -1804,8 +1804,8 @@ export default function AdminOmnichannelPage() {
                 /* ================= TAB 2: HÀNH TRÌNH 360° THEO THỨ TỰ CHUẨN ================= */
                 <div className="space-y-3">
                   {/* 1. TỔNG QUAN HÀNH TRÌNH */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
-                    <div className="font-bold text-slate-900 flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <div className="bg-white border border-stone-100 rounded-xl p-3 shadow-2xs space-y-2 text-xs">
+                    <div className="font-bold text-stone-900 flex items-center justify-between border-b border-stone-100 pb-1.5">
                       <span className="flex items-center gap-1 text-emerald-700">
                         <Layers size={14} />
                         <span>Tổng Quan Hành Trình Đa Kênh</span>
@@ -1816,14 +1816,14 @@ export default function AdminOmnichannelPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-1">
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                        <span className="text-[10px] text-slate-500 block">Số Fanpage đã chat:</span>
+                      <div className="bg-stone-50 p-2 rounded-lg border border-stone-100">
+                        <span className="text-[10px] text-stone-400 block">Số Fanpage đã chat:</span>
                         <span className="text-base font-black text-blue-600">
                           {customer360?.totalFanpagesChatted || 1} Page
                         </span>
                       </div>
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                        <span className="text-[10px] text-slate-500 block">Điểm chạm đầu tiên:</span>
+                      <div className="bg-stone-50 p-2 rounded-lg border border-stone-100">
+                        <span className="text-[10px] text-stone-400 block">Điểm chạm đầu tiên:</span>
                         <span className="text-xs font-bold text-emerald-600 truncate block">
                           {customer360?.firstTouchPoint?.channelName || selectedConv.fanpage?.pageName || "Fanpage"}
                         </span>
@@ -1832,19 +1832,19 @@ export default function AdminOmnichannelPage() {
                   </div>
 
                   {/* 2. TIMELINE HÀNH TRÌNH TIẾP CẬN */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3">
-                    <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
+                  <div className="bg-white border border-stone-100 rounded-xl p-3.5 shadow-2xs space-y-3">
+                    <div className="font-bold text-xs text-stone-900 flex items-center justify-between">
                       <span>Timeline Tiếp Cận Theo Thời Gian</span>
-                      <span className="text-[10px] text-slate-400 font-mono">Từ cũ đến mới</span>
+                      <span className="text-[10px] text-stone-500 font-mono">Từ cũ đến mới</span>
                     </div>
 
                     {loading360 ? (
-                      <div className="py-8 text-center text-slate-400 text-xs">
+                      <div className="py-8 text-center text-stone-500 text-xs">
                         <RefreshCw className="animate-spin inline-block mb-1" size={16} />
                         <p>Đang dựng hành trình 360°...</p>
                       </div>
                     ) : customer360?.timeline && customer360.timeline.length > 0 ? (
-                      <div className="relative pl-5 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                      <div className="relative pl-5 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-stone-100">
                         {customer360.timeline.map((item, idx) => (
                           <div key={item.id} className="relative group">
                             <span
@@ -1854,8 +1854,8 @@ export default function AdminOmnichannelPage() {
 
                             <div className="text-xs">
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900">{item.title}</span>
-                                <span className="text-[10px] text-slate-400 font-mono">
+                                <span className="font-bold text-stone-900">{item.title}</span>
+                                <span className="text-[10px] text-stone-500 font-mono">
                                   {new Date(item.timestamp).toLocaleDateString("vi-VN", {
                                     timeZone: "Asia/Ho_Chi_Minh",
                                     day: "2-digit",
@@ -1864,10 +1864,10 @@ export default function AdminOmnichannelPage() {
                                   })}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                              <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
                                 {item.description}
                               </p>
-                              <span className="inline-block mt-1 px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded text-[9px] font-medium">
+                              <span className="inline-block mt-1 px-1.5 py-0.2 bg-stone-50 text-stone-500 rounded text-[9px] font-medium">
                                 Kênh: {item.channelName}
                               </span>
                             </div>
@@ -1875,7 +1875,7 @@ export default function AdminOmnichannelPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-6 text-slate-400 text-xs">
+                      <div className="text-center py-6 text-stone-500 text-xs">
                         Chưa có lịch sử đa kênh cho khách này
                       </div>
                     )}
@@ -1883,14 +1883,14 @@ export default function AdminOmnichannelPage() {
 
                   {/* 3. QUẢNG CÁO (COLLAPSIBLE TRONG TAB 360) */}
                   {customer360?.adsAttribution && (
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden text-xs">
+                    <div className="bg-white border border-stone-100 rounded-xl shadow-2xs overflow-hidden text-xs">
                       <div
                         onClick={() => setAdsDetailExpanded(!adsDetailExpanded)}
-                        className="p-2.5 bg-slate-50 hover:bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer transition-colors"
+                        className="p-2.5 bg-stone-50 hover:bg-stone-50 border-b border-stone-100 flex items-center justify-between cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-1.5">
                           <Target size={14} className="text-blue-600 shrink-0" />
-                          <span className="font-black text-slate-900 uppercase text-[11px] tracking-wide">
+                          <span className="font-black text-stone-900 uppercase text-[11px] tracking-wide">
                             Quảng Cáo
                           </span>
                         </div>
@@ -1905,15 +1905,15 @@ export default function AdminOmnichannelPage() {
 
                       {adsDetailExpanded && (
                         <div className="p-3 space-y-2 bg-white animate-in fade-in duration-150">
-                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                            <span className="text-slate-500 text-[11px]">Nguồn tracking:</span>
+                          <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                            <span className="text-stone-400 text-[11px]">Nguồn tracking:</span>
                             <span className="font-bold text-emerald-700 text-[11px]">
                               {customer360.adsAttribution.referralSource || "Website Click Messenger"}
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
-                            <span className="text-slate-500 text-[11px]">Mã Ads ID:</span>
+                          <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
+                            <span className="text-stone-400 text-[11px]">Mã Ads ID:</span>
                             <div className="flex items-center gap-1">
                               <span className="font-mono font-bold text-blue-700 text-[11px]">
                                 {customer360.adsAttribution.adId}
@@ -1931,16 +1931,16 @@ export default function AdminOmnichannelPage() {
                             </div>
                           </div>
 
-                          <div className="py-0.5 border-b border-slate-50 space-y-0.5">
-                            <span className="text-slate-500 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
-                            <p className="font-bold text-slate-900 text-[11px] leading-tight break-all">
+                          <div className="py-0.5 border-b border-stone-50 space-y-0.5">
+                            <span className="text-stone-400 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
+                            <p className="font-bold text-stone-900 text-[11px] leading-tight break-all">
                               {customer360.adsAttribution.adsetName}
                             </p>
                           </div>
 
                           <div className="pt-1">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-bold text-slate-600 uppercase">
+                              <span className="text-[10px] font-bold text-stone-500 uppercase">
                                 Bài viết quảng cáo:
                               </span>
                               <button
@@ -1957,7 +1957,7 @@ export default function AdminOmnichannelPage() {
                                 <span>Copy</span>
                               </button>
                             </div>
-                            <div className="bg-slate-50 border border-slate-200 rounded p-2 text-slate-800 text-[11px] leading-relaxed whitespace-pre-wrap">
+                            <div className="bg-stone-50 border border-stone-100 rounded p-2 text-stone-800 text-[11px] leading-relaxed whitespace-pre-wrap">
                               <div className="font-bold text-blue-900 mb-0.5">
                                 {customer360.adsAttribution.adHeadline}
                               </div>
@@ -1972,7 +1972,7 @@ export default function AdminOmnichannelPage() {
               )}
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-400 text-xs">
+            <div className="p-8 text-center text-stone-500 text-xs">
               Chưa chọn khách hàng
             </div>
           )}
@@ -1982,7 +1982,7 @@ export default function AdminOmnichannelPage() {
       {/* ================= AI COPILOT MODAL ================= */}
       {copilotModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white border border-stone-200 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center justify-between text-white">
               <div className="flex items-center gap-2">
                 <Sparkles size={18} />
@@ -1998,28 +1998,28 @@ export default function AdminOmnichannelPage() {
 
             <div className="p-5 space-y-4 text-xs">
               {copilotLoading ? (
-                <div className="py-10 text-center text-slate-400">
+                <div className="py-10 text-center text-stone-500">
                   <RefreshCw className="animate-spin inline-block mb-2 text-amber-400" size={24} />
                   <p>AI đang đọc nội dung chat và phân tích ý định của khách...</p>
                 </div>
               ) : activeCopilotData ? (
                 <>
-                  <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 space-y-1.5">
+                  <div className="bg-stone-100 border border-stone-200 rounded-xl p-3 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Nhu cầu phát hiện:</span>
+                      <span className="text-stone-500">Nhu cầu phát hiện:</span>
                       <span className="font-bold text-amber-400">{activeCopilotData.detectedService}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Chi nhánh muốn ghé:</span>
+                      <span className="text-stone-500">Chi nhánh muốn ghé:</span>
                       <span className="font-bold text-emerald-400">{activeCopilotData.detectedBranch}</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                    <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider block mb-1.5">
                       Kịch bản phản hồi gợi ý (Tối ưu chốt lịch khám):
                     </label>
-                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-slate-200 text-xs leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-stone-100 border border-stone-200 rounded-xl p-3.5 text-stone-700 text-xs leading-relaxed whitespace-pre-wrap">
                       {activeCopilotData.suggestedResponse}
                     </div>
                   </div>
@@ -2031,7 +2031,7 @@ export default function AdminOmnichannelPage() {
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Copy size={13} />
                       <span>{copied ? "Đã sao chép!" : "Sao chép"}</span>
@@ -2042,7 +2042,7 @@ export default function AdminOmnichannelPage() {
                         setCopilotModalOpen(false);
                         showToast("Đã chèn câu trả lời vào khung chat!");
                       }}
-                      className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white rounded-lg font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-stone-800 rounded-lg font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                     >
                       <span>Sử dụng câu này</span>
                       <ArrowRight size={13} />
