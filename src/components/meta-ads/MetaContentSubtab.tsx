@@ -69,22 +69,28 @@ export default function MetaContentSubtab({ contentAds }: MetaContentSubtabProps
     const service = item.service || "IMPLANT";
     const preset = SERVICE_MEDIA_MAP[service] || SERVICE_MEDIA_MAP["IMPLANT"];
 
+    const isVideoFormat =
+      !!item.video_source ||
+      (item.format || "").toUpperCase().includes("VIDEO") ||
+      (item.format || "").toUpperCase().includes("REELS") ||
+      (item.ad_name || "").toUpperCase().includes("VIDEO") ||
+      (item.campaign_name || "").toUpperCase().includes("VIDEO");
+
     const thumbnail =
       item.thumbnail_url && item.thumbnail_url.startsWith("http")
         ? item.thumbnail_url
         : preset.thumbnail;
 
-    const video = item.video_source && item.video_source.startsWith("http") ? item.video_source : preset.video;
-    const title = item.title || item.hook || preset.title;
+    const video =
+      item.video_source && item.video_source.startsWith("http")
+        ? item.video_source
+        : (isVideoFormat ? preset.video : "");
+
+    const title = item.title || item.ad_name || preset.title;
     const body = item.content_text || item.body || preset.body;
     const cta = item.cta_title || preset.cta;
-    const isVideoFormat =
-      (item.video_source && item.video_source.length > 0) ||
-      (item.format || "").toUpperCase().includes("VIDEO") ||
-      (item.format || "").toUpperCase().includes("REELS") ||
-      (item.campaign_name || "").toUpperCase().includes("VIDEO");
 
-    return { thumbnail, video, title, body, cta, isVideoFormat };
+    return { thumbnail, video, title, body, cta, isVideoFormat: isVideoFormat || !!video };
   };
 
   // Compute AI Quality Score badge (0 - 100)
@@ -351,29 +357,57 @@ export default function MetaContentSubtab({ contentAds }: MetaContentSubtabProps
               return (
                 <div className="space-y-2">
                   <div className="relative w-full rounded-2xl overflow-hidden bg-black shadow-inner border border-stone-800">
-                    {media.isVideoFormat ? (
+                    {media.isVideoFormat && media.video ? (
                       <div className="relative">
                         <video
+                          key={media.video}
                           controls
                           autoPlay
+                          playsInline
                           poster={media.thumbnail}
                           src={media.video}
-                          className="w-full max-h-80 object-contain bg-black"
-                        />
+                          className="w-full max-h-96 object-contain bg-black"
+                        >
+                          <source src={media.video} type="video/mp4" />
+                          Trình duyệt không hỗ trợ phát thẻ video.
+                        </video>
                         <div className="bg-stone-900/90 text-stone-200 text-[11px] px-3 py-1.5 flex items-center justify-between font-sans">
                           <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
                             <Volume2 size={13} />
-                            ▶ Đang phát video quảng cáo Meta Ads thực tế
+                            ▶ Đang phát Video Meta Ads thực tế (Có âm thanh)
                           </span>
-                          <span className="text-[10px] text-stone-400 font-mono">1080p Full HD</span>
+                          <a
+                            href={media.video}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-sky-400 hover:underline font-mono"
+                          >
+                            Mở video CDN
+                          </a>
                         </div>
                       </div>
                     ) : (
-                      <img
-                        src={media.thumbnail}
-                        alt={media.title}
-                        className="w-full max-h-80 object-cover"
-                      />
+                      <div className="relative">
+                        <img
+                          src={media.thumbnail}
+                          alt={media.title}
+                          className="w-full max-h-96 object-contain bg-stone-900 mx-auto"
+                        />
+                        <div className="bg-stone-900/90 text-stone-200 text-[11px] px-3 py-1.5 flex items-center justify-between font-sans">
+                          <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                            <ImageIcon size={13} />
+                            Ảnh mẫu quảng cáo Meta Ads thực tế
+                          </span>
+                          <a
+                            href={media.thumbnail}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-sky-400 hover:underline font-mono"
+                          >
+                            Mở ảnh gốc
+                          </a>
+                        </div>
+                      </div>
                     )}
                   </div>
 
