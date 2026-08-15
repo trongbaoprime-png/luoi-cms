@@ -1,0 +1,299 @@
+// ============================================================
+// META ADS DATABASE — luoi_meta
+// Tách hoàn toàn khỏi CMS để cô lập lỗi & tối ưu hiệu suất
+// ============================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("META_ADS_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-meta"
+}
+
+// Tài khoản quảng cáo Meta
+model MetaAdAccount {
+  id          String   @id @default(cuid())
+  accountId   String   @unique // act_830836643076983
+  accountName String?
+  currency    String   @default("VND")
+  timezone    String   @default("Asia/Ho_Chi_Minh")
+  status      String?  // ACTIVE, DISABLED
+  accessToken String?  // Token riêng per account nếu cần
+  isActive    Boolean  @default(true)
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaigns    MetaCampaign[]
+  dailyStats   MetaAdDailyStat[]
+  syncRuns     MetaSyncRun[]
+}
+
+// Chiến dịch
+model MetaCampaign {
+  id           String   @id @default(cuid())
+  campaignId   String   @unique
+  campaignName String?
+  accountId    String
+  account      MetaAdAccount @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
+  objective    String?  // MESSAGES, LEAD_GENERATION, CONVERSIONS
+  status       String?
+  effectiveStatus String?
+  service      String?  // Implant, Răng sứ, Niềng răng, Tổng quát
+  branch       String?  // Detect từ tên campaign
+  budgetDaily  Float?
+  budgetTotal  Float?
+  startDate    String?
+  stopDate     String?
+  createdTime  String?
+  updatedTime  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  adsets       MetaAdSet[]
+  dailyStats   MetaAdDailyStat[]
+
+  @@index([accountId])
+  @@index([status])
+}
+
+// Nhóm quảng cáo
+model MetaAdSet {
+  id          String   @id @default(cuid())
+  adsetId     String   @unique
+  adsetName   String?
+  campaignId  String
+  campaign    MetaCampaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  accountId   String?
+  status      String?
+  effectiveStatus String?
+  targeting   String?  // JSON string of targeting spec
+  budgetDaily Float?
+  startDate   String?
+  stopDate    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ads         MetaAd[]
+
+  @@index([campaignId])
+  @@index([accountId])
+}
+
+// Mẩu quảng cáo
+model MetaAd {
+  id              String   @id @default(cuid())
+  adId            String   @unique
+  adName          String?
+  adsetId         String
+  adset           MetaAdSet @relation(fields: [adsetId], references: [adsetId], onDelete: Cascade)
+  campaignId      String?
+  accountId       String?
+  status          String?
+  effectiveStatus String?
+  creativeId      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creative        MetaAdCreative?
+  dailyInsights   MetaAdDailyInsight[]
+
+  @@index([adsetId])
+  @@index([campaignId])
+  @@index([accountId])
+}
+
+// Nội dung creative
+model MetaAdCreative {
+  id           String  @id @default(cuid())
+  adId         String  @unique
+  ad           MetaAd  @relation(fields: [adId], references: [adId], onDelete: Cascade)
+  adName       String?
+  adsetId      String?
+  adsetName    String?
+  campaignId   String?
+  campaignName String?
+  accountId    String?
+  status       String?
+  effectiveStatus String?
+  creativeId   String?
+  thumbnailUrl String?
+  bodyText     String?
+  titleText    String?
+  callToAction String?
+  linkUrl      String?
+  previewUrl   String?
+  format       String?  // IMAGE, VIDEO, CAROUSEL
+  videoId      String?
+  // Video retention breakpoints
+  video3s      Float?
+  video25      Float?
+  video50      Float?
+  video75      Float?
+  video95      Float?
+  video100     Float?
+  createdTime  String?
+  updatedTime  String?
+  rawJson      String?  // Full raw JSON from API (backup)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([campaignId])
+  @@index([adsetId])
+}
+
+// Số liệu hàng ngày — cấp Campaign/AdSet (aggregate)
+model MetaAdDailyStat {
+  id             String   @id @default(cuid())
+  date           String   // YYYY-MM-DD
+  accountId      String
+  account        MetaAdAccount? @relation(fields: [accountId], references: [accountId], onDelete: SetNull)
+  accountName    String?
+  campaignId     String
+  campaign       MetaCampaign? @relation(fields: [campaignId], references: [campaignId], onDelete: SetNull)
+  campaignName   String?
+  adsetId        String   @default("")
+  adsetName      String?
+  service        String?
+  branch         String?
+  spend          Float    @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  frequency      Float    @default(0)
+  clicks         Int      @default(0)
+  cpm            Float    @default(0)
+  ctr            Float    @default(0)
+  cpc            Float    @default(0)
+  messagesNew    Int      @default(0)
+  messagingTotal Int      @default(0)
+  leads          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([date, accountId, campaignId, adsetId], name: "meta_daily_stat_key")
+  @@index([date])
+  @@index([accountId])
+  @@index([campaignId])
+  @@index([service])
+  @@index([branch])
+}
+
+// Số liệu hàng ngày — cấp Ad (chi tiết)
+model MetaAdDailyInsight {
+  id             String   @id @default(cuid())
+  date           String   // YYYY-MM-DD
+  adId           String
+  ad             MetaAd?  @relation(fields: [adId], references: [adId], onDelete: SetNull)
+  adName         String?
+  adsetId        String?
+  adsetName      String?
+  campaignId     String?
+  campaignName   String?
+  accountId      String?
+  spend          Float    @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  frequency      Float    @default(0)
+  clicks         Int      @default(0)
+  cpm            Float    @default(0)
+  ctr            Float    @default(0)
+  cpc            Float    @default(0)
+  messagesNew    Int      @default(0)
+  messagingTotal Int      @default(0)
+  leads          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([date, adId], name: "meta_ad_daily_insight_key")
+  @@index([date])
+  @@index([accountId])
+  @@index([campaignId])
+  @@index([adId])
+}
+
+// Lịch sử đồng bộ
+model MetaSyncRun {
+  id          String    @id @default(cuid())
+  runType     String    // FULL | INCREMENTAL | MANUAL | CRON
+  accountId   String?
+  account     MetaAdAccount? @relation(fields: [accountId], references: [accountId], onDelete: SetNull)
+  status      String    @default("RUNNING") // RUNNING | DONE | FAILED
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  recordsSync Int       @default(0)
+  dateFrom    String?   // Khoảng thời gian sync
+  dateTo      String?
+  errorMsg    String?
+  triggeredBy String?   // CRON | MANUAL | API
+  createdAt   DateTime  @default(now())
+
+  @@index([status])
+  @@index([accountId])
+  @@index([startedAt])
+}
+
+// Meta Instant Form — Cấu hình form
+model MetaLeadForm {
+  id         String   @id @default(cuid())
+  formId     String   @unique
+  formName   String?
+  pageId     String?
+  pageName   String?
+  campaignId String?
+  status     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  entries    MetaLeadFormEntry[]
+
+  @@index([pageId])
+  @@index([campaignId])
+}
+
+// Lead thu được từ Meta Instant Form
+model MetaLeadFormEntry {
+  id          String       @id @default(cuid())
+  leadId      String       @unique  // Meta leadgen_id
+  formId      String?
+  form        MetaLeadForm? @relation(fields: [formId], references: [formId], onDelete: SetNull)
+  pageId      String?
+  campaignId  String?
+  adId        String?
+  fullName    String?
+  phone       String?
+  email       String?
+  rawFields   String?      // JSON: all form fields
+  syncedToCrm Boolean      @default(false)
+  crmLeadId   String?      // ID của CRMLead sau khi sync
+  createdAt   DateTime     @default(now())
+
+  @@index([formId])
+  @@index([campaignId])
+  @@index([phone])
+  @@index([syncedToCrm])
+}
+
+// Campaign Health Diagnosis — Lưu kết quả chẩn đoán
+model MetaCampaignDiagnosis {
+  id              String   @id @default(cuid())
+  campaignId      String
+  campaignName    String?
+  accountId       String?
+  diagnosisDate   String   // YYYY-MM-DD
+  period          String   // "7D" | "14D" | "30D"
+  overallHealth   String   // "HEALTHY" | "AT_RISK" | "CRITICAL"
+  diagnosisCodes  String   // JSON: ["A1", "B2"]
+  symptoms        String   // JSON: detailed symptom data
+  recommendations String   // JSON: action items
+  funnelScores    String?  // JSON: {delivery, creative, lead, revenue}
+  createdAt       DateTime @default(now())
+
+  @@unique([campaignId, diagnosisDate, period])
+  @@index([campaignId])
+  @@index([overallHealth])
+  @@index([diagnosisDate])
+}

@@ -254,103 +254,48 @@ model ShortcodeBlock {
   updatedAt  DateTime @updatedAt
 }
 
-model MetaAdDailyStat {
-  id             String   @id @default(cuid())
-  date           String   // YYYY-MM-DD
-  accountId      String   // act_830836643076983 or 830836643076983
-  accountName    String?
-  campaignId     String
-  campaignName   String?
-  adsetId        String   @default("")
-  adsetName      String?
-  spend          Float    @default(0)
-  impressions    Int      @default(0)
-  reach          Int      @default(0)
-  clicks         Int      @default(0)
-  cpm            Float    @default(0)
-  ctr            Float    @default(0)
-  cpc            Float    @default(0)
-  messagesNew    Int      @default(0)
-  messagingTotal Int      @default(0)
-  leads          Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([date, accountId, campaignId, adsetId], name: "meta_daily_stat_key")
-  @@index([date])
-  @@index([accountId])
-  @@index([campaignId])
-}
-
-model MetaAdCreative {
-  id           String   @id @default(cuid())
-  adId         String   @unique
-  adName       String?
-  adsetId      String?
-  adsetName    String?
-  campaignId   String?
-  campaignName String?
-  accountId    String?
-  status       String?
-  effectiveStatus String?
-  creativeId   String?
-  thumbnailUrl String?
-  bodyText     String?
-  titleText    String?
-  callToAction String?
-  linkUrl      String?
-  previewUrl   String?
-  createdTime  String?
-  updatedTime  String?
-  rawJson      String?  // Full raw JSON from API
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([accountId])
-  @@index([campaignId])
-}
-
-model MetaAdDailyInsight {
-  id             String   @id @default(cuid())
-  date           String   // YYYY-MM-DD
-  adId           String
-  adName         String?
-  adsetId        String?
-  adsetName      String?
-  campaignId     String?
-  campaignName   String?
-  accountId      String?
-  spend          Float    @default(0)
-  impressions    Int      @default(0)
-  reach          Int      @default(0)
-  clicks         Int      @default(0)
-  cpm            Float    @default(0)
-  ctr            Float    @default(0)
-  cpc            Float    @default(0)
-  messagesNew    Int      @default(0)
-  messagingTotal Int      @default(0)
-  leads          Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([date, adId], name: "meta_ad_daily_insight_key")
-  @@index([date])
-  @@index([accountId])
-  @@index([campaignId])
-  @@index([adId])
-}
-
-model MetaSyncRun {
+model AffiliatePartner {
   id          String   @id @default(cuid())
-  runType     String   // FULL | INCREMENTAL | MANUAL
-  accountId   String?
-  status      String   @default("RUNNING") // RUNNING | DONE | FAILED
-  startedAt   DateTime @default(now())
-  finishedAt  DateTime?
-  recordsSync Int      @default(0)
-  errorMsg    String?
+  name        String
+  email       String   @unique
+  phone       String?
+  code        String   @unique // Mã giới thiệu
+  commissionRate Float @default(0.05) // 5%
+  status      String   @default("ACTIVE") // ACTIVE | INACTIVE | BANNED
+  totalEarned Float    @default(0)
+  paidOut     Float    @default(0)
+  bank        String?  // Tên ngân hàng
+  bankAccount String?  // Số tài khoản
+  bankName    String?  // Tên chủ tài khoản
+  note        String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@index([status])
-  @@index([accountId])
+  clicks      AffiliateClick[]
 }
+
+model AffiliateClick {
+  id          String          @id @default(cuid())
+  partnerId   String
+  partner     AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  targetUrl   String
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  isConverted Boolean         @default(false)
+  revenue     Float?          // Doanh thu từ click này
+  commission  Float?          // Hoa hồng đã tính
+  createdAt   DateTime        @default(now())
+
+  @@index([partnerId])
+  @@index([createdAt])
+  @@index([isConverted])
+}
+
+// ============================================================
+// NOTE: Meta Ads tables đã được TÁCH SANG prisma/meta-ads.prisma
+// Kết nối: META_ADS_DATABASE_URL → luoi_meta
+// Không import MetaAd* từ đây nữa
+// ============================================================
+
+

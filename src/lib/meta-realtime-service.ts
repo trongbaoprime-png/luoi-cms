@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { db } from "@/lib/db";
+import { cmsDb } from "@/lib/cms-db";
+import { metaDb } from "@/lib/meta-db";
 import { detectService, detectBranch } from "@/lib/meta-detection";
 
 // File Cache Config
@@ -109,7 +110,7 @@ export function enrichMetaContentRow(c: any, idx: number = 0) {
 
 // Read Meta Configuration from DB Settings or env
 export async function getMetaConfig() {
-  const settings = await db.setting.findMany({
+  const settings = await cmsDb.setting.findMany({
     where: {
       key: {
         in: [
@@ -280,7 +281,7 @@ export async function getMetaRealtimeData(
   // 2. Read PostgreSQL Database historical data if not fresh
   if (!fresh) {
     try {
-      const dbAggregated = await db.metaAdDailyStat.groupBy({
+      const dbAggregated = await metaDb.metaAdDailyStat.groupBy({
         by: [
           "accountId",
           "accountName",
@@ -529,7 +530,7 @@ export async function getMetaRealtimeData(
   // Fallback to PostgreSQL DB if live API returned 0 campaigns
   if (campaignRows.length === 0) {
     try {
-      const dbAggregated = await db.metaAdDailyStat.groupBy({
+      const dbAggregated = await metaDb.metaAdDailyStat.groupBy({
         by: ["accountId", "accountName", "campaignId", "campaignName", "adsetId", "adsetName"],
         _sum: {
           spend: true,

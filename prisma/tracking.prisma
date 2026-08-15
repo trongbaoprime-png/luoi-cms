@@ -1,0 +1,151 @@
+// ============================================================
+// TRACKING DATABASE — luoi_tracking
+// Pixel events, UTM attribution, conversion funnel
+// Write-heavy — tách riêng để không ảnh hưởng CMS read perf
+// ============================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TRACKING_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-tracking"
+}
+
+// Phiên truy cập website
+model TrackingSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  visitorId   String?  // anonymous persistent ID (cookie)
+  ipAddress   String?
+  userAgent   String?
+  // UTM Parameters
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+  // Click IDs
+  fbclid      String?
+  gclid       String?
+  ttclid      String?
+  // Attribution
+  referrer    String?
+  landingPage String?
+  // Geo
+  country     String?
+  region      String?  // Tỉnh/TP
+  city        String?
+  detectedBranch String? // Branch detect từ IP/UTM
+  // Status
+  isConverted Boolean  @default(false)
+  convertedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events      TrackingEvent[]
+
+  @@index([sessionId])
+  @@index([visitorId])
+  @@index([fbclid])
+  @@index([utmCampaign])
+  @@index([createdAt])
+}
+
+// Sự kiện tracking
+model TrackingEvent {
+  id         String   @id @default(cuid())
+  sessionId  String
+  session    TrackingSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  eventName  String   // PageView, FormSubmit, ClickZalo, ClickCall, ViewProduct, ScrollDepth
+  eventData  String?  // JSON: additional data
+  pageUrl    String?
+  pageTitle  String?
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([eventName])
+  @@index([createdAt])
+}
+
+// Conversion event gửi lên Meta/GA4
+model TrackingConversion {
+  id            String   @id @default(cuid())
+  sessionId     String?
+  eventName     String   // Lead, Contact, Purchase
+  platform      String   // META_CAPI | GA4 | TIKTOK_EVENTS
+  value         Float?
+  currency      String   @default("VND")
+  fbclid        String?
+  fbc           String?
+  fbp           String?
+  gclid         String?
+  utmSource     String?
+  utmCampaign   String?
+  phone         String?   // Hashed khi gửi
+  email         String?   // Hashed khi gửi
+  eventId       String?   // Deduplicate ID
+  status        String    @default("PENDING") // PENDING | SENT | FAILED
+  response      String?   // Raw API response
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([platform])
+  @@index([status])
+  @@index([sessionId])
+  @@index([fbclid])
+  @@index([createdAt])
+}
+
+// Map UTM → SourceGroup (cho CRM phân loại)
+model UTMMapping {
+  id          String   @id @default(cuid())
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  sourceGroup String   // FACEBOOK | GOOGLE | TIKTOK | HOTLINE | WEBSITE | KHÁC
+  label       String?  // Human-readable label
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([utmSource, utmMedium, utmCampaign])
+}
+
+// Log bắn pixel (thay AdsLog trong CMS)
+model PixelFireLog {
+  id        String   @id @default(cuid())
+  platform  String   // META | GA4 | TIKTOK
+  eventName String
+  eventData String   // JSON payload
+  status    String   // SUCCESS | FAILED | DEDUP
+  response  String?
+  latencyMs Int?
+  createdAt DateTime @default(now())
+
+  @@index([platform])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Geo session — Phát hiện vùng địa lý (persist thay query-time)
+model GeoSession {
+  id             String   @id @default(cuid())
+  sessionId      String?
+  ipAddress      String
+  country        String?
+  region         String?
+  city           String?
+  latitude       Float?
+  longitude      Float?
+  detectedBranch String?  // Branch được assign từ geo
+  isp            String?
+  createdAt      DateTime @default(now())
+
+  @@index([ipAddress])
+  @@index([detectedBranch])
+  @@index([createdAt])
+}

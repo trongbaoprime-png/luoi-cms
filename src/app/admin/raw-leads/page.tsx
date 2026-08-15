@@ -90,6 +90,17 @@ export default function RawLeadsPage() {
     } catch {}
   };
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input (400ms)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const fetchRawLeads = async () => {
     setLoading(true);
     try {
@@ -100,7 +111,7 @@ export default function RawLeadsPage() {
       if (activeTab === "CLICKS" && channelFilter !== "ALL") {
         params.append("channel", channelFilter);
       }
-      if (search) params.append("search", search);
+      if (debouncedSearch) params.append("search", debouncedSearch);
 
       const res = await fetch(`/api/admin/raw-leads?${params.toString()}`);
       const data = await res.json();
@@ -108,8 +119,8 @@ export default function RawLeadsPage() {
       if (data.success) {
         setRawLeads(data.data);
         if (data.stats) setStats(data.stats);
-        setTotalPages(data.pagination.totalPages);
-        setTotalCount(data.pagination.totalCount);
+        setTotalPages(data.pagination.totalPages || 1);
+        setTotalCount(data.pagination.totalCount || 0);
       }
     } catch {
       console.error("Lỗi nạp dữ liệu khách thô");
@@ -120,7 +131,7 @@ export default function RawLeadsPage() {
 
   useEffect(() => {
     fetchRawLeads();
-  }, [page, activeTab, channelFilter]);
+  }, [page, activeTab, channelFilter, debouncedSearch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

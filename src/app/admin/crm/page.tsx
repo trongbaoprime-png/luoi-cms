@@ -317,16 +317,24 @@ export function MiniCrmAdminPage() {
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input (400ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
   // Reset to page 1 whenever any filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, sourceFilter, originFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo]);
+  }, [debouncedSearch, statusFilter, sourceFilter, originFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
+      if (debouncedSearch) params.append("search", debouncedSearch);
       if (statusFilter !== "ALL") params.append("status", statusFilter);
       if (sourceFilter !== "ALL") params.append("sourceGroup", sourceFilter);
       if (originFilter !== "ALL") params.append("originGroup", originFilter);
@@ -351,7 +359,7 @@ export function MiniCrmAdminPage() {
       }
     } catch {}
     setLoading(false);
-  }, [searchTerm, statusFilter, sourceFilter, originFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo, currentPage]);
+  }, [debouncedSearch, statusFilter, sourceFilter, originFilter, telesaleFilter, branchFilter, specificBranchFilter, serviceFilter, dateFrom, dateTo, currentPage]);
 
   useEffect(() => {
     fetchLeads();

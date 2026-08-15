@@ -1,4 +1,5 @@
-import { db } from "@/lib/db";
+import { cmsDb } from "@/lib/cms-db";
+import { metaDb } from "@/lib/meta-db";
 import { getMetaConfig, discoverAdAccounts } from "@/lib/meta-realtime-service";
 
 interface SyncOptions {
@@ -81,7 +82,7 @@ async function batchUpsertStats(rows: any[], accId: string): Promise<number> {
       const campaignId = row.campaign_id || "unknown";
       const adsetId = row.adset_id || "";
 
-      return db.metaAdDailyStat.upsert({
+      return metaDb.metaAdDailyStat.upsert({
         where: {
           meta_daily_stat_key: {
             date,
@@ -132,7 +133,7 @@ async function batchUpsertStats(rows: any[], accId: string): Promise<number> {
   for (let i = 0; i < upsertOps.length; i += BATCH_SIZE) {
     const chunk = upsertOps.slice(i, i + BATCH_SIZE);
     try {
-      await db.$transaction(chunk);
+      await metaDb.$transaction(chunk);
       savedCount += chunk.length;
     } catch {
       for (const op of chunk) {
@@ -238,7 +239,7 @@ export async function syncMetaAds365Days(options: SyncOptions = {}) {
   };
 
   try {
-    await db.setting.upsert({
+    await cmsDb.setting.upsert({
       where: { key: "meta_last_daily_sync" },
       create: { key: "meta_last_daily_sync", value: JSON.stringify(summaryPayload) },
       update: { value: JSON.stringify(summaryPayload), updatedAt: new Date() },
@@ -252,7 +253,7 @@ export async function syncMetaAds365Days(options: SyncOptions = {}) {
 
 export async function getLastMetaSyncInfo() {
   try {
-    const setting = await db.setting.findUnique({
+    const setting = await cmsDb.setting.findUnique({
       where: { key: "meta_last_daily_sync" },
     });
     if (setting && setting.value) {

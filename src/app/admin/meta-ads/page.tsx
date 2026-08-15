@@ -53,6 +53,8 @@ export interface MetaCampaignRow {
   leads: number;
 }
 
+import MetaDiagnosisSubtab from "@/components/meta-ads/MetaDiagnosisSubtab";
+
 export interface MetaContentRow extends MetaCampaignRow {
   ad_id?: string;
   ad_name?: string;
@@ -77,7 +79,7 @@ export interface MetaContentRow extends MetaCampaignRow {
 }
 
 export default function MetaAdsReportPage() {
-  const [activeSubtab, setActiveSubtab] = useState<"analysis" | "campaign" | "content" | "accounts">("analysis");
+  const [activeSubtab, setActiveSubtab] = useState<"analysis" | "diagnosis" | "campaign" | "content" | "accounts">("analysis");
   const [selectedPreset, setSelectedPreset] = useState<DatePresetKey>("THIS_MONTH");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -283,30 +285,34 @@ export default function MetaAdsReportPage() {
     return Array.from(set);
   }, [campaigns]);
 
-  // Filtered Campaigns List
+  // Filtered Campaigns List with robust case-insensitive matching
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((row) => {
-      const rowService = row.service || detectService(row);
-      const rowBranch = row.branch || detectBranch(row);
+      const rowService = (row.service || detectService(row) || "").toLowerCase();
+      const rowBranch = (row.branch || detectBranch(row) || "").toLowerCase();
+      const sFilter = serviceFilter.toLowerCase().trim();
+      const bFilter = branchFilter.toLowerCase().trim();
 
-      if (serviceFilter && rowService !== serviceFilter) return false;
-      if (branchFilter && rowBranch !== branchFilter) return false;
+      if (sFilter && !rowService.includes(sFilter) && !sFilter.includes(rowService)) return false;
+      if (bFilter && !rowBranch.includes(bFilter) && !bFilter.includes(rowBranch)) return false;
       if (accountFilter && row.account_id !== accountFilter) return false;
-      if (statusFilter && row.effective_status !== statusFilter) return false;
+      if (statusFilter && (row.effective_status || "").toUpperCase() !== statusFilter.toUpperCase()) return false;
       return true;
     });
   }, [campaigns, serviceFilter, branchFilter, accountFilter, statusFilter]);
 
-  // Filtered Content List
+  // Filtered Content List with robust case-insensitive matching
   const filteredContent = useMemo(() => {
     return contentAds.filter((row) => {
-      const rowService = row.service || detectService(row);
-      const rowBranch = row.branch || detectBranch(row);
+      const rowService = (row.service || detectService(row) || "").toLowerCase();
+      const rowBranch = (row.branch || detectBranch(row) || "").toLowerCase();
+      const sFilter = serviceFilter.toLowerCase().trim();
+      const bFilter = branchFilter.toLowerCase().trim();
 
-      if (serviceFilter && rowService !== serviceFilter) return false;
-      if (branchFilter && rowBranch !== branchFilter) return false;
+      if (sFilter && !rowService.includes(sFilter) && !sFilter.includes(rowService)) return false;
+      if (bFilter && !rowBranch.includes(bFilter) && !bFilter.includes(rowBranch)) return false;
       if (accountFilter && row.account_id !== accountFilter) return false;
-      if (statusFilter && row.effective_status !== statusFilter) return false;
+      if (statusFilter && (row.effective_status || "").toUpperCase() !== statusFilter.toUpperCase()) return false;
       return true;
     });
   }, [contentAds, serviceFilter, branchFilter, accountFilter, statusFilter]);
@@ -492,6 +498,16 @@ export default function MetaAdsReportPage() {
           }`}
         >
           IV. Tài khoản quảng cáo ({accounts.length})
+        </button>
+        <button
+          onClick={() => setActiveSubtab("diagnosis")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+            activeSubtab === "diagnosis"
+              ? "bg-rose-700 text-white shadow-xs"
+              : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
+          }`}
+        >
+          <span>🩺 V. Chẩn đoán sức khỏe Camp</span>
         </button>
       </div>
 
@@ -797,6 +813,11 @@ export default function MetaAdsReportPage() {
       {/* SUBTAB IV: TÀI KHOẢN QUẢNG CÁO COMPONENT */}
       {activeSubtab === "accounts" && (
         <MetaAccountsSubtab accounts={accounts} metrics={metrics} />
+      )}
+
+      {/* SUBTAB V: CHẨN ĐOÁN SỨC KHỎE CAMPAIGN */}
+      {activeSubtab === "diagnosis" && (
+        <MetaDiagnosisSubtab campaigns={filteredCampaigns} />
       )}
     </div>
   );

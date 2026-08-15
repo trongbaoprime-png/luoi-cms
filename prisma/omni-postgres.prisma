@@ -86,3 +86,49 @@ model OmniMessage {
   @@index([senderType])
   @@index([createdAt])
 }
+
+// AI Reply Suggestion Log — persist d? h?c pattern
+model OmniAILog {
+  id             String   @id @default(cuid())
+  conversationId String
+  promptText     String   // Tin nh?n g?c c?a khách
+  suggestion     String   // G?i ý c?a AI
+  wasUsed        Boolean  @default(false)
+  wasEdited      Boolean  @default(false)
+  finalText      String?  // Text th?c s? du?c g?i
+  model          String?  // Gemini/OpenAI model used
+  latencyMs      Int?
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+// Rule t? d?ng g?n th? / phân branch
+model OmniAutoRule {
+  id          String   @id @default(cuid())
+  name        String
+  condition   String   // JSON: {field, operator, value}
+  action      String   // JSON: {type, value} — type: TAG | BRANCH | ASSIGN
+  priority    Int      @default(0)
+  isActive    Boolean  @default(true)
+  triggerCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// L?ch s? d?ng b? sang CRM
+model OmniCRMSync {
+  id             String   @id @default(cuid())
+  conversationId String?
+  psid           String?
+  phone          String?
+  crmLeadId      String?
+  status         String   @default("SYNCED") // SYNCED | FAILED | SKIPPED
+  errorMsg       String?
+  syncedAt       DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([phone])
+  @@index([status])
+}

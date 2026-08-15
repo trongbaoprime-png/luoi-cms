@@ -50,9 +50,15 @@ model CRMLead {
   appointmentDoctor String?            // Bác sĩ / Nhân viên phụ trách lịch hẹn
   appointmentStatus String?            @default("PENDING") // PENDING, CONFIRMED, REMINDED, CHECKED_IN, NO_SHOW, CANCELLED
   appointmentNote   String?            // Ghi chú lịch hẹn
+  // Attribution — Link sang Meta Ads campaign
+  campaignId        String?            // Meta campaignId (để cross-reference với luoi_meta)
+  adsetId           String?
+  adId              String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   statusHistory     CRMStatusHistory[]
+  notes             CRMNote[]
+
 
   @@unique([phone])
   @@index([status])
@@ -78,4 +84,35 @@ model CRMStatusHistory {
 
   @@index([leadId])
   @@index([createdAt])
+}
+
+model CRMNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      CRMLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  content   String
+  type      String   @default("NOTE") // NOTE | CALL | EMAIL | SMS | VISIT
+  createdBy String?  @default("SYSTEM")
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model CRMRevenuePlan {
+  id         String   @id @default(cuid())
+  month      String   // YYYY-MM
+  branch     String?
+  service    String?
+  targetLeads     Int      @default(0)
+  targetRevenue   Float    @default(0)
+  actualLeads     Int      @default(0)
+  actualRevenue   Float    @default(0)
+  actualCheckin   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([month, branch, service])
+  @@index([month])
+  @@index([branch])
 }

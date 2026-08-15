@@ -13,6 +13,7 @@ interface Subscriber {
 
 export default function AdminSubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/subscribers")
@@ -22,12 +23,18 @@ export default function AdminSubscribersPage() {
       });
   }, []);
 
+  const filtered = subscribers.filter((s) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return s.email.toLowerCase().includes(q) || (s.name || "").toLowerCase().includes(q);
+  });
+
   const handleExportCsv = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + ["Email,Status,Date", ...subscribers.map((s) => `${s.email},${s.status},${s.createdAt}`)].join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + ["Email,Status,Date", ...filtered.map((s) => `${s.email},${s.status},${s.createdAt}`)].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "subscribers_luoidonnha.csv");
+    link.setAttribute("download", "subscribers_tamducsmile.csv");
     document.body.appendChild(link);
     link.click();
   };
@@ -48,6 +55,19 @@ export default function AdminSubscribersPage() {
         </button>
       </div>
 
+      <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between gap-3">
+        <input
+          type="text"
+          placeholder="Tìm theo email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full md:w-80 px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0d4f4a]"
+        />
+        <div className="text-xs text-stone-500 font-mono">
+          Hiển thị: <strong>{filtered.length}</strong> / {subscribers.length} email
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -58,7 +78,7 @@ export default function AdminSubscribersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100 text-sm">
-            {subscribers.map((sub) => (
+            {filtered.map((sub) => (
               <tr key={sub.id} className="hover:bg-stone-50">
                 <td className="py-3 px-4 font-mono font-medium text-stone-900">{sub.email}</td>
                 <td className="py-3 px-4">
