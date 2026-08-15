@@ -56,10 +56,10 @@ export default function AdminCategoriesPage() {
         .replace(/\s+/g, "-");
       setSlug(generatedSlug);
       if (!seoTitle) {
-        setSeoTitle(`${val} - Chuyên mục | Lười Dọn Nhà`);
+        setSeoTitle(`${val} - Chuyên mục | Tâm Đức Smile`);
       }
       if (!canonicalUrl) {
-        setCanonicalUrl(`https://luoidonnha.com/${generatedSlug}`);
+        setCanonicalUrl(`https://tamduc.vn/${generatedSlug}`);
       }
     }
   };
@@ -69,10 +69,10 @@ export default function AdminCategoriesPage() {
     setName(cat.name);
     setSlug(cat.slug);
     setDescription(cat.description || "");
-    setSeoTitle(cat.seoTitle || `${cat.name} - Chuyên mục | Lười Dọn Nhà`);
+    setSeoTitle(cat.seoTitle || `${cat.name} - Chuyên mục | Tâm Đức Smile`);
     setSeoDescription(cat.seoDescription || cat.description || "");
     setOgImage(cat.ogImage || "");
-    setCanonicalUrl(cat.canonicalUrl || `https://luoidonnha.com/${cat.slug}`);
+    setCanonicalUrl(cat.canonicalUrl || `https://tamduc.vn/${cat.slug}`);
   };
 
   const cancelEdit = () => {
@@ -88,14 +88,14 @@ export default function AdminCategoriesPage() {
 
   const handleAutoFillSeo = () => {
     if (!name) return;
-    setSeoTitle(`${name} - Cập nhật mới nhất 2026 | Lười Dọn Nhà`);
+    setSeoTitle(`${name} - Cập nhật mới nhất 2026 | Tâm Đức Smile`);
     if (description) {
       setSeoDescription(description.slice(0, 155));
     } else {
-      setSeoDescription(`Tổng hợp các bài viết, cẩm nang và sản phẩm hàng đầu thuộc chuyên mục ${name} tại Lười Dọn Nhà.`);
+      setSeoDescription(`Tổng hợp các bài viết, cẩm nang và sản phẩm hàng đầu thuộc chuyên mục ${name} tại Tâm Đức Smile.`);
     }
     if (slug) {
-      setCanonicalUrl(`https://luoidonnha.com/${slug}`);
+      setCanonicalUrl(`https://tamduc.vn/${slug}`);
     }
   };
 
@@ -127,10 +127,18 @@ export default function AdminCategoriesPage() {
         setMsg(editingId ? "✓ Đã cập nhật danh mục & tối ưu SEO thành công!" : "✓ Đã thêm danh mục mới & cấu hình SEO chuẩn Google!");
         cancelEdit();
         fetchCategories();
+      } else {
+        const errMsg = data.error || "Lỗi không xác định";
+        setMsg("❌ Lỗi: " + errMsg);
+        alert("Thao tác thất bại!\n\n" + errMsg);
       }
+    } catch (e: any) {
+      const errMsg = e?.message || "Lỗi kết nối server";
+      setMsg("❌ " + errMsg);
+      alert("Lỗi kết nối: " + errMsg);
     } finally {
       setLoading(false);
-      setTimeout(() => setMsg(""), 4000);
+      setTimeout(() => setMsg(""), 5000);
     }
   };
 
@@ -271,7 +279,7 @@ export default function AdminCategoriesPage() {
                   type="text"
                   value={seoTitle}
                   onChange={(e) => setSeoTitle(e.target.value)}
-                  placeholder="VD: Dịch Vụ Vệ Sinh Căn Hộ Chuyên Nghiệp | Lười Dọn Nhà"
+                  placeholder="VD: Dịch Vụ Vệ Sinh Căn Hộ Chuyên Nghiệp | Tâm Đức Smile"
                   className="w-full px-3 py-2 border border-stone-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-600 font-sans text-xs"
                 />
               </div>
@@ -308,7 +316,7 @@ export default function AdminCategoriesPage() {
                     type="url"
                     value={ogImage}
                     onChange={(e) => setOgImage(e.target.value)}
-                    placeholder="https://luoidonnha.com/images/category-banner.jpg"
+                    placeholder="https://tamduc.vn/images/category-banner.jpg"
                     className="w-full px-3 py-2 border border-stone-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-600 text-xs font-mono"
                   />
                   {ogImage && (
@@ -331,7 +339,7 @@ export default function AdminCategoriesPage() {
                   type="url"
                   value={canonicalUrl}
                   onChange={(e) => setCanonicalUrl(e.target.value)}
-                  placeholder="https://luoidonnha.com/dich-vu-ve-sinh"
+                  placeholder="https://tamduc.vn/dich-vu-ve-sinh"
                   className="w-full px-3 py-2 border border-stone-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-600 text-xs font-mono"
                 />
               </div>
@@ -342,10 +350,10 @@ export default function AdminCategoriesPage() {
                   Xem trước kết quả tìm kiếm Google (SERP Preview)
                 </span>
                 <p className="text-sm font-semibold text-blue-700 hover:underline truncate font-sans">
-                  {seoTitle || (name ? `${name} - Chuyên mục | Lười Dọn Nhà` : "Tiêu đề danh mục trên Google Search")}
+                  {seoTitle || (name ? `${name} - Chuyên mục | Tâm Đức Smile` : "Tiêu đề danh mục trên Google Search")}
                 </p>
                 <p className="text-[11px] text-emerald-800 truncate font-mono">
-                  https://luoidonnha.com/{slug || "slug-danh-muc"}
+                  https://tamduc.vn/{slug || "slug-danh-muc"}
                 </p>
                 <p className="text-xs text-stone-600 line-clamp-2 font-sans leading-relaxed">
                   {seoDescription || description || "Đoạn trích giới thiệu danh mục xuất hiện trên Google Tìm Kiếm giúp gia tăng CTR và thứ hạng từ khóa."}
@@ -412,7 +420,7 @@ export default function AdminCategoriesPage() {
                       </td>
                       <td className="py-3 px-3">
                         <a
-                          href={`https://luoidonnha.com/${cat.slug}`}
+                          href={`https://tamduc.vn/${cat.slug}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-emerald-700 hover:underline flex items-center gap-1 font-bold"

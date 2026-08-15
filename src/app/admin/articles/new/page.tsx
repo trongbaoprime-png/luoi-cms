@@ -341,6 +341,7 @@ export default function NewArticlePage() {
     }
 
     const selectedCategoryObj = categoriesList.find((c) => c.id === selectedCategoryId);
+    setMsg(status === "PUBLISHED" ? "⏳ Đang xuất bản bài viết..." : "⏳ Đang lưu nháp...");
 
     try {
       const res = await fetch("/api/articles", {
@@ -350,7 +351,7 @@ export default function NewArticlePage() {
           title,
           slug,
           categoryId: selectedCategoryId || undefined,
-          categoryName: selectedCategoryObj ? selectedCategoryObj.name : "Mẹo Nhà Gọn",
+          categoryName: selectedCategoryObj ? selectedCategoryObj.name : undefined,
           summary,
           content,
           coverImage,
@@ -368,13 +369,20 @@ export default function NewArticlePage() {
 
       const data = await res.json();
       if (data.success) {
-        alert(`Đã lưu bài viết thành công (${status})!`);
-        router.push("/admin/articles");
+        setMsg(`✅ ${status === "PUBLISHED" ? "Xuất bản" : "Lưu nháp"} thành công!`);
+        setTimeout(() => router.push("/admin/articles"), 800);
+      } else {
+        const errMsg = data.error || "Lỗi không xác định";
+        setMsg(`❌ Lỗi: ${errMsg}`);
+        alert(`Lưu bài viết thất bại!\n\n${errMsg}`);
       }
-    } catch {
-      alert("Lỗi kết nối khi lưu bài viết.");
+    } catch (e: any) {
+      const errMsg = e?.message || "Lỗi kết nối server";
+      setMsg(`❌ ${errMsg}`);
+      alert(`Lỗi kết nối khi lưu bài viết:\n${errMsg}`);
     }
   };
+
 
   return (
     <div className="w-full max-w-[1536px] mx-auto space-y-6 pb-12">

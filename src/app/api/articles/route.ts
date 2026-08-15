@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { title, slug, summary, content, categoryId, categoryName, seoTitle, seoDesc, status } = body;
+    const { title, slug, summary, content, categoryId, categoryName, coverImage, seoTitle, seoDesc, schemaJson, status } = body;
 
     let targetCategoryId = categoryId;
 
@@ -51,8 +51,10 @@ export async function POST(req: Request) {
         slug: slug || title.toLowerCase().replace(/[^a-z0-9]/g, "-"),
         summary,
         content,
+        coverImage: coverImage || undefined,
         seoTitle: seoTitle || title,
         seoDescription: seoDesc || summary,
+        schemaJson: schemaJson || undefined,
         status: status || "PUBLISHED",
         categoryId: targetCategoryId || undefined,
       },

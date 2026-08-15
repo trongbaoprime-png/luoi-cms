@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     avatar?: string;
   }>({
     name: "Beni",
-    email: "admin@luoidonnha.com",
+    email: "admin@tamducsmile.vn",
     role: "ADMIN",
   });
 

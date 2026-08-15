@@ -77,7 +77,7 @@ export default function AdminPagesManagerPage() {
       setSeoTitle(`${val} | Lười Dọn Nhà`);
     }
     if (!canonicalUrl) {
-      setCanonicalUrl(`https://luoidonnha.com/${generatedSlug}`);
+      setCanonicalUrl(`https://nkhoa.tamducsmile.vn/${generatedSlug}`);
     }
   };
 
@@ -86,7 +86,7 @@ export default function AdminPagesManagerPage() {
     setSeoTitle(`${title} - Ưu đãi & Khảo sát miễn phí | Lười Dọn Nhà`);
     setSeoDescription(`Khám phá dịch vụ ${title} chuyên nghiệp tại Lười Dọn Nhà. Cam kết sạch sẽ, nhanh chóng, bảo hành chu đáo.`);
     if (slug) {
-      setCanonicalUrl(`https://luoidonnha.com/${slug}`);
+      setCanonicalUrl(`https://nkhoa.tamducsmile.vn/${slug}`);
     }
   };
 
@@ -127,7 +127,12 @@ export default function AdminPagesManagerPage() {
         setUseDefaultHeader(true);
         setUseDefaultFooter(true);
         fetchPages();
+      } else {
+        const errMsg = data.error || "Lỗi tạo trang không xác định";
+        alert("Tạo trang thất bại!\n\n" + errMsg);
       }
+    } catch (e: any) {
+      alert("Lỗi kết nối: " + (e?.message || "Server error"));
     } finally {
       setLoading(false);
     }
@@ -140,7 +145,7 @@ export default function AdminPagesManagerPage() {
     setEditSeoTitle(p.seoTitle || "");
     setEditSeoDescription(p.seoDescription || "");
     setEditOgImage(p.ogImage || "");
-    setEditCanonicalUrl(p.canonicalUrl || `https://luoidonnha.com/${p.slug}`);
+    setEditCanonicalUrl(p.canonicalUrl || `https://nkhoa.tamducsmile.vn/${p.slug}`);
     setEditKeywords(p.keywords || "");
     setEditNoIndex(p.noIndex || false);
     setEditUseHeader(p.useDefaultHeader);
@@ -173,7 +178,11 @@ export default function AdminPagesManagerPage() {
       if (data.success) {
         setEditingPage(null);
         fetchPages();
+      } else {
+        alert("Cập nhật trang thất bại!\n\n" + (data.error || "Lỗi không xác định"));
       }
+    } catch (e: any) {
+      alert("Lỗi kết nối: " + (e?.message || "Server error"));
     } finally {
       setEditLoading(false);
     }
@@ -320,7 +329,7 @@ export default function AdminPagesManagerPage() {
                     type="url"
                     value={ogImage}
                     onChange={(e) => setOgImage(e.target.value)}
-                    placeholder="https://luoidonnha.com/images/landing-banner.jpg"
+                    placeholder="https://nkhoa.tamducsmile.vn/images/landing-banner.jpg"
                     className="w-full px-3 py-2 border border-stone-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-600 text-xs font-mono"
                   />
                   {ogImage && (
@@ -356,7 +365,7 @@ export default function AdminPagesManagerPage() {
                     type="url"
                     value={canonicalUrl}
                     onChange={(e) => setCanonicalUrl(e.target.value)}
-                    placeholder="https://luoidonnha.com/slug"
+                    placeholder="https://nkhoa.tamducsmile.vn/slug"
                     className="w-full px-3 py-2 border border-stone-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-600 text-xs font-mono"
                   />
                 </div>
@@ -384,7 +393,7 @@ export default function AdminPagesManagerPage() {
                   {seoTitle || (title ? `${title} | Lười Dọn Nhà` : "Tiêu đề trang Landing Page trên Google")}
                 </p>
                 <p className="text-[11px] text-emerald-800 truncate font-mono">
-                  https://luoidonnha.com/{slug || "slug-landing-page"}
+                  https://nkhoa.tamducsmile.vn/{slug || "slug-landing-page"}
                 </p>
                 <p className="text-xs text-stone-600 line-clamp-2 font-sans leading-relaxed">
                   {seoDescription || "Đoạn trích mô tả trang landing page trên kết quả tìm kiếm tự nhiên của Google giúp tối ưu CTR và thứ hạng từ khóa."}
@@ -457,7 +466,7 @@ export default function AdminPagesManagerPage() {
                       </td>
                       <td className="py-3 px-3">
                         <a
-                          href={`https://luoidonnha.com/${p.slug}`}
+                          href={`https://nkhoa.tamducsmile.vn/${p.slug}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-emerald-700 hover:underline flex items-center gap-1 font-bold"
