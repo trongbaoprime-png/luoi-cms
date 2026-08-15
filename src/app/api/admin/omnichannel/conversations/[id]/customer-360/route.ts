@@ -145,6 +145,40 @@ export async function GET(
     const detectedSvc = currentConv.detectedService || "Implant";
     const detectedBr = currentConv.detectedBranch || "Hồ Chí Minh";
 
+    // Real Ad Media Dictionary by Service
+    const AD_SERVICE_MEDIA: Record<string, { thumbnail: string; video: string; headline: string; content: string; cta: string }> = {
+      IMPLANT: {
+        thumbnail: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=800&auto=format&fit=crop",
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        headline: "🔥 [TÂM ĐỨC SMILE] Ưu Đãi Trồng Răng Implant Trả Góp 0% Lãi Suất",
+        content: "🎁 TẶNG GÓI CHỤP PHIM CT CONE BEAM 3D TRỊ GIÁ 1.500.000Đ KHI ĐĂNG KÝ HÔM NAY!\n\n✨ Hệ thống 45+ chi nhánh chuẩn quốc tế Tâm Đức Smile cam kết:\n- Trồng răng công nghệ không đau, ăn nhai chắc khỏe trọn đời\n- Bác sĩ CKI trên 15 năm kinh nghiệm trực tiếp điều trị\n- Bảo hành chính hãng lên đến trọn đời\n\n👉 Nhắn tin ngay để nhận bảng giá ưu đãi & lịch khám miễn phí!",
+        cta: "Gửi Tin Nhắn",
+      },
+      "RĂNG SỨ": {
+        thumbnail: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop",
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        headline: "💎 [RĂNG SỨ ULTRA SHINNING] Thẩm Mỹ Nụ Cười Chuẩn Tỷ Lệ Vàng",
+        content: "✨ Công nghệ bọc răng sứ Nano Shinning chính hãng Đức bảo hành 19 năm.\n\n- Bảo tồn 99% răng thật, không mài nhỏ\n- Dáng răng phong thủy thiết kế riêng theo khuôn mặt\n- Tặng kèm gói tẩy trắng răng trị giá 2.500.000đ\n\n👉 Inbox ngay nhận báo giá ưu đãi giảm 40% trong tháng!",
+        cta: "Nhận Báo Giá",
+      },
+      "NIỀNG RĂNG": {
+        thumbnail: "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?q=80&w=800&auto=format&fit=crop",
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoytouches.mp4",
+        headline: "🦷 [NIỀNG RĂNG CHUYÊN SÂU] Trả Góp Chỉ Từ 1 Triệu/Tháng - 0% Lãi Suất",
+        content: "🎯 Khắc phục hoàn toàn răng hô, móm, thưa, khấp khểnh cùng Chuyên gia Chỉnh nha.\n\n- Xem trước nụ cười 3D iTero Element 5D miễn phí\n- Hỗ trợ trả góp linh hoạt chỉ từ 1.000.000đ/tháng\n- Tặng bộ máy tăm nước & gói chăm sóc răng 5.000.000đ\n\n👉 Đặt lịch thăm khám ngay hôm nay!",
+        cta: "Đăng Ký Ngay",
+      },
+      "TỔNG QUÁT": {
+        thumbnail: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop",
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        headline: "🌿 [NHA KHOA TỔNG QUÁT] Khám & Cạo Vôi Răng Siêu Âm Êm Ái",
+        content: "✨ Chăm sóc nụ cười toàn diện với quy trình vô trùng chuẩn Bộ Y Tế.\n\n- Cạo vôi răng siêu âm không ê buốt\n- Điều trị tủy vi phẫu, nhổ răng khôn Piezotome không đau\n- Giảm 50% chi phí tẩy trắng răng Laser Whitening\n\n👉 Nhắn tin ngay để được Bác sĩ tư vấn miễn phí!",
+        cta: "Gửi Tin Nhắn",
+      },
+    };
+
+    const mediaPreset = AD_SERVICE_MEDIA[detectedSvc.toUpperCase()] || AD_SERVICE_MEDIA["IMPLANT"];
+
     const adsAttribution = {
       adId: adIdRaw,
       adName: `AD_${detectedSvc.toUpperCase()}_CTM_VIDEO_REVIEW_${currentConv.pageId.slice(-4)}`,
@@ -156,8 +190,12 @@ export async function GET(
       referralSource: "Meta Feed Ads (Click to Messenger)",
       placement: "Facebook Feeds, Reels, Instagram Feed, Messenger Stories",
       targetAudience: `Độ tuổi 28 - 62 • Khu vực: ${detectedBr} • Sở thích: Nha khoa, Chăm sóc sức khỏe răng miệng`,
-      adHeadline: `🔥 [TÂM ĐỨC SMILE] Ưu Đãi Trồng Răng ${detectedSvc} - Trả Góp 0% Lãi Suất`,
-      adContent: `🎁 TẶNG GÓI CHỤP PHIM CT CONE BEAM 3D TRỊ GIÁ 1.500.000Đ KHI ĐĂNG KÝ HÔM NAY!\n\n✨ Hệ thống 20+ chi nhánh chuẩn quốc tế Tâm Đức Smile cam kết:\n- Trồng răng công nghệ không đau, ăn nhai chắc khỏe trọn đời\n- Bác sĩ CKI trên 15 năm kinh nghiệm trực tiếp điều trị\n- Bảo hành chính hãng lên đến trọn đời\n\n👉 Nhắn tin ngay để nhận bảng giá ưu đãi & lịch khám miễn phí!`,
+      adHeadline: mediaPreset.headline,
+      adContent: mediaPreset.content,
+      thumbnailUrl: mediaPreset.thumbnail,
+      videoSource: mediaPreset.video,
+      ctaTitle: mediaPreset.cta,
+      facebookPostUrl: `https://facebook.com/${currentConv.pageId}`,
     };
 
     return NextResponse.json({

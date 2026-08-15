@@ -235,32 +235,19 @@ export const getEffectiveBranch = (
 ): string => {
   if (!conv) return "Chưa chọn chi nhánh (Đang tư vấn)";
 
-  // 1. If conversation has explicit canonical branch
-  if (
-    conv.detectedBranch &&
-    conv.detectedBranch !== "Chưa chọn chi nhánh (Đang tư vấn)" &&
-    conv.detectedBranch !== "Chưa chọn chi nhánh" &&
-    conv.detectedBranch !== "CHƯA XÁC ĐỊNH"
-  ) {
-    const canonical = mapToCanonicalBranch(conv.detectedBranch);
-    if (canonical && canonical !== "Chưa chọn chi nhánh (Đang tư vấn)") return canonical;
-  }
-
-  // 2. Real-time message content scan (Customer messages first, then Staff)
+  // 1. Scan ONLY customer messages (senderType === "CUSTOMER")
   if (msgs && msgs.length > 0) {
-    const custTexts = msgs.filter((m) => m.senderType === "CUSTOMER").map((m) => m.content).join(" \n ");
-    const custBr = parseBranchFromText(custTexts);
-    if (custBr && custBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
-      return custBr;
-    }
-    const allTexts = msgs.map((m) => m.content).join(" \n ");
-    const allBr = parseBranchFromText(allTexts);
-    if (allBr && allBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
-      return allBr;
+    const custMsgs = msgs.filter((m) => m.senderType === "CUSTOMER");
+    if (custMsgs.length > 0) {
+      const custTexts = custMsgs.map((m) => m.content).join(" \n ");
+      const custBr = parseBranchFromText(custTexts);
+      if (custBr && custBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+        return custBr;
+      }
     }
   }
 
-  // 3. If CRM Lead has valid branch
+  // 2. If CRM Lead has valid branch (e.g. verified by Telesale/CSKH)
   if (
     crmLead?.branch &&
     crmLead.branch !== "Chưa chọn chi nhánh (Đang tư vấn)" &&
@@ -271,12 +258,34 @@ export const getEffectiveBranch = (
     if (canonical && canonical !== "Chưa chọn chi nhánh (Đang tư vấn)") return canonical;
   }
 
-  // 4. Fanpage name detection (e.g. "Nha Khoa Tâm Đức Smile Dĩ An" -> "DĨ AN (BÌNH DƯƠNG)")
+  // 3. If Fanpage is a dedicated branch page (e.g. "Nha Khoa Tâm Đức Smile Dĩ An")
   if (conv.fanpage?.pageName) {
-    const pageBr = parseBranchFromText(conv.fanpage.pageName);
-    if (pageBr && pageBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
-      return pageBr;
+    const pName = conv.fanpage.pageName.toLowerCase();
+    const isGenericPage = 
+      pName.includes("thẩm mỹ") || 
+      pName.includes("răng sứ cao cấp") || 
+      pName.includes("dr trí") || 
+      pName.includes("dr tri") || 
+      pName === "nha khoa tâm đức smile" || 
+      pName === "nha khoa tâm đức";
+      
+    if (!isGenericPage) {
+      const pageBr = parseBranchFromText(conv.fanpage.pageName);
+      if (pageBr && pageBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+        return pageBr;
+      }
     }
+  }
+
+  // 4. Fallback to manually stored branch if valid
+  if (
+    conv.detectedBranch &&
+    conv.detectedBranch !== "Chưa chọn chi nhánh (Đang tư vấn)" &&
+    conv.detectedBranch !== "Chưa chọn chi nhánh" &&
+    conv.detectedBranch !== "CHƯA XÁC ĐỊNH"
+  ) {
+    const canonical = mapToCanonicalBranch(conv.detectedBranch);
+    if (canonical && canonical !== "Chưa chọn chi nhánh (Đang tư vấn)") return canonical;
   }
 
   return "Chưa chọn chi nhánh (Đang tư vấn)";
@@ -429,10 +438,9 @@ export default function AdminOmnichannelPage() {
     }
   };
 
-  // Auto-detect branch from message content using Comprehensive Vietnam Geo Engine
+  // Auto-detect branch from message content (STRICTLY ONLY CUSTOMER MESSAGES)
   const autoDetectBranchFromMessages = (msgs: MessageItem[]): string | null => {
     if (!msgs || msgs.length === 0) return null;
-    // 1. Prioritize Customer message content
     const customerTexts = msgs
       .filter((m) => m.senderType === "CUSTOMER")
       .map((m) => m.content)
@@ -440,12 +448,6 @@ export default function AdminOmnichannelPage() {
     const custBr = parseBranchFromText(customerTexts);
     if (custBr && custBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
       return custBr;
-    }
-    // 2. Check all messages (including staff advice)
-    const allTexts = msgs.map((m) => m.content).join(" \n ");
-    const allBr = parseBranchFromText(allTexts);
-    if (allBr && allBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
-      return allBr;
     }
     return null;
   };
@@ -1862,18 +1864,19 @@ export default function AdminOmnichannelPage() {
                       </div>
 
                       {adsDetailExpanded && (
-                        <div className="p-3 space-y-2 bg-white animate-in fade-in duration-150">
-                          <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
-                            <span className="text-stone-400 text-[11px]">Nguồn tracking:</span>
-                            <span className="font-bold text-emerald-700 text-[11px]">
-                              {customer360.adsAttribution.referralSource || "Website Click Messenger"}
+                        <div className="p-3 space-y-2.5 bg-white animate-in fade-in duration-150">
+                          {/* Nguồn Tracking & Mã Ads */}
+                          <div className="flex items-center justify-between py-0.5 border-b border-stone-100">
+                            <span className="text-stone-400 text-[10px]">Nguồn tracking:</span>
+                            <span className="font-bold text-emerald-700 text-[10px]">
+                              {customer360.adsAttribution.referralSource || "Meta Feed Ads"}
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between py-0.5 border-b border-stone-50">
-                            <span className="text-stone-400 text-[11px]">Mã Ads ID:</span>
+                          <div className="flex items-center justify-between py-0.5 border-b border-stone-100">
+                            <span className="text-stone-400 text-[10px]">Mã Ads ID:</span>
                             <div className="flex items-center gap-1">
-                              <span className="font-mono font-bold text-blue-700 text-[11px]">
+                              <span className="font-mono font-bold text-blue-700 text-[10px]">
                                 {customer360.adsAttribution.adId}
                               </span>
                               <button
@@ -1882,23 +1885,55 @@ export default function AdminOmnichannelPage() {
                                   navigator.clipboard.writeText(customer360.adsAttribution.adId);
                                   showToast("Đã sao chép Mã Ad ID!");
                                 }}
-                                className="p-0.5 text-blue-600 cursor-pointer"
+                                className="p-0.5 text-blue-600 hover:text-blue-800 cursor-pointer"
                               >
                                 <Copy size={10} />
                               </button>
                             </div>
                           </div>
 
-                          <div className="py-0.5 border-b border-stone-50 space-y-0.5">
+                          {/* Tên Chiến Dịch (Campaign) */}
+                          <div className="py-0.5 border-b border-stone-100 space-y-0.5">
+                            <span className="text-stone-400 text-[10px] block">Chiến Dịch (Campaign):</span>
+                            <p className="font-bold text-[#0d4f4a] text-[11px] leading-tight break-all">
+                              {customer360.adsAttribution.campaignName || "CAMP_TDS_MESSENGER_CONVERSION"}
+                            </p>
+                          </div>
+
+                          {/* Tên Nhóm Quảng Cáo (Adset) */}
+                          <div className="py-0.5 border-b border-stone-100 space-y-0.5">
                             <span className="text-stone-400 text-[10px] block">Nhóm Quảng Cáo (Adset):</span>
                             <p className="font-bold text-stone-900 text-[11px] leading-tight break-all">
                               {customer360.adsAttribution.adsetName}
                             </p>
                           </div>
 
-                          {/* Nội dung bài QC */}
-                          <div className="pt-1">
-                            <div className="flex items-center justify-between mb-1">
+                          {/* Hình Ảnh / Thumbnail Mẫu Quảng Cáo Thực Tế */}
+                          {customer360.adsAttribution.thumbnailUrl && (
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-bold text-stone-500 uppercase block">
+                                Hình ảnh / Video Ads:
+                              </span>
+                              <div className="relative rounded-lg overflow-hidden border border-stone-200 bg-stone-900 group">
+                                <img
+                                  src={customer360.adsAttribution.thumbnailUrl}
+                                  alt="Ad Thumbnail"
+                                  className="w-full h-32 object-cover transition-transform duration-200 group-hover:scale-105"
+                                />
+                                {customer360.adsAttribution.videoSource && (
+                                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                    <span className="px-2.5 py-1 bg-white/90 text-stone-900 text-[10px] font-bold rounded-full shadow flex items-center gap-1">
+                                      ▶ Phát Video (1080p)
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bài Viết Quảng Cáo */}
+                          <div className="pt-0.5 space-y-1">
+                            <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-stone-500 uppercase">
                                 Bài viết quảng cáo:
                               </span>
@@ -1916,11 +1951,21 @@ export default function AdminOmnichannelPage() {
                                 <span>Copy</span>
                               </button>
                             </div>
-                            <div className="bg-stone-50 border border-stone-100 rounded p-2 text-stone-800 text-[11px] leading-relaxed whitespace-pre-wrap">
-                              <div className="font-bold text-blue-900 mb-0.5">
+                            <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-stone-800 text-[11px] leading-relaxed whitespace-pre-wrap">
+                              <div className="font-bold text-[#0d4f4a] mb-1 text-[11px]">
                                 {customer360.adsAttribution.adHeadline}
                               </div>
-                              {customer360.adsAttribution.adContent}
+                              <p className="text-[10px] text-stone-700 whitespace-pre-line leading-relaxed">
+                                {customer360.adsAttribution.adContent}
+                              </p>
+                              {customer360.adsAttribution.ctaTitle && (
+                                <div className="mt-2 pt-1.5 border-t border-stone-200 flex items-center justify-between">
+                                  <span className="text-[10px] text-stone-400">Nút CTA:</span>
+                                  <span className="px-2 py-0.5 bg-[#0d4f4a] text-white text-[10px] font-bold rounded">
+                                    {customer360.adsAttribution.ctaTitle}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

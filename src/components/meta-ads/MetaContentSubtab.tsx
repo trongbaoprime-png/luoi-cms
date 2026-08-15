@@ -74,11 +74,12 @@ export default function MetaContentSubtab({ contentAds }: MetaContentSubtabProps
         ? item.thumbnail_url
         : preset.thumbnail;
 
-    const video = item.video_source || preset.video;
+    const video = item.video_source && item.video_source.startsWith("http") ? item.video_source : preset.video;
     const title = item.title || item.hook || preset.title;
     const body = item.content_text || item.body || preset.body;
     const cta = item.cta_title || preset.cta;
     const isVideoFormat =
+      (item.video_source && item.video_source.length > 0) ||
       (item.format || "").toUpperCase().includes("VIDEO") ||
       (item.format || "").toUpperCase().includes("REELS") ||
       (item.campaign_name || "").toUpperCase().includes("VIDEO");

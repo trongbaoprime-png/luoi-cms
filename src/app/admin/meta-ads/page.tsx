@@ -80,7 +80,7 @@ export interface MetaContentRow extends MetaCampaignRow {
 
 export default function MetaAdsReportPage() {
   const [activeSubtab, setActiveSubtab] = useState<"analysis" | "diagnosis" | "campaign" | "content" | "accounts">("analysis");
-  const [selectedPreset, setSelectedPreset] = useState<DatePresetKey>("THIS_MONTH");
+  const [selectedPreset, setSelectedPreset] = useState<DatePresetKey>("TODAY");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 

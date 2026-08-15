@@ -49,11 +49,17 @@ function writeCache(key: string, data: any) {
 export function enrichMetaContentRow(c: any, idx: number = 0) {
   const service = c.service || detectService(c) || "IMPLANT";
   const branch = c.branch || detectBranch(c) || "HCM";
-  const isVideo = (c.campaign_name || "").toUpperCase().includes("VIDEO") || 
-                  (c.campaign_name || "").toUpperCase().includes("REELS") || 
-                  (c.adset_name || "").toUpperCase().includes("VIDEO");
+  const isVideo =
+    !!c.video_source ||
+    (c.campaign_name || "").toUpperCase().includes("VIDEO") ||
+    (c.campaign_name || "").toUpperCase().includes("REELS") ||
+    (c.adset_name || "").toUpperCase().includes("VIDEO") ||
+    (c.ad_name || "").toUpperCase().includes("VIDEO");
 
-  const serviceMedia: Record<string, { thumbnail: string; video: string; title: string; body: string; cta: string }> = {
+  const serviceMedia: Record<
+    string,
+    { thumbnail: string; video: string; title: string; body: string; cta: string }
+  > = {
     IMPLANT: {
       thumbnail: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=800&auto=format&fit=crop",
       video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
@@ -98,7 +104,7 @@ export function enrichMetaContentRow(c: any, idx: number = 0) {
     cta_url: c.cta_url || `https://facebook.com/${c.campaign_id || '1000'}`,
     format: c.format || (isVideo ? "VIDEO / REELS" : "IMAGE / POST"),
     thumbnail_url: c.thumbnail_url || preset.thumbnail,
-    video_source: c.video_source || preset.video,
+    video_source: c.video_source || (isVideo ? preset.video : ""),
     facebook_url: c.facebook_url || `https://facebook.com/${c.campaign_id || ''}`,
     video25: c.video25 || 100,
     video50: c.video50 || 74,
@@ -166,7 +172,7 @@ async function fetchMetaGraph(
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s per request timeout
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
     const res = await fetch(url.toString(), {
@@ -242,7 +248,7 @@ export async function discoverAdAccounts(accessToken: string): Promise<string[]>
   return [];
 }
 
-// Main Realtime Data Fetcher with Parallel Processing & DB Storage
+// Main Realtime Data Fetcher with PostgreSQL Persistence & Instant Cache
 export async function getMetaRealtimeData(
   scope: string,
   since: string,
@@ -261,14 +267,14 @@ export async function getMetaRealtimeData(
     };
   }
 
-  // Determine date bounds
+  // Determine date bounds - Default to TODAY
   const today = new Date().toISOString().split("T")[0];
   const startDate = since || today;
   const endDate = until || today;
 
   const cacheKey = `${scope}_${startDate}_${endDate}_${config.accountIds.join("-")}`;
   const isToday = startDate <= today && endDate >= today;
-  const ttlMs = isToday ? 5 * 60 * 1000 : 24 * 60 * 60 * 1000; // 5 min for today, 24h for historical
+  const ttlMs = isToday ? 3 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
   // 1. Read file cache if not forced fresh
   if (!fresh) {
@@ -278,7 +284,7 @@ export async function getMetaRealtimeData(
     }
   }
 
-  // 2. Read PostgreSQL Database historical data if not fresh
+  // 2. Read PostgreSQL Database stats if not forced fresh
   if (!fresh) {
     try {
       const dbAggregated = await metaDb.metaAdDailyStat.groupBy({
@@ -305,6 +311,17 @@ export async function getMetaRealtimeData(
       });
 
       if (dbAggregated && dbAggregated.length > 0) {
+        // Also fetch real creatives stored in DB
+        const storedCreatives = await metaDb.metaAdCreative.findMany({
+          take: 200,
+        });
+        const creativeMap = new Map<string, any>();
+        storedCreatives.forEach((cr) => {
+          if (cr.campaignId) creativeMap.set(cr.campaignId, cr);
+          if (cr.adsetId) creativeMap.set(cr.adsetId, cr);
+          if (cr.adId) creativeMap.set(cr.adId, cr);
+        });
+
         const campaignMap: Record<string, any> = {};
         const accountSet = new Map<string, any>();
 
@@ -336,6 +353,9 @@ export async function getMetaRealtimeData(
           const campaignName = item.campaignName || "Campaign không tên";
           const adsetName = item.adsetName || "Nhóm tổng";
 
+          // Match stored creative if available
+          const cr = creativeMap.get(item.campaignId) || creativeMap.get(item.adsetId);
+
           campaignMap[key] = {
             date_start: startDate,
             date_stop: endDate,
@@ -361,12 +381,17 @@ export async function getMetaRealtimeData(
             messagesNew,
             totalMessagingContacts,
             leads,
+            title: cr?.titleText,
+            body: cr?.bodyText,
+            thumbnail_url: cr?.thumbnailUrl,
+            video_source: cr?.previewUrl,
+            cta_title: cr?.callToAction,
+            facebook_url: cr?.linkUrl,
           };
         });
 
         const campaigns = Object.values(campaignMap);
         const accounts = Array.from(accountSet.values());
-
         const contentAds = campaigns.map((c: any, idx: number) => enrichMetaContentRow(c, idx));
 
         const dbPayload = {
@@ -392,7 +417,7 @@ export async function getMetaRealtimeData(
     }
   }
 
-  // 3. Fallback: Fetch directly from Meta Graph API
+  // 3. Fallback: Fetch directly from Meta Graph API & Upsert into PostgreSQL
   let accountIds = config.accountIds;
   if (accountIds.length === 0) {
     accountIds = await discoverAdAccounts(config.accessToken);
@@ -424,6 +449,69 @@ export async function getMetaRealtimeData(
         timezone_name: accInfo.timezone_name || "Asia/Ho_Chi_Minh",
       };
 
+      // 1. Fetch Ad Videos (to get playable MP4 URLs & Video Posters)
+      let videoMap: Record<string, any> = {};
+      try {
+        const vRes = await fetchMetaGraph(`${actId}/advideos`, config.accessToken, {
+          fields: "id,source,picture,thumbnails,title,length",
+          limit: "100",
+        });
+        if (vRes?.data && Array.isArray(vRes.data)) {
+          vRes.data.forEach((v: any) => {
+            videoMap[v.id] = v;
+          });
+        }
+      } catch {}
+
+      // 2. Fetch Ads with Real Creatives
+      let adCreativeMap: Record<string, any> = {};
+      try {
+        const aRes = await fetchMetaGraph(`${actId}/ads`, config.accessToken, {
+          fields:
+            "id,name,status,adset_id,campaign_id,creative{id,name,title,body,image_url,thumbnail_url,video_id,effective_object_story_id,object_story_spec,call_to_action_type}",
+          limit: "100",
+        });
+        if (aRes?.data && Array.isArray(aRes.data)) {
+          aRes.data.forEach((ad: any) => {
+            const cr = ad.creative || {};
+            const oss = cr.object_story_spec || {};
+            const linkData = oss.link_data || {};
+            const vid = cr.video_id;
+            const vMatch = vid ? videoMap[vid] : null;
+
+            const cta =
+              cr.call_to_action_type ||
+              linkData.call_to_action?.type ||
+              "MESSAGE_PAGE";
+            const ctaTitle =
+              cta === "MESSAGE_PAGE"
+                ? "Gửi Tin Nhắn"
+                : cta === "LEARN_MORE"
+                ? "Tìm Hiểu Thêm"
+                : "Đăng Ký Ngay";
+
+            const creativeObj = {
+              adId: ad.id,
+              adName: ad.name,
+              campaignId: ad.campaign_id,
+              adsetId: ad.adset_id,
+              title: cr.title || linkData.name || "",
+              body: cr.body || linkData.message || "",
+              imageUrl: cr.image_url || cr.thumbnail_url || (vMatch ? vMatch.picture : ""),
+              videoSource: vMatch?.source || "",
+              ctaTitle,
+              facebookUrl: cr.effective_object_story_id
+                ? `https://facebook.com/${cr.effective_object_story_id}`
+                : "",
+            };
+
+            if (ad.campaign_id) adCreativeMap[ad.campaign_id] = creativeObj;
+            if (ad.adset_id) adCreativeMap[ad.adset_id] = creativeObj;
+            adCreativeMap[ad.id] = creativeObj;
+          });
+        }
+      } catch {}
+
       const localCampaigns: any[] = [];
       const localContent: any[] = [];
       const localGender: any[] = [];
@@ -440,10 +528,20 @@ export async function getMetaRealtimeData(
           });
 
           if (insights?.data && Array.isArray(insights.data)) {
-            insights.data.forEach((row: any) => {
+            for (const row of insights.data) {
               const metrics = parseActionMetrics(row.actions);
               const campaignName = row.campaign_name || "Campaign không tên";
               const adsetName = row.adset_name || "Nhóm tổng";
+              const spend = Number(row.spend || 0);
+              const reach = Number(row.reach || 0);
+              const impressions = Number(row.impressions || 0);
+              const clicks = Number(row.clicks || row.inline_link_clicks || 0);
+              const frequency = Number(row.frequency || (reach > 0 ? impressions / reach : 1));
+              const cpm = Number(row.cpm || (impressions > 0 ? (spend / impressions) * 1000 : 0));
+              const ctr = Number(row.ctr || (impressions > 0 ? (clicks / impressions) * 100 : 0));
+              const cpc = Number(row.cpc || (clicks > 0 ? spend / clicks : 0));
+
+              const matchedCr = adCreativeMap[row.campaign_id] || adCreativeMap[row.adset_id];
 
               const campaignObj = {
                 date_start: row.date_start || startDate,
@@ -459,56 +557,82 @@ export async function getMetaRealtimeData(
                 branch: detectBranch({ campaign_name: campaignName, adset_name: adsetName }),
                 effective_status: "ACTIVE",
                 configured_status: "ACTIVE",
-                spend: Number(row.spend || 0),
-                reach: Number(row.reach || 0),
-                impressions: Number(row.impressions || 0),
-                frequency: Number(row.frequency || 0),
-                cpm: Number(row.cpm || 0),
-                ctr: Number(row.ctr || 0),
-                cpc: Number(row.cpc || 0),
-                clicks: Number(row.clicks || row.inline_link_clicks || 0),
+                spend,
+                reach,
+                impressions,
+                frequency,
+                cpm,
+                ctr,
+                cpc,
+                clicks,
                 messagesNew: metrics.messagesNew,
                 totalMessagingContacts: metrics.totalMessagingContacts,
                 leads: metrics.leads,
+                title: matchedCr?.title,
+                body: matchedCr?.body,
+                thumbnail_url: matchedCr?.imageUrl,
+                video_source: matchedCr?.videoSource,
+                cta_title: matchedCr?.ctaTitle,
+                facebook_url: matchedCr?.facebookUrl,
               };
 
               localCampaigns.push(campaignObj);
               localContent.push(enrichMetaContentRow(campaignObj, localContent.length));
-            });
-          }
-        } catch {}
-      }
 
-      if (scope === "breakdowns" || scope === "all") {
-        try {
-          const genderRes = await fetchMetaGraph(`${actId}/insights`, config.accessToken, {
-            level: "campaign",
-            breakdowns: "gender",
-            fields: "account_id,account_name,campaign_id,campaign_name,spend,reach,impressions,clicks,actions",
-            time_range: timeRange,
-            limit: "100",
-          });
-          if (genderRes?.data) {
-            genderRes.data.forEach((r: any) => {
-              const m = parseActionMetrics(r.actions);
-              localGender.push({ ...r, spend: Number(r.spend || 0), messagesNew: m.messagesNew, leads: m.leads });
-            });
-          }
-        } catch {}
-
-        try {
-          const hourlyRes = await fetchMetaGraph(`${actId}/insights`, config.accessToken, {
-            level: "campaign",
-            breakdowns: "hourly_stats_aggregated_by_advertiser_time_zone",
-            fields: "account_id,account_name,campaign_id,campaign_name,spend,reach,impressions,clicks,actions",
-            time_range: timeRange,
-            limit: "100",
-          });
-          if (hourlyRes?.data) {
-            hourlyRes.data.forEach((r: any) => {
-              const m = parseActionMetrics(r.actions);
-              localHourly.push({ ...r, spend: Number(r.spend || 0), messagesNew: m.messagesNew, leads: m.leads });
-            });
+              // Persist into PostgreSQL luoi_meta asynchronously without blocking
+              metaDb.metaAdDailyStat
+                .upsert({
+                  where: {
+                    meta_daily_stat_key: {
+                      date: row.date_start || startDate,
+                      accountId: accId,
+                      campaignId: row.campaign_id || "unknown",
+                      adsetId: row.adset_id || "",
+                    },
+                  },
+                  update: {
+                    accountName: row.account_name || accInfo.name,
+                    campaignName,
+                    adsetName,
+                    service: campaignObj.service,
+                    branch: campaignObj.branch,
+                    spend,
+                    reach,
+                    impressions,
+                    frequency,
+                    clicks,
+                    cpm,
+                    ctr,
+                    cpc,
+                    messagesNew: metrics.messagesNew,
+                    messagingTotal: metrics.totalMessagingContacts,
+                    leads: metrics.leads,
+                  },
+                  create: {
+                    date: row.date_start || startDate,
+                    accountId: accId,
+                    accountName: row.account_name || accInfo.name,
+                    campaignId: row.campaign_id || "unknown",
+                    campaignName,
+                    adsetId: row.adset_id || "",
+                    adsetName,
+                    service: campaignObj.service,
+                    branch: campaignObj.branch,
+                    spend,
+                    reach,
+                    impressions,
+                    frequency,
+                    clicks,
+                    cpm,
+                    ctr,
+                    cpc,
+                    messagesNew: metrics.messagesNew,
+                    messagingTotal: metrics.totalMessagingContacts,
+                    leads: metrics.leads,
+                  },
+                })
+                .catch(() => {});
+            }
           }
         } catch {}
       }
@@ -526,68 +650,6 @@ export async function getMetaRealtimeData(
       hourlyRows.push(...res.value.localHourly);
     }
   });
-
-  // Fallback to PostgreSQL DB if live API returned 0 campaigns
-  if (campaignRows.length === 0) {
-    try {
-      const dbAggregated = await metaDb.metaAdDailyStat.groupBy({
-        by: ["accountId", "accountName", "campaignId", "campaignName", "adsetId", "adsetName"],
-        _sum: {
-          spend: true,
-          impressions: true,
-          reach: true,
-          clicks: true,
-          messagesNew: true,
-          messagingTotal: true,
-          leads: true,
-        },
-      });
-
-      if (dbAggregated && dbAggregated.length > 0) {
-        dbAggregated.forEach((item) => {
-          const spend = item._sum.spend || 0;
-          const impressions = item._sum.impressions || 0;
-          const reach = item._sum.reach || 0;
-          const clicks = item._sum.clicks || 0;
-          const messagesNew = item._sum.messagesNew || 0;
-          const totalMessagingContacts = item._sum.messagingTotal || 0;
-          const leads = item._sum.leads || 0;
-          const campaignName = item.campaignName || "Campaign không tên";
-          const adsetName = item.adsetName || "Nhóm tổng";
-
-          const cObj = {
-            date_start: startDate,
-            date_stop: endDate,
-            account_id: item.accountId,
-            ad_account_id: `act_${item.accountId}`,
-            account_name: item.accountName || `Tài khoản ${item.accountId.slice(-4)}`,
-            campaign_id: item.campaignId,
-            campaign_name: campaignName,
-            adset_id: item.adsetId,
-            adset_name: adsetName,
-            service: detectService({ campaign_name: campaignName, adset_name: adsetName }),
-            branch: detectBranch({ campaign_name: campaignName, adset_name: adsetName }),
-            effective_status: "ACTIVE",
-            configured_status: "ACTIVE",
-            spend,
-            reach,
-            impressions,
-            frequency: reach > 0 ? impressions / reach : 1,
-            cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
-            ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
-            cpc: clicks > 0 ? spend / clicks : 0,
-            clicks,
-            messagesNew,
-            totalMessagingContacts,
-            leads,
-          };
-
-          campaignRows.push(cObj);
-          contentRows.push(enrichMetaContentRow(cObj, contentRows.length));
-        });
-      }
-    } catch {}
-  }
 
   const resultPayload = {
     ok: true,
