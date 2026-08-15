@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const dateRange = searchParams.get("dateRange");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const platform = searchParams.get("platform"); // facebook | zalo | instagram | website
     const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
@@ -25,6 +26,20 @@ export async function GET(req: NextRequest) {
     // 1. Lọc theo Page
     if (pageId && pageId !== "ALL") {
       where.pageId = pageId;
+    }
+
+    // 1b. Lọc theo Platform/Kênh
+    if (platform && platform !== "all") {
+      if (platform === "instagram") {
+        where.igsid = { not: null };
+      } else if (platform === "facebook") {
+        where.igsid = null; // FB conversations don't have igsid
+        where.zalosid = null;
+      } else if (platform === "zalo") {
+        where.zalosid = { not: null };
+      } else if (platform === "website") {
+        where.source = "WEBSITE";
+      }
     }
 
     // 2. Lọc theo Chi nhánh
@@ -70,12 +85,42 @@ export async function GET(req: NextRequest) {
         end.setDate(end.getDate() - 1);
         end.setHours(23, 59, 59, 999);
         where.lastMessageAt = { gte: start, lte: end };
+      } else if (dateRange === "TODAY_YESTERDAY") {
+        start.setDate(start.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+        where.lastMessageAt = { gte: start };
       } else if (dateRange === "7DAYS") {
         start.setDate(start.getDate() - 7);
+        where.lastMessageAt = { gte: start };
+      } else if (dateRange === "14DAYS") {
+        start.setDate(start.getDate() - 14);
         where.lastMessageAt = { gte: start };
       } else if (dateRange === "30DAYS") {
         start.setDate(start.getDate() - 30);
         where.lastMessageAt = { gte: start };
+      } else if (dateRange === "THIS_WEEK") {
+        const day = start.getDay();
+        const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+        start.setDate(diff);
+        start.setHours(0, 0, 0, 0);
+        where.lastMessageAt = { gte: start };
+      } else if (dateRange === "THIS_MONTH") {
+        start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+        where.lastMessageAt = { gte: start };
+      } else if (dateRange === "LAST_MONTH") {
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        where.lastMessageAt = { gte: lastMonth, lte: lastMonthEnd };
+      } else if (dateRange && dateRange.startsWith("CUSTOM:")) {
+        // Format: CUSTOM:2024-08-01:2024-08-15
+        const parts = dateRange.split(":");
+        if (parts.length === 3) {
+          where.lastMessageAt = {
+            gte: new Date(parts[1]),
+            lte: new Date(`${parts[2]}T23:59:59.999Z`),
+          };
+        }
       } else if (dateRange === "CUSTOM" && startDate && endDate) {
         where.lastMessageAt = {
           gte: new Date(startDate),
