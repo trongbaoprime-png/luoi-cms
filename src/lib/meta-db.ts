@@ -7,7 +7,9 @@ const globalForMeta = globalThis as unknown as {
 function createMetaClient() {
   const envUrl =
     process.env.META_ADS_DATABASE_URL ||
-    "postgresql://postgres:luoicms@127.0.0.1:5432/luoi_meta?schema=public";
+    process.env.META_DATABASE_URL ||
+    "postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_meta?schema=public";
+
 
   return new MetaPrismaClient({
     datasources: { db: { url: envUrl } },

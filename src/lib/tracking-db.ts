@@ -7,7 +7,9 @@ const globalForTracking = globalThis as unknown as {
 function createTrackingClient() {
   const envUrl =
     process.env.TRACKING_DATABASE_URL ||
-    "postgresql://postgres:luoicms@127.0.0.1:5432/luoi_tracking?schema=public";
+    process.env.TRACKING_DB_URL ||
+    "postgresql://luoi_admin:luoi_secure_password_2026@127.0.0.1:5432/luoi_tracking?schema=public";
+
 
   return new TrackingPrismaClient({
     datasources: { db: { url: envUrl } },
