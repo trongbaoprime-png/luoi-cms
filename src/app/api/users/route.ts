@@ -44,11 +44,11 @@ export async function GET(req: Request) {
       },
     });
 
-    // Auto-seed default accounts if empty
+    // Auto-seed default real admin account if empty
     if (users.length === 0) {
       const defaultPass = await hashPassword("Admin@123456");
-      const seedUsers = [
-        {
+      await db.user.create({
+        data: {
           name: "Nguyễn Văn Bảo (Admin Tổng)",
           email: "admin@tamducsmile.vn",
           password: defaultPass,
@@ -57,53 +57,7 @@ export async function GET(req: Request) {
           bio: "Quản trị viên toàn hệ thống Lưới Business OS",
           status: "ACTIVE",
         },
-        {
-          name: "Trần Marketing Lead",
-          email: "marketing@tamducsmile.vn",
-          password: defaultPass,
-          role: "MARKETING",
-          permissions: JSON.stringify([
-            "ads:campaigns:view", "ads:diagnosis:view", "ads:diagnosis:apply", "ads:accounts:manage", "ads:forms:view",
-            "ads:cards:kpi", "ads:cards:wasted", "ads:col:spend:view", "ads:col:roas:view",
-            "rawleads:forms:view", "rawleads:channels:view", "rawleads:subscribers:view", "rawleads:export",
-            "crm:leads:view", "crm:cards:kpi", "crm:cards:revenue", "crm:notes:manage",
-            "omni:inbox:access", "omni:cards:analytics", "omni:pancake:sync",
-            "tracking:sessions:view", "tracking:pixel:manage",
-            "cms:articles:view", "cms:cards:overview",
-            "privacy:phone:unmask", "privacy:email:unmask", "privacy:revenue:unmask",
-          ]),
-          bio: "Trưởng phòng Marketing & Ads",
-          status: "ACTIVE",
-        },
-        {
-          name: "Võ Thị CSKH Đa Kênh",
-          email: "cskh@tamducsmile.vn",
-          password: defaultPass,
-          role: "CSKH_OMNICHANNEL",
-          permissions: JSON.stringify([
-            "omni:inbox:access", "omni:inbox:reply", "omni:copilot:use", "omni:branch:assign", "omni:pancake:sync", "omni:crm:push",
-            "crm:leads:view", "crm:leads:edit", "crm:notes:manage",
-          ]),
-          bio: "Tư vấn viên CSKH 68 Fanpages",
-          status: "ACTIVE",
-        },
-        {
-          name: "Lê Telesale Pro",
-          email: "telesale@tamducsmile.vn",
-          password: defaultPass,
-          role: "TELESALE_STAFF",
-          permissions: JSON.stringify([
-            "crm:leads:view", "crm:leads:edit", "crm:notes:manage",
-            "omni:inbox:access", "omni:inbox:reply", "omni:copilot:use", "omni:branch:assign",
-          ]),
-          bio: "Chuyên viên Telesale & Chăm sóc lịch hẹn",
-          status: "ACTIVE",
-        },
-      ];
-
-      for (const u of seedUsers) {
-        await db.user.create({ data: u });
-      }
+      });
 
       users = await db.user.findMany({
         orderBy: { createdAt: "desc" },

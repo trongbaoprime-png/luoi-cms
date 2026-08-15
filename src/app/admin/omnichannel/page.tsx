@@ -203,19 +203,83 @@ const PANCAKE_GRID_ROW_3 = [
 
 const BRANCH_LIST = Object.keys(GEO_BRANCH_MAPPINGS);
 
-const getEffectiveBranch = (conv: ConversationItem | null, crmLead: any): string => {
-  if (!conv) return "Chưa chọn chi nhánh (Đang tư vấn)";
-  const rawBranch = conv.detectedBranch || crmLead?.branch;
-  if (!rawBranch || rawBranch === "Chưa chọn chi nhánh (Đang tư vấn)" || rawBranch === "Chưa chọn chi nhánh" || rawBranch === "CHƯA XÁC ĐỊNH") {
-    return "Chưa chọn chi nhánh (Đang tư vấn)";
+export const mapToCanonicalBranch = (raw: string): string | null => {
+  if (!raw) return null;
+  const clean = raw.trim().toLowerCase();
+  if (
+    clean === "chưa chọn chi nhánh (đang tư vấn)" ||
+    clean === "chưa chọn chi nhánh" ||
+    clean === "chưa xác định" ||
+    clean === "null" ||
+    clean === "undefined"
+  ) {
+    return null;
   }
-  const cleanRaw = rawBranch.trim().toLowerCase();
   for (const b of BRANCH_LIST) {
-    if (b.toLowerCase() === cleanRaw || b.toLowerCase().includes(cleanRaw) || cleanRaw.includes(b.toLowerCase())) {
+    const bLower = b.toLowerCase();
+    if (bLower === clean || bLower.startsWith(clean) || clean.startsWith(bLower) || bLower.includes(clean) || clean.includes(bLower)) {
       return b;
     }
   }
-  return rawBranch;
+  const parsed = parseBranchFromText(raw);
+  if (parsed && parsed !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+    return parsed;
+  }
+  return raw;
+};
+
+export const getEffectiveBranch = (
+  conv: ConversationItem | null,
+  crmLead: any,
+  msgs?: MessageItem[]
+): string => {
+  if (!conv) return "Chưa chọn chi nhánh (Đang tư vấn)";
+
+  // 1. If conversation has explicit canonical branch
+  if (
+    conv.detectedBranch &&
+    conv.detectedBranch !== "Chưa chọn chi nhánh (Đang tư vấn)" &&
+    conv.detectedBranch !== "Chưa chọn chi nhánh" &&
+    conv.detectedBranch !== "CHƯA XÁC ĐỊNH"
+  ) {
+    const canonical = mapToCanonicalBranch(conv.detectedBranch);
+    if (canonical && canonical !== "Chưa chọn chi nhánh (Đang tư vấn)") return canonical;
+  }
+
+  // 2. Real-time message content scan (Customer messages first, then Staff)
+  if (msgs && msgs.length > 0) {
+    const custTexts = msgs.filter((m) => m.senderType === "CUSTOMER").map((m) => m.content).join(" \n ");
+    const custBr = parseBranchFromText(custTexts);
+    if (custBr && custBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+      return custBr;
+    }
+    const allTexts = msgs.map((m) => m.content).join(" \n ");
+    const allBr = parseBranchFromText(allTexts);
+    if (allBr && allBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+      return allBr;
+    }
+  }
+
+  // 3. If CRM Lead has valid branch
+  if (
+    crmLead?.branch &&
+    crmLead.branch !== "Chưa chọn chi nhánh (Đang tư vấn)" &&
+    crmLead.branch !== "Chưa chọn chi nhánh" &&
+    crmLead.branch !== "CHƯA XÁC ĐỊNH"
+  ) {
+    const canonical = mapToCanonicalBranch(crmLead.branch);
+    if (canonical && canonical !== "Chưa chọn chi nhánh (Đang tư vấn)") return canonical;
+  }
+
+  // 4. Fanpage name detection (e.g. "Nha Khoa Tâm Đức Smile Dĩ An" -> "DĨ AN (BÌNH DƯƠNG)")
+  if (conv.fanpage?.pageName) {
+    const pageBr = parseBranchFromText(conv.fanpage.pageName);
+    if (pageBr && pageBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+      return pageBr;
+    }
+  }
+
+  return "Chưa chọn chi nhánh (Đang tư vấn)";
 };
 
 
@@ -394,28 +458,23 @@ export default function AdminOmnichannelPage() {
       const json = await res.json();
       if (json.success) {
         setMessages(json.data);
-        // Auto-detect branch from API or from message content
-        const detectedFromApi = json.detectedBranch;
-        const detectedFromContent = autoDetectBranchFromMessages(json.data);
-        const finalBranch = detectedFromApi || detectedFromContent;
-        if (finalBranch) {
+        const curConv = conversations.find((c) => c.id === convId);
+        const finalBranch = getEffectiveBranch(curConv || null, crmStatus?.lead, json.data);
+        if (finalBranch && finalBranch !== "Chưa chọn chi nhánh (Đang tư vấn)") {
           setConversations((prev) =>
             prev.map((c) => {
-              if (c.id === convId && !c.detectedBranch) {
-                // Only auto-set if not already set
+              if (c.id === convId) {
                 return { ...c, detectedBranch: finalBranch };
               }
               return c;
             })
           );
           // Persist auto-detected branch
-          if (detectedFromContent && !detectedFromApi) {
-            fetch(`/api/admin/omnichannel/conversations/${convId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ detectedBranch: detectedFromContent }),
-            }).catch(() => {});
-          }
+          fetch(`/api/admin/omnichannel/conversations/${convId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ detectedBranch: finalBranch }),
+          }).catch(() => {});
         }
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       }
@@ -1507,7 +1566,7 @@ export default function AdminOmnichannelPage() {
                         </span>
                       </div>
                       <select
-                        value={getEffectiveBranch(selectedConv, crmStatus?.lead)}
+                        value={getEffectiveBranch(selectedConv, crmStatus?.lead, messages)}
                         onChange={(e) => handleUpdateBranch(e.target.value)}
                         className="w-full bg-white border border-stone-200 rounded px-2 py-1 text-xs font-bold text-emerald-800 focus:outline-none focus:border-blue-500 cursor-pointer"
                       >
