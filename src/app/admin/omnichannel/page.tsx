@@ -38,7 +38,7 @@ import {
   FileText,
   Edit3,
 } from "lucide-react";
-import { MASTER_PANCAKE_TAGS, getAssignedStaff } from "@/lib/pancake-tag-parser";
+import { MASTER_PANCAKE_TAGS, getAssignedStaff, GEO_BRANCH_MAPPINGS, parseBranchFromText } from "@/lib/pancake-tag-parser";
 
 interface ConversationItem {
   id: string;
@@ -201,13 +201,23 @@ const PANCAKE_GRID_ROW_3 = [
   { code: "BumDV", color: "#C88141", label: "BUM" },
 ];
 
-const BRANCH_LIST = [
-  "CẦN THƠ", "GÒ VẤP (TP.HCM)", "QUẬN 3 (TP.HCM)", "QUẬN 1 (TP.HCM)", "TÂN PHÚ (TP.HCM)",
-  "BÌNH THẠNH (TP.HCM)", "BÌNH TÂN (TP.HCM)", "QUẬN 7 (TP.HCM)", "THỦ ĐỨC (TP.HCM)",
-  "DĨ AN (BÌNH DƯƠNG)", "BIÊN HÒA (ĐỒNG NAI)", "GIA KIỆM (ĐỒNG NAI)", "CÀ MAU",
-  "BẠC LIÊU", "SÓC TRĂNG", "ĐỒNG THÁP", "BÀ RỊA - VŨNG TÀU", "TÂY NINH",
-  "BÌNH PHƯỚC", "ĐÀ LẠT (LÂM ĐỒNG)", "QUY NHƠN", "ĐÀ NẴNG", "HÒA BÌNH",
-];
+const BRANCH_LIST = Object.keys(GEO_BRANCH_MAPPINGS);
+
+const getEffectiveBranch = (conv: ConversationItem | null, crmLead: any): string => {
+  if (!conv) return "Chưa chọn chi nhánh (Đang tư vấn)";
+  const rawBranch = conv.detectedBranch || crmLead?.branch;
+  if (!rawBranch || rawBranch === "Chưa chọn chi nhánh (Đang tư vấn)" || rawBranch === "Chưa chọn chi nhánh" || rawBranch === "CHƯA XÁC ĐỊNH") {
+    return "Chưa chọn chi nhánh (Đang tư vấn)";
+  }
+  const cleanRaw = rawBranch.trim().toLowerCase();
+  for (const b of BRANCH_LIST) {
+    if (b.toLowerCase() === cleanRaw || b.toLowerCase().includes(cleanRaw) || cleanRaw.includes(b.toLowerCase())) {
+      return b;
+    }
+  }
+  return rawBranch;
+};
+
 
 const TELESALE_LIST = [
   "THẢO", "NHUNG", "TRANG", "Trân Miln", "Liễu", "Loan", "SINH", "HẠ", "XUÂN", "QUIN", "TRÚC",
@@ -355,98 +365,27 @@ export default function AdminOmnichannelPage() {
     }
   };
 
-  // Auto-detect branch from message content
+  // Auto-detect branch from message content using Comprehensive Vietnam Geo Engine
   const autoDetectBranchFromMessages = (msgs: MessageItem[]): string | null => {
-    const BRANCH_KEYWORDS: Record<string, string> = {
-      "cần thơ": "CẦN THƠ",
-      "cantho": "CẦN THƠ",
-      "gò vấp": "GÒ VẤP (TP.HCM)",
-      "go vap": "GÒ VẤP (TP.HCM)",
-      "quận 3": "QUẬN 3 (TP.HCM)",
-      "quan 3": "QUẬN 3 (TP.HCM)",
-      "quận 1": "QUẬN 1 (TP.HCM)",
-      "quan 1": "QUẬN 1 (TP.HCM)",
-      "tân phú": "TÂN PHÚ (TP.HCM)",
-      "tan phu": "TÂN PHÚ (TP.HCM)",
-      "bình thạnh": "BÌNH THẠNH (TP.HCM)",
-      "binh thanh": "BÌNH THẠNH (TP.HCM)",
-      "bình tân": "BÌNH TÂN (TP.HCM)",
-      "binh tan": "BÌNH TÂN (TP.HCM)",
-      "quận 7": "QUẬN 7 (TP.HCM)",
-      "quan 7": "QUẬN 7 (TP.HCM)",
-      "thủ đức": "THỦ ĐỨC (TP.HCM)",
-      "thu duc": "THỦ ĐỨC (TP.HCM)",
-      "dĩ an": "DĨ AN (BÌNH DƯƠNG)",
-      "di an": "DĨ AN (BÌNH DƯƠNG)",
-      "bình dương": "DĨ AN (BÌNH DƯƠNG)",
-      "biên hòa": "BIÊN HÒA (ĐỒNG NAI)",
-      "bien hoa": "BIÊN HÒA (ĐỒNG NAI)",
-      "đồng nai": "BIÊN HÒA (ĐỒNG NAI)",
-      "gia kiệm": "GIA KIỆM (ĐỒNG NAI)",
-      "cà mau": "CÀ MAU",
-      "ca mau": "CÀ MAU",
-      "bạc liêu": "BẠC LIÊU",
-      "bac lieu": "BẠC LIÊU",
-      "sóc trăng": "SÓC TRĂNG",
-      "soc trang": "SÓC TRĂNG",
-      "đồng tháp": "ĐỒNG THÁP",
-      "dong thap": "ĐỒNG THÁP",
-      "vũng tàu": "BÀ RỊA - VŨNG TÀU",
-      "vung tau": "BÀ RỊA - VŨNG TÀU",
-      "bà rịa": "BÀ RỊA - VŨNG TÀU",
-      "tây ninh": "TÂY NINH",
-      "bình phước": "BÌNH PHƯỚC",
-      "đà lạt": "ĐÀ LẠT (LÂM ĐỒNG)",
-      "da lat": "ĐÀ LẠT (LÂM ĐỒNG)",
-      "lâm đồng": "ĐÀ LẠT (LÂM ĐỒNG)",
-      "quy nhơn": "QUY NHƠN",
-      "đà nẵng": "ĐÀ NẴNG",
-      "da nang": "ĐÀ NẴNG",
-      "hòa bình": "HÒA BÌNH",
-      // Mekong Delta expansions
-      "an giang": "CẦN THƠ",  // nearest branch
-      "kiên giang": "CẦN THƠ",
-      "rạch giá": "CẦN THƠ",
-      "hà tiên": "CẦN THƠ",
-      "tiền giang": "CẦN THƠ",
-      "mỹ tho": "CẦN THƠ",
-      "bến tre": "CẦN THƠ",
-      "trà vinh": "CẦN THƠ",
-      "vĩnh long": "CẦN THƠ",
-      "hậu giang": "CẦN THƠ",
-      "long an": "CẦN THƠ",
-      // Central expansions
-      "nha trang": "QUY NHƠN",
-      "khánh hòa": "QUY NHƠN",
-      "phú yên": "QUY NHƠN",
-      "bình định": "QUY NHƠN",
-      "quảng ngãi": "ĐÀ NẴNG",
-      "quảng nam": "ĐÀ NẴNG",
-      "thừa thiên": "ĐÀ NẴNG",
-      "huế": "ĐÀ NẴNG",
-      // Province name → detect from fanpage
-      "ninh kiều": "CẦN THƠ",
-      "ô môn": "CẦN THƠ",
-      "bình thủy": "CẦN THƠ",
-    };
-    // Check customer messages first
+    if (!msgs || msgs.length === 0) return null;
+    // 1. Prioritize Customer message content
     const customerTexts = msgs
       .filter((m) => m.senderType === "CUSTOMER")
-      .map((m) => m.content.toLowerCase())
-      .join(" ");
-    for (const [keyword, branch] of Object.entries(BRANCH_KEYWORDS)) {
-      if (customerTexts.includes(keyword)) return branch;
+      .map((m) => m.content)
+      .join(" \n ");
+    const custBr = parseBranchFromText(customerTexts);
+    if (custBr && custBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+      return custBr;
     }
-    // Also check staff messages (staff may mention branch name)
-    const staffTexts = msgs
-      .filter((m) => m.senderType === "STAFF" || m.senderType === "AI_BOT")
-      .map((m) => m.content.toLowerCase())
-      .join(" ");
-    for (const [keyword, branch] of Object.entries(BRANCH_KEYWORDS)) {
-      if (staffTexts.includes(keyword)) return branch;
+    // 2. Check all messages (including staff advice)
+    const allTexts = msgs.map((m) => m.content).join(" \n ");
+    const allBr = parseBranchFromText(allTexts);
+    if (allBr && allBr !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+      return allBr;
     }
     return null;
   };
+
 
   const fetchMessages = async (convId: string) => {
     setLoadingMessages(true);
@@ -493,9 +432,23 @@ export default function AdminOmnichannelPage() {
       const json = await res.json();
       if (json.success) {
         setCrmStatus(json.data);
+        if (json.data?.lead?.branch) {
+          const matchedBranch = getEffectiveBranch(null, json.data.lead);
+          if (matchedBranch && matchedBranch !== "Chưa chọn chi nhánh (Đang tư vấn)") {
+            setConversations((prev) =>
+              prev.map((c) => {
+                if (c.id === convId && (!c.detectedBranch || c.detectedBranch === "Chưa chọn chi nhánh (Đang tư vấn)" || c.detectedBranch === "Chưa chọn chi nhánh")) {
+                  return { ...c, detectedBranch: matchedBranch };
+                }
+                return c;
+              })
+            );
+          }
+        }
       }
     } catch {}
   };
+
 
   const fetchCustomer360 = async (convId: string) => {
     setLoading360(true);
@@ -1554,10 +1507,11 @@ export default function AdminOmnichannelPage() {
                         </span>
                       </div>
                       <select
-                        value={selectedConv.detectedBranch || "Chưa chọn chi nhánh"}
+                        value={getEffectiveBranch(selectedConv, crmStatus?.lead)}
                         onChange={(e) => handleUpdateBranch(e.target.value)}
                         className="w-full bg-white border border-stone-200 rounded px-2 py-1 text-xs font-bold text-emerald-800 focus:outline-none focus:border-blue-500 cursor-pointer"
                       >
+
                         <option value="Chưa chọn chi nhánh (Đang tư vấn)">Chưa chọn chi nhánh (Đang tư vấn)</option>
                         {BRANCH_LIST.map((b) => (
                           <option key={b} value={b}>

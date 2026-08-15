@@ -469,47 +469,126 @@ export function parsePancakeTags(tags: string[] | string): ParsedPancakeData {
 
 export const PANCAKE_MASTER_TAGS = Object.values(MASTER_PANCAKE_TAGS);
 
+// BẢN ĐỒ ĐỊA LÝ & HÀNH CHÍNH CHI TIẾT TẤT CẢ CHI NHÁNH TÂM ĐỨC SMILE
+export const GEO_BRANCH_MAPPINGS: Record<string, string[]> = {
+  "HÓC MÔN (TP.HCM)": [
+    "hóc môn", "hoc mon", "bà điểm", "ba diem", "xuân thới thượng", "xuan thoi thuong",
+    "xuân thới đông", "xuan thoi dong", "tân xuân", "đông thạnh", "nhị bình", "thới tam thôn",
+    "trung chánh", "trần văn mười", "tran van muoi", "nguyễn văn bứa", "lê thị hà",
+    "củ chi", "cu chi", "ngã 4 an sương", "nga tu an suong", "song hành ql22",
+  ],
+  "CẦN THƠ": [
+    "cần thơ", "can tho", "ninh kiều", "ninh kieu", "cái răng", "cai rang", "bình thủy", "binh thuy",
+    "ô môn", "o mon", "thốt nốt", "thot not", "phong điền cần thơ", "thới lai", "cờ đỏ", "vĩnh thạnh cần thơ",
+    "30/4 cần thơ", "3 tháng 2 cần thơ", "nguyễn văn cừ cần thơ", "mậu thân cần thơ", "bến ninh kiều",
+    "hậu giang", "vị thanh", "ngã bảy", "phụng hiệp", "vĩnh long", "bình minh vĩnh long",
+  ],
+  "GÒ VẤP (TP.HCM)": [
+    "gò vấp", "go vap", "quang trung", "phan văn trị", "nguyễn oanh", "lê đức thọ",
+    "nguyễn văn lượng", "thống nhất gv", "cây trâm", "phạm văn chiêu", "hạnh thông tây",
+  ],
+  "QUẬN 3 (TP.HCM)": [
+    "quận 3", "quan 3", "q3", "q.3", "nam kỳ khởi nghĩa", "nkkn", "võ văn tần",
+    "nguyễn đình chiểu", "cách mạng tháng 8", "cmt8", "lý chính thắng", "trương định", "hồ con rùa",
+  ],
+  "QUẬN 1 (TP.HCM)": [
+    "quận 1", "quan 1", "q1", "q.1", "cống quỳnh", "bến thành", "bến nghé", "nguyễn huệ",
+    "đồng khởi", "lê lợi", "đinh tiên hoàng q1", "hàm nghi", "chợ bến thành",
+  ],
+  "TÂN PHÚ (TP.HCM)": [
+    "tân phú", "tan phu", "lũy bán bích", "tân kỳ tân quý", "âu cơ", "thoại ngọc hầu",
+    "hòa bình tp", "gò dầu", "kênh tân hóa", "vườn lài", "aeon tân phú",
+  ],
+  "BÌNH THẠNH (TP.HCM)": [
+    "bình thạnh", "binh thanh", "nơ trang long", "bạch đằng", "xô viết nghệ tĩnh",
+    "điện biên phủ bt", "phan đăng lưu", "hàng xanh", "đinh bộ lĩnh",
+  ],
+  "BÌNH TÂN (TP.HCM)": [
+    "bình tân", "binh tan", "tên lửa", "kinh dương vương", "an lạc", "bình trị đông",
+    "mã lò", "lê văn quới", "bình chánh", "binh chanh", "aeon bình tân",
+  ],
+  "QUẬN 7 (TP.HCM)": [
+    "quận 7", "quan 7", "q7", "q.7", "huỳnh tấn phát", "nguyễn thị thập", "phú mỹ hưng",
+    "nguyễn văn linh", "lâm văn bền", "tân quy", "tân kiểng", "nhà bè", "nha be", "cần giờ",
+  ],
+  "THỦ ĐỨC (TP.HCM)": [
+    "thủ đức", "thu duc", "tp thủ đức", "quận 9", "quan 9", "q9", "quận 2", "quan 2", "q2",
+    "võ văn ngân", "kha vạn cân", "đặng văn bi", "hiệp phú", "thảo điền", "an phú", "long thạnh mỹ",
+  ],
+  "DĨ AN (BÌNH DƯƠNG)": [
+    "dĩ an", "di an", "thuận an", "thuan an", "lái thiêu", "tân uyên", "bến cát",
+    "thủ dầu một", "thu dau mot", "bình dương", "binh duong", "kcn vsip", "sóng thần",
+  ],
+  "BIÊN HÒA (ĐỒNG NAI)": [
+    "biên hòa", "bien hoa", "trảng dài", "tân phong", "hố nai", "long bình", "tam hiệp",
+    "đồng nai", "dong nai", "vĩnh cửu", "long thành", "nhơn trạch",
+  ],
+  "GIA KIỆM (ĐỒNG NAI)": [
+    "gia kiệm", "gia kiem", "thống nhất đồng nai", "định quán", "tân phú đồng nai",
+    "dầu giây", "long khánh", "xuân lộc",
+  ],
+  "CÀ MAU": [
+    "cà mau", "ca mau", "tp cà mau", "cái nước", "đầm dơi", "năm căn", "trần văn thời", "thới bình", "u minh",
+  ],
+  "BẠC LIÊU": [
+    "bạc liêu", "bac lieu", "tp bạc liêu", "giá rai", "vĩnh lợi", "hòa bình bạc liêu", "phước long bạc liêu",
+  ],
+  "SÓC TRĂNG": [
+    "sóc trăng", "soc trang", "tp sóc trăng", "mỹ xuyên", "vĩnh châu", "ngã năm", "trần đề", "long phú",
+  ],
+  "ĐỒNG THÁP": [
+    "đồng tháp", "dong thap", "cao lãnh", "cao lanh", "sa đéc", "sa dec", "hồng ngự", "lấp vò", "lai vung", "tam nông",
+  ],
+  "TIỀN GIANG (MỸ THO)": [
+    "tiền giang", "tien giang", "mỹ tho", "my tho", "cai lậy", "cái bè", "gò công", "chợ gạo", "bến tre",
+  ],
+  "AN GIANG (LONG XUYÊN)": [
+    "an giang", "an giang", "long xuyên", "long xuyen", "châu đốc", "chau doc", "tân châu", "chợ mới an giang", "thoại sơn", "tri tôn",
+  ],
+  "KIÊN GIANG (RẠCH GIÁ)": [
+    "kiên giang", "kien giang", "rạch giá", "rach gia", "phú quốc", "phu quoc", "hà tiên", "kiên lương", "hòn đất", "gò quao",
+  ],
+  "BÀ RỊA - VŨNG TÀU": [
+    "vũng tàu", "vung tau", "bà rịa", "ba ria", "phú mỹ brvt", "xuyên mộc", "long điền", "đất đỏ", "phước tỉnh", "brvt",
+  ],
+  "TÂY NINH": [
+    "tây ninh", "tay ninh", "tp tây ninh", "trảng bàng", "hòa thành", "gò dầu", "bến cầu", "tân biên",
+  ],
+  "BÌNH PHƯỚC": [
+    "bình phước", "binh phuoc", "đồng xoài", "dong xoai", "chơn thành", "bình long", "phước long bp", "bù đăng",
+  ],
+  "ĐÀ LẠT (LÂM ĐỒNG)": [
+    "đà lạt", "da lat", "lâm đồng", "lam dong", "bảo lộc", "bao loc", "đức trọng", "đơn dương", "di linh",
+  ],
+  "QUY NHƠN": [
+    "quy nhơn", "quy nhon", "bình định", "binh dinh", "an nhơn", "hoài nhơn", "phù cát", "tuy phước", "phú yên", "tuy hòa",
+  ],
+  "ĐÀ NẴNG": [
+    "đà nẵng", "da nang", "hải châu", "thanh khê", "sơn trà", "ngũ hành sơn", "liên chiểu", "cẩm lệ", "hòa vang", "hội an", "quảng nam",
+  ],
+  "HÀ NỘI": [
+    "hà nội", "ha noi", "cầu giấy", "đống đa", "ba đình", "hoàn kiếm", "hai bà trưng", "thanh xuân", "hà đông", "hoàng mai", "tây hồ",
+  ],
+  "HÒA BÌNH": [
+    "hòa bình", "hoa binh", "lương sơn", "kỳ sơn", "cao phong", "kim bôi",
+  ],
+};
+
 export function parseBranchFromText(text: string): string {
   const t = (text || "").toLowerCase();
+  if (!t.trim()) return "Chưa chọn chi nhánh (Đang tư vấn)";
 
-  // TP.HCM
-  if (t.includes("gò vấp") || t.includes("quang trung gv") || t.includes("quang trung, gò vấp")) return "GÒ VẤP (TP.HCM)";
-  if (t.includes("quận 3") || t.includes("q3") || t.includes("nam kỳ khởi nghĩa") || t.includes("nkkn")) return "QUẬN 3 (TP.HCM)";
-  if (t.includes("quận 1") || t.includes("q1") || t.includes("cống quỳnh")) return "QUẬN 1 (TP.HCM)";
-  if (t.includes("tân bình") || t.includes("cộng hòa")) return "TÂN BÌNH (TP.HCM)";
-  if (t.includes("bình thạnh") || t.includes("nơ trang long")) return "BÌNH THẠNH (TP.HCM)";
-  if (t.includes("quận 7") || t.includes("q7") || t.includes("huỳnh tấn phát")) return "QUẬN 7 (TP.HCM)";
-  if (t.includes("bình tân") || t.includes("tên lửa")) return "BÌNH TÂN (TP.HCM)";
-  if (t.includes("hóc môn") || t.includes("hoc mon")) return "HÓC MÔN (TP.HCM)";
-  if (t.includes("tân phú") || t.includes("lũy bán bích") || t.includes("tan phu")) return "TÂN PHÚ (TP.HCM)";
-  
-  // Bình Dương
-  if (t.includes("dĩ an") || t.includes("di an")) return "DĨ AN (BÌNH DƯƠNG)";
-  if (t.includes("thủ dầu một") || t.includes("thu dau mot") || t.includes("thuận an") || t.includes("thuan an") || t.includes("bình dương") || t.includes("binh duong")) return "BÌNH DƯƠNG";
-
-  // Đồng Nai
-  if (t.includes("biên hòa") || t.includes("bien hoa") || t.includes("đồng nai") || t.includes("dong nai")) return "BIÊN HÒA (ĐỒNG NAI)";
-  if (t.includes("gia kiệm") || t.includes("gia kiem") || t.includes("thống nhất") || t.includes("long khánh")) return "GIA KIỆM (ĐỒNG NAI)";
-
-  // Miền Tây
-  if (t.includes("cần thơ") || t.includes("can tho") || t.includes("ninh kiều") || t.includes("cái răng")) return "CẦN THƠ";
-  if (t.includes("cà mau") || t.includes("ca mau")) return "CÀ MAU";
-  if (t.includes("bạc liêu") || t.includes("bac lieu")) return "BẠC LIÊU";
-  if (t.includes("sóc trăng") || t.includes("soc trang")) return "SÓC TRĂNG";
-  if (t.includes("đồng tháp") || t.includes("dong thap") || t.includes("cao lãnh") || t.includes("sa đéc")) return "ĐỒNG THÁP";
-  if (t.includes("kiên giang") || t.includes("rạch giá") || t.includes("phú quốc")) return "KIÊN GIANG";
-
-  // Đông Nam Bộ & Tây Nguyên & Miền Trung
-  if (t.includes("vũng tàu") || t.includes("bà rịa") || t.includes("xuyên mộc") || t.includes("phước tỉnh") || t.includes("brvt")) return "BÀ RỊA - VŨNG TÀU";
-  if (t.includes("tây ninh") || t.includes("tay ninh")) return "TÂY NINH";
-  if (t.includes("bình phước") || t.includes("đồng xoài") || t.includes("binh phuoc")) return "BÌNH PHƯỚC";
-  if (t.includes("đà lạt") || t.includes("da lat") || t.includes("lâm đồng") || t.includes("bảo lộc")) return "ĐÀ LẠT (LÂM ĐỒNG)";
-  if (t.includes("quy nhơn") || t.includes("quy nhon") || t.includes("bình định")) return "QUY NHƠN";
-  if (t.includes("đà nẵng") || t.includes("da nang")) return "ĐÀ NẴNG";
-  if (t.includes("hòa bình") || t.includes("hoa binh")) return "HÒA BÌNH";
+  for (const [branchName, keywords] of Object.entries(GEO_BRANCH_MAPPINGS)) {
+    for (const kw of keywords) {
+      if (t.includes(kw)) {
+        return branchName;
+      }
+    }
+  }
 
   return "Chưa chọn chi nhánh (Đang tư vấn)";
 }
+
 
 export function parseServiceFromText(text: string): string {
   const t = (text || "").toLowerCase();
