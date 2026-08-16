@@ -171,7 +171,7 @@ export async function runPreflightScan(module: string = "ALL"): Promise<Prefligh
     if (module === "ALL" || module === "OMNICHANNEL") {
       const totalConversations = await omniDb.omniConversation.count().catch(() => 150);
       const pendingSync = await omniDb.omniConversation.count({
-        where: { isPhoneAvailable: true },
+        where: { phone: { not: null } },
       }).catch(() => 42);
 
       totalScanned += totalConversations;
