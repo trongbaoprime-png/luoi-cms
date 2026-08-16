@@ -31,6 +31,7 @@ import {
   LogOut,
   CheckCircle2,
   BarChart3,
+  Zap,
 } from "lucide-react";
 
 interface MenuItem {
@@ -176,6 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       groupTitle: "HỆ THỐNG & PHÂN QUYỀN",
       icon: Shield,
       items: [
+        { title: "Sync Engine & Job Queue", href: "/admin/sync-engine", icon: Zap },
         { title: "OmniRoute Gateway", href: "/admin/omniroute", icon: Share2 },
         { title: "Quản lý Users", href: "/admin/users", icon: Shield },
         { title: "Audit Logs & Webhooks", href: "/admin/audit-logs", icon: Activity },
