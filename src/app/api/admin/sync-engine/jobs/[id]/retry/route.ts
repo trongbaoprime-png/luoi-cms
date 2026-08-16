@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const newJob = retryFailedJob(id);
+    const newJob = await retryFailedJob(id);
 
     if (!newJob) {
       return NextResponse.json(

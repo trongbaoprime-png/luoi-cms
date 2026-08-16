@@ -381,7 +381,7 @@ async function executeJobInBackground(job: SyncJob) {
   saveJobs(memoryJobs);
 }
 
-export function retryFailedJob(jobId: string): SyncJob | null {
+export async function retryFailedJob(jobId: string): Promise<SyncJob | null> {
   const job = getJobById(jobId);
   if (!job) return null;
 
