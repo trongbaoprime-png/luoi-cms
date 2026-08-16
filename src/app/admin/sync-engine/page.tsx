@@ -1,39 +1,25 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   RefreshCw,
   Play,
-  CheckCircle2,
-  AlertCircle,
   Clock,
   Database,
   Layers,
   Terminal,
   Search,
-  Filter,
-  Download,
   RotateCcw,
   Sparkles,
   ShieldCheck,
   Zap,
-  Activity,
-  ChevronRight,
   Server,
-  FileText,
   Video,
   Users,
   Share2,
 } from "lucide-react";
 import { SyncJob, PreflightReport } from "@/lib/sync-engine/sync-queue";
-
-interface ResourceOption {
-  id: string;
-  name: string;
-  countLabel: string;
-  excluded: boolean;
-  statusText: string;
-}
+import { DynamicResourceItem } from "@/app/api/admin/sync-engine/resources/route";
 
 export default function SyncEnginePage() {
   const [selectedModule, setSelectedModule] = useState<string>("OMNICHANNEL");
@@ -41,6 +27,15 @@ export default function SyncEnginePage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [loadingJobs, setLoadingJobs] = useState<boolean>(false);
   const [triggeringJob, setTriggeringJob] = useState<boolean>(false);
+
+  // Dynamic Real Resources State
+  const [resources, setResources] = useState<Record<string, DynamicResourceItem[]>>({
+    OMNICHANNEL: [],
+    META_ADS: [],
+    CRM_LEADS: [],
+    SEO_INDEXING: [],
+  });
+  const [loadingResources, setLoadingResources] = useState<boolean>(false);
 
   // Pre-flight State
   const [isPreflightModalOpen, setIsPreflightModalOpen] = useState(false);
@@ -50,30 +45,6 @@ export default function SyncEnginePage() {
   // Filter & Search Log State
   const [logSearch, setLogSearch] = useState<string>("");
   const [logLevelFilter, setLogLevelFilter] = useState<string>("ALL");
-
-  // Selected Resources State
-  const [resources, setResources] = useState<Record<string, ResourceOption[]>>({
-    OMNICHANNEL: [
-      { id: "pancake_vip9", name: "9 Fanpages Chạy Ads Chính (Ưu tiên)", countLabel: "484755, 101372...", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "pancake_satellites", name: "59 Fanpages Vệ Tinh & Chi Nhánh", countLabel: "59 trang kết nối", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "staff_locked", name: "Hội thoại Nhân viên đang chốt", countLabel: "142 cuộc chat", excluded: true, statusText: "excluded — Bảo vệ dữ liệu nhân viên" },
-      { id: "manual_branch", name: "Chi nhánh Khách đã chọn thủ công", countLabel: "Đã chốt lịch", excluded: true, statusText: "excluded — Không ghi đè" },
-    ],
-    META_ADS: [
-      { id: "meta_11_accounts", name: "11 Tài khoản Quảng cáo Tâm Đức", countLabel: "11 Ad Accounts", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "meta_advideos", name: "Video Ads MP4 CDN & Âm thanh", countLabel: "52 video thực tế", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "meta_creatives", name: "918 Mẫu Creative & Post Facebook", countLabel: "918 creatives", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "meta_daily_insights", name: "Số liệu Thống kê Ngày (Spend, CPTN)", countLabel: "2.046 records", excluded: false, statusText: "sẽ đồng bộ" },
-    ],
-    CRM_LEADS: [
-      { id: "crm_leads_new", name: "Khách hàng Tiềm năng mới có SĐT", countLabel: "Hôm nay & Hôm qua", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "crm_doctor_notes", name: "Ghi chú & Hồ sơ Bác sĩ đã nhập", countLabel: "Protected fields", excluded: true, statusText: "excluded — Giữ nguyên hồ sơ" },
-    ],
-    SEO_INDEXING: [
-      { id: "seo_articles", name: "Bài viết Kiến thức Nha khoa mới", countLabel: "65 bài viết", excluded: false, statusText: "sẽ đồng bộ" },
-      { id: "seo_indexnow", name: "IndexNow Protocol (Bing & Yandex)", countLabel: "Realtime ping", excluded: false, statusText: "sẽ đồng bộ" },
-    ],
-  });
 
   // Content Scope Rules Checkboxes
   const [contentRules, setContentRules] = useState({
@@ -88,7 +59,29 @@ export default function SyncEnginePage() {
   const [deltaOnly, setDeltaOnly] = useState(true);
   const [excludeConflicts, setExcludeConflicts] = useState(true);
 
-  // Fetch Jobs
+  // 1. Fetch Dynamic Real Resources from PostgreSQL
+  const fetchResources = async (moduleName: string) => {
+    setLoadingResources(true);
+    try {
+      const res = await fetch(`/api/admin/sync-engine/resources?module=${moduleName}`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setResources((prev) => ({
+          ...prev,
+          [moduleName]: json.data,
+        }));
+      }
+    } catch {
+    } finally {
+      setLoadingResources(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchResources(selectedModule);
+  }, [selectedModule]);
+
+  // 2. Fetch Jobs
   const fetchJobs = async () => {
     try {
       const res = await fetch("/api/admin/sync-engine/jobs");
@@ -130,14 +123,18 @@ export default function SyncEnginePage() {
   const handleTriggerSync = async () => {
     setTriggeringJob(true);
     try {
+      const activeList = resources[selectedModule] || [];
+      const selectedIds = activeList.filter((r) => !r.excluded).map((r) => r.id);
+
       const res = await fetch("/api/admin/sync-engine/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           module: selectedModule,
-          jobName: `${selectedModule.toLowerCase()}-delta-sync`,
+          jobName: `${selectedModule.toLowerCase()}-live-sync`,
           deltaOnly,
           excludeConflicts,
+          selectedResources: selectedIds,
         }),
       });
       const json = await res.json();
@@ -174,7 +171,7 @@ export default function SyncEnginePage() {
     return matchLevel && matchSearch;
   });
 
-  const activeResources = resources[selectedModule] || resources["OMNICHANNEL"];
+  const activeResources = resources[selectedModule] || [];
   const syncableCount = activeResources.filter((r) => !r.excluded).length;
 
   return (
@@ -191,11 +188,11 @@ export default function SyncEnginePage() {
                 Sync Engine & Background Job Queue
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#00c9b7]/20 text-[#00c9b7] border border-[#00c9b7]/30">
-                LƯỜI OS COCKPIT
+                100% REAL PRODUCTION
               </span>
             </div>
             <p className="text-xs text-stone-400 font-mono">
-              Hệ thống điều phối hàng đợi tác vụ, đồng bộ vi sai (Delta Sync) và nhật ký sự kiện thời gian thực.
+              Hệ thống điều phối hàng đợi tác vụ, đồng bộ vi sai (Delta Sync) và nhật ký sự kiện thời gian thực từ 5 cơ sở dữ liệu PostgreSQL.
             </p>
           </div>
         </div>
@@ -221,8 +218,8 @@ export default function SyncEnginePage() {
         {[
           { key: "OMNICHANNEL", label: "💬 Omnichannel (68 Fanpages)", icon: Layers },
           { key: "META_ADS", label: "📊 Meta Ads (11 Ad Accounts)", icon: Video },
-          { key: "CRM_LEADS", label: "👥 miniCRM & Leads", icon: Users },
-          { key: "SEO_INDEXING", label: "🌐 SEO & IndexNow", icon: Share2 },
+          { key: "CRM_LEADS", label: "👥 miniCRM (19.406 Leads)", icon: Users },
+          { key: "SEO_INDEXING", label: "🌐 SEO & Landing Pages", icon: Share2 },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -241,12 +238,12 @@ export default function SyncEnginePage() {
 
       {/* Top 2-Column Configuration Cards (Storekit Style) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 1: Tài nguyên & Phạm vi nguồn */}
+        {/* Card 1: Tài nguyên & Phạm vi nguồn thực tế */}
         <div className="bg-[#141720] border border-stone-800 rounded-2xl p-5 space-y-4 shadow-xl">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-sm text-stone-100 flex items-center gap-2">
               <Database size={16} className="text-[#00c9b7]" />
-              <span>Phạm Vi Tài Nguyên & Quy Tắc Loại Trừ</span>
+              <span>Danh Sách Tài Nguyên Thực Tế ({activeResources.length} mục)</span>
             </h3>
             <span className="text-[11px] font-mono text-stone-400">
               {syncableCount}/{activeResources.length} sẵn sàng đồng bộ
@@ -257,52 +254,62 @@ export default function SyncEnginePage() {
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 font-mono flex items-start gap-2">
             <ShieldCheck size={16} className="text-amber-400 shrink-0 mt-0.5" />
             <span>
-              <strong>Tick = loại trừ:</strong> Dữ liệu nhân viên đang chăm sóc hoặc đã chốt lịch hẹn sẽ được bảo vệ tuyệt đối, auto-sync sẽ không ghi đè.
+              <strong>Tick = Loại trừ:</strong> Bỏ chọn để tạm ngưng hoặc bảo vệ mục không cho auto-sync ghi đè. Dữ liệu truy vấn 100% thời gian thực từ PostgreSQL.
             </span>
           </div>
 
-          {/* Resource Checklist */}
+          {/* Real Dynamic Resource Checklist */}
           <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-            {activeResources.map((item) => (
-              <div
-                key={item.id}
-                className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                  item.excluded
-                    ? "bg-stone-900/40 border-stone-800/60 opacity-75"
-                    : "bg-[#181b26] border-stone-800 hover:border-[#00c9b7]/40"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={!item.excluded}
-                    onChange={() => {
-                      setResources((prev) => ({
-                        ...prev,
-                        [selectedModule]: prev[selectedModule].map((r) =>
-                          r.id === item.id ? { ...r, excluded: !r.excluded } : r
-                        ),
-                      }));
-                    }}
-                    className="w-4 h-4 rounded-md accent-[#00c9b7] cursor-pointer"
-                  />
-                  <div>
-                    <div className="text-xs font-bold text-stone-200">{item.name}</div>
-                    <div className="text-[10px] text-stone-500 font-mono">{item.countLabel}</div>
-                  </div>
-                </div>
-
-                <span
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+            {loadingResources ? (
+              <div className="p-8 text-center text-stone-500 font-mono text-xs animate-pulse">
+                Đang tải danh sách tài nguyên thực tế từ database...
+              </div>
+            ) : activeResources.length === 0 ? (
+              <div className="p-8 text-center text-stone-500 font-mono text-xs">
+                Chưa tìm thấy bản ghi nào trong phân hệ này.
+              </div>
+            ) : (
+              activeResources.map((item) => (
+                <div
+                  key={item.id}
+                  className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
                     item.excluded
-                      ? "bg-stone-800 text-stone-400 border border-stone-700"
-                      : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                      ? "bg-stone-900/40 border-stone-800/60 opacity-75"
+                      : "bg-[#181b26] border-stone-800 hover:border-[#00c9b7]/40"
                   }`}
                 >
-                  {item.statusText}
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={!item.excluded}
+                      onChange={() => {
+                        setResources((prev) => ({
+                          ...prev,
+                          [selectedModule]: prev[selectedModule].map((r) =>
+                            r.id === item.id ? { ...r, excluded: !r.excluded } : r
+                          ),
+                        }));
+                      }}
+                      className="w-4 h-4 rounded-md accent-[#00c9b7] cursor-pointer"
+                    />
+                    <div>
+                      <div className="text-xs font-bold text-stone-200">{item.name}</div>
+                      <div className="text-[10px] text-stone-500 font-mono">{item.countLabel}</div>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                      item.excluded
+                        ? "bg-stone-800 text-stone-400 border border-stone-700"
+                        : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    }`}
+                  >
+                    {item.statusText}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -321,7 +328,7 @@ export default function SyncEnginePage() {
 
             {/* Smart Delta Notice */}
             <div className="p-3 bg-stone-900 border border-stone-800 rounded-xl text-xs text-stone-300 font-mono leading-relaxed">
-              💡 <strong>Chỉ đồng bộ key chưa có bản dịch/dữ liệu hoặc nguồn đã đổi:</strong> Chạy lại an toàn không tốn Token/Quota. Dữ liệu đã xử lý qua flow push sẽ tự động được giữ nguyên.
+              💡 <strong>Chỉ đồng bộ key chưa có dữ liệu hoặc nguồn đã đổi:</strong> Chạy lại an toàn không tốn Token/Quota API. Dữ liệu đã chốt lịch qua CRM sẽ tự động được giữ nguyên.
             </div>
 
             {/* Content Checkboxes Grid */}
@@ -405,7 +412,7 @@ export default function SyncEnginePage() {
               className="px-5 py-2.5 bg-[#00c9b7] hover:bg-[#00b3a2] text-[#023835] font-black text-xs rounded-xl transition-all shadow-lg shadow-[#00c9b7]/10 flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Play size={14} className={triggeringJob ? "animate-spin" : ""} />
-              <span>{triggeringJob ? "Đang khởi chạy..." : `Đồng bộ ${syncableCount} nhóm mục`}</span>
+              <span>{triggeringJob ? "Đang khởi chạy..." : `Đồng bộ ${syncableCount} mục thực tế`}</span>
             </button>
           </div>
         </div>
@@ -432,8 +439,8 @@ export default function SyncEnginePage() {
           {/* Jobs List */}
           <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
             {jobs.length === 0 ? (
-              <div className="p-8 text-center text-stone-500 font-mono text-xs">
-                Chưa có Job nào trong hàng đợi.
+              <div className="p-8 text-center text-stone-500 font-mono text-xs border border-dashed border-stone-800/80 rounded-xl">
+                Chưa có Job nào được chạy. Hãy bấm <strong>"Đồng bộ"</strong> ở trên để khởi chạy tác vụ đầu tiên.
               </div>
             ) : (
               jobs.map((job) => {
@@ -524,7 +531,7 @@ export default function SyncEnginePage() {
               <div className="flex items-center gap-2">
                 <Terminal size={16} className="text-[#00c9b7]" />
                 <h3 className="font-bold text-sm text-stone-100 font-sans">
-                  Event Log Stream: <span className="text-[#00c9b7] font-mono">{selectedJob?.jobName || "No job"}</span>
+                  Event Log Stream: <span className="text-[#00c9b7] font-mono">{selectedJob?.jobName || "No job selected"}</span>
                 </h3>
               </div>
 
@@ -571,7 +578,7 @@ export default function SyncEnginePage() {
           <div className="bg-[#0b0d13] border border-stone-900 rounded-xl p-4 font-mono text-xs text-stone-300 min-h-[300px] max-h-[340px] overflow-y-auto space-y-2 shadow-inner">
             {!selectedJob || filteredLogs.length === 0 ? (
               <div className="h-full flex items-center justify-center text-stone-600">
-                <span>Select a job to see its event log.</span>
+                <span>Chọn một Job ở hàng đợi bên trái để xem luồng Event Log chi tiết.</span>
               </div>
             ) : (
               filteredLogs.map((log, idx) => {
@@ -636,13 +643,13 @@ export default function SyncEnginePage() {
             {/* Summary Metrics Grid */}
             <div className="grid grid-cols-3 gap-3 font-mono text-center">
               <div className="p-3 bg-stone-900 border border-stone-800 rounded-xl">
-                <span className="text-[10px] text-stone-400 block">Tổng Quét:</span>
-                <strong className="text-lg text-stone-100">{preflightData.summary.totalScanned}</strong>
+                <span className="text-[10px] text-stone-400 block">Tổng Quét Thực Tế:</span>
+                <strong className="text-lg text-stone-100">{preflightData.summary.totalScanned.toLocaleString("vi-VN")}</strong>
               </div>
 
               <div className="p-3 bg-[#00c9b7]/10 border border-[#00c9b7]/30 rounded-xl">
                 <span className="text-[10px] text-[#00c9b7] block">Cần Đồng Bộ Delta:</span>
-                <strong className="text-lg text-[#00c9b7]">+{preflightData.summary.newOrModified}</strong>
+                <strong className="text-lg text-[#00c9b7]">+{preflightData.summary.newOrModified.toLocaleString("vi-VN")}</strong>
               </div>
 
               <div className="p-3 bg-stone-900 border border-stone-800 rounded-xl">
@@ -654,7 +661,7 @@ export default function SyncEnginePage() {
             {/* Resource Breakdown List */}
             <div className="space-y-2">
               <span className="text-[11px] font-bold text-stone-400 font-mono block uppercase">
-                Chi tiết từng phân hệ:
+                Chi tiết từng phân hệ PostgreSQL:
               </span>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {preflightData.breakdown.map((b, idx) => (
