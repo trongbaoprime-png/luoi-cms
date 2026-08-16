@@ -113,7 +113,7 @@ export async function runPreflightScan(module: string = "ALL"): Promise<Prefligh
         where: { phone: { not: null } },
       });
       const pendingSync = await omniDb.omniConversation.count({
-        where: { isBranchDetected: false },
+        where: { detectedBranch: null },
       }).catch(() => 0);
 
       totalScanned += totalConversations;
@@ -159,7 +159,7 @@ export async function runPreflightScan(module: string = "ALL"): Promise<Prefligh
         _count: { id: true },
       });
       const crmDelta = await crmDb.cRMLead.count({
-        where: { isSyncedToPostgres: false },
+        where: { status: "NEW" },
       }).catch(() => 0);
 
       totalScanned += totalLeads;
