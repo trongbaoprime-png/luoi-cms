@@ -292,7 +292,7 @@ async function executeJobInBackground(job: SyncJob) {
 
         try {
           const convCount = await omniDb.omniConversation.count({
-            where: { fanpageId: page.pageId },
+            where: { pageId: page.pageId },
           });
 
           job.successItems += 1;
