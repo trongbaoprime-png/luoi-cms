@@ -207,7 +207,7 @@ export async function runPreflightScan(module: string = "ALL"): Promise<Prefligh
 
     // 3. Scan miniCRM Leads
     if (module === "ALL" || module === "CRM_LEADS") {
-      const totalCustomers = await crmDb.customer.count().catch(() => 320);
+      const totalCustomers = await crmDb.cRMLead.count().catch(() => 320);
       const crmDelta = 18;
 
       totalScanned += totalCustomers;
