@@ -4,7 +4,7 @@ import os from "os";
 import { cmsDb } from "@/lib/cms-db";
 import { metaDb } from "@/lib/meta-db";
 import { omniDb } from "@/lib/omni-db";
-import { crmPgDb } from "@/lib/crm-pg-db";
+import { crmDb } from "@/lib/crm-db";
 
 export interface SyncJobLog {
   id: string;
@@ -207,7 +207,7 @@ export async function runPreflightScan(module: string = "ALL"): Promise<Prefligh
 
     // 3. Scan miniCRM Leads
     if (module === "ALL" || module === "CRM_LEADS") {
-      const totalCustomers = await crmPgDb.customer.count().catch(() => 320);
+      const totalCustomers = await crmDb.customer.count().catch(() => 320);
       const crmDelta = 18;
 
       totalScanned += totalCustomers;
