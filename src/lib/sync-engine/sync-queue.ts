@@ -224,7 +224,7 @@ export async function runPreflightScan(module: string = "ALL"): Promise<Prefligh
 
     // 4. Scan SEO & Indexing
     if (module === "ALL" || module === "SEO_INDEXING") {
-      const totalArticles = await cmsDb.article.count().catch(() => 65);
+      const totalArticles = await cmsDb.post.count().catch(() => 65);
       const seoDelta = 5;
 
       totalScanned += totalArticles;
