@@ -18,7 +18,8 @@ export interface PermissionResult {
 
 /**
  * Enforce strict Admin Authentication server-side.
- * Validates cryptographically secure session token from Cookie or Bearer header against Redis.
+ * Validates a cryptographically secure session token from Cookie or Bearer header against Redis/memory session storage.
+ * Production is fail-closed: missing or unknown sessions are rejected.
  */
 export async function requireAuth(req?: Request): Promise<AuthResult> {
   try {
@@ -42,21 +43,26 @@ export async function requireAuth(req?: Request): Promise<AuthResult> {
     }
 
     if (!sessionToken) {
-      sessionToken = "default-admin-session-token";
+      return {
+        authenticated: false,
+        errorResponse: NextResponse.json(
+          { success: false, error: "401 Unauthorized - Chưa đăng nhập hoặc thiếu phiên xác thực." },
+          { status: 401 }
+        ),
+      };
     }
 
-    // 3. Retrieve and Validate Session from Redis Server-Side with Fallback
-    const storedSession = await getAdminSession(sessionToken);
-    const session: AdminSession = storedSession || {
-      token: sessionToken,
-      userId: "admin-root",
-      username: "Beni",
-      email: "admin@luoidonnha.com",
-      role: "SUPER_ADMIN",
-      permissions: ["ALL"],
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 8640000000,
-    };
+    // 3. Retrieve and strictly validate server-side session
+    const session = await getAdminSession(sessionToken);
+    if (!session) {
+      return {
+        authenticated: false,
+        errorResponse: NextResponse.json(
+          { success: false, error: "401 Unauthorized - Phiên đăng nhập không hợp lệ hoặc đã hết hạn." },
+          { status: 401 }
+        ),
+      };
+    }
 
     return {
       authenticated: true,
@@ -64,7 +70,7 @@ export async function requireAuth(req?: Request): Promise<AuthResult> {
       username: session.username,
       role: session.role,
     };
-  } catch (err: any) {
+  } catch {
     return {
       authenticated: false,
       errorResponse: NextResponse.json(
@@ -116,7 +122,7 @@ export async function requirePermission(permission: string, req?: Request): Prom
 }
 
 /**
- * Backward compatibility wrapper for existing endpoints
+ * Backward compatibility wrapper for existing endpoints.
  */
 export async function verifyAdminAuth(req?: Request): Promise<{
   authenticated: boolean;
@@ -127,8 +133,8 @@ export async function verifyAdminAuth(req?: Request): Promise<{
   const auth = await requireAuth(req);
   return {
     authenticated: auth.authenticated,
-    username: auth.username || "admin",
-    role: auth.role || "ADMIN",
+    username: auth.username || "",
+    role: auth.role || "",
     errorResponse: auth.errorResponse,
   };
 }

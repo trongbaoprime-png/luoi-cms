@@ -2,11 +2,15 @@ import { cmsDb } from "../src/lib/cms-db";
 import { hashPassword } from "../src/lib/auth-security";
 
 async function main() {
-  const targetPassword = process.argv[2] || "B@oph@m021991";
-  console.log(`🔐 Hashing password '${targetPassword}' using Argon2id...`);
+  const targetPassword = process.argv[2];
+  if (!targetPassword || targetPassword.length < 12) {
+    console.error("Usage: npx tsx scripts/reset-all-passwords.ts '<strong-password-at-least-12-chars>'");
+    process.exit(2);
+  }
+
+  console.log("🔐 Hashing supplied password using Argon2id...");
   const hashedPassword = await hashPassword(targetPassword);
 
-  // 1. Ensure primary admin user exists
   const adminUser = await cmsDb.user.findFirst({
     where: { OR: [{ email: "admin@luoidonnha.com" }, { name: "admin" }, { name: "Beni" }] },
   });
@@ -21,18 +25,14 @@ async function main() {
         status: "ACTIVE",
       },
     });
-    console.log(`✅ Created default admin user: 'admin@luoidonnha.com' / 'admin'`);
+    console.log("✅ Created default admin identity. Password was not printed.");
   }
 
-  // 2. Reset password for ALL users in the database
   const result = await cmsDb.user.updateMany({
-    data: {
-      password: hashedPassword,
-      status: "ACTIVE",
-    },
+    data: { password: hashedPassword, status: "ACTIVE" },
   });
 
-  console.log(`✅ Successfully reset password for ALL ${result.count} user accounts in database to: '${targetPassword}'`);
+  console.log(`✅ Successfully reset passwords for ${result.count} user accounts. Password was not printed.`);
 
   const allUsers = await cmsDb.user.findMany({
     select: { id: true, name: true, email: true, role: true, status: true },

@@ -8,6 +8,8 @@
     "prisma:generate": "prisma generate --schema=prisma/cms.prisma && prisma generate --schema=prisma/meta-ads.prisma && prisma generate --schema=prisma/crm-postgres.prisma && prisma generate --schema=prisma/omni-postgres.prisma && prisma generate --schema=prisma/tracking.prisma",
     "build": "npm run prisma:generate && next build",
     "start": "next start",
+    "mcp:start": "node server/mcp-server.mjs",
+    "mcp:test": "node scripts/test-mcp.mjs",
     "lint": "eslint",
     "audit": "tsc --noEmit",
     "check:system": "npm run prisma:generate && tsc --noEmit && next build"
